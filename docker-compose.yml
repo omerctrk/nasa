@@ -65,6 +65,9 @@ services:
       SANS_API_ANALYZE_PATH: ${SANS_API_ANALYZE_PATH:-/v1/sans/analyze}
       SANS_API_TOKEN: ${SANS_API_TOKEN:-}
       JWT_SECRET: ${JWT_SECRET:-}
+      JWT_ISSUER: ${JWT_ISSUER:-astra-health}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-astra-health-api}
+      ACCESS_TOKEN_SECONDS: ${ACCESS_TOKEN_SECONDS:-3600}
     ports: ["8000:8000"]
     volumes: ["./backend:/app"]   # geliştirme: kod değişince yeniden yüklenir
     # Tek API worker

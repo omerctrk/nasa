@@ -166,6 +166,7 @@ class CurrentUser(ContractModel):
 
 
 class ErrorCode(StrEnum):
+    SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"  # 503: required persistence not delivered
     UNAUTHORIZED = "UNAUTHORIZED"  # 401
     FORBIDDEN = "FORBIDDEN"  # 403
     NOT_FOUND = "NOT_FOUND"  # 404

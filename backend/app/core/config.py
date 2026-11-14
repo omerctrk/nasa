@@ -8,6 +8,7 @@ Bu eşleme docker-compose.yml'de yapılır; kod hangi hesapla çalıştığını
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 from sqlalchemy.engine import URL
 
 
@@ -18,11 +19,11 @@ class Settings(BaseSettings):
     db_port: int = 1433
     db_name: str = "AstraHealth"
     db_user: str = "astra_app"
-    db_password: str
+    db_password: str = Field(repr=False)
     odbc_driver: str = "ODBC Driver 18 for SQL Server"
 
     # --- Kimlik (Ömer, sözleşme §5) ---
-    jwt_secret: str | None = None  # JWT_SECRET; auth açılırken zorunlu tutulur, repoya yazılmaz
+    jwt_secret: str | None = Field(default=None, repr=False)  # auth açılırken zorunlu
     jwt_issuer: str = "astra-health"
     jwt_audience: str = "astra-health-api"
 

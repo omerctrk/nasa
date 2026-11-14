@@ -101,6 +101,14 @@ pip install -r requirements.lock.txt && pytest
 
 ## Durum
 
+Ömer'in auth entegrasyonu: `contracts/auth-integration.md`. Auth router gerçek
+SQLAlchemy repository'sine bağlıdır. API başlangıcında güçlü `JWT_SECRET` zorunludur;
+`DB_USER=astra_app` kontrol edilir. A6 seed/A7 ve gerçek DB kabulü hâlâ ayrı teslimdir.
+
+Ö2 analiz işi API'si: `contracts/analysis-jobs.md`. Başlatma/durum/retry router'ları
+hazırdır. A3 job repository'si teslim edilene kadar üretim çağrıları 503 döndürür;
+başarılı kalıcı kayıt varmış gibi bellekten job üretilmez.
+
 - [x] A0: klasör yapısı, tek Base, 6 şema, 2 rol (SANS rolü yok), evaluation DENY, bootstrap, ayrı migrate, sınırlı API hesabı, `/api/v1/health/live|ready`
 - [x] A1 core: Missions/Astronauts/Users, FK/UQ/CHECK, filtreli UQ, app izinleri (DELETE yok), flight_day eşlemesi, kimlik repository'si
 - [x] Ortak sözleşme: common.py, interfaces.py, records.py, hata zarfı, ayarlar, fixture'lar (contracts/backend-contract.md)

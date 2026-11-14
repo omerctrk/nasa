@@ -69,7 +69,8 @@ class MeasurementRepository(Protocol):
 
 
 @runtime_checkable
-class JobRepository(Protocol):
+class JobApiRepository(Protocol):
+    """Ö2 subset; API fakes do not need to implement worker operations."""
     def create_or_get_job(
         self,
         scope: JobScope,
@@ -83,6 +84,13 @@ class JobRepository(Protocol):
     def get_job(self, job_id: uuid.UUID, scope: JobScope) -> JobRecord | None:
         """Kapsam dışındaki iş için de None (404, varlığı sızdırılmaz)."""
 
+    def request_retry(self, job_id: uuid.UUID, scope: JobScope) -> JobRecord:
+        """Yalnız FAILED iş: retry_cycle+1, attempts=0, QUEUED. Snapshot korunur.
+        Geçiş atomiktir. Başka durumda InvalidStateTransition, kapsam dışıysa NotFound."""
+
+
+@runtime_checkable
+class JobRepository(JobApiRepository, Protocol):
     def claim_next_job(self, lease_seconds: int) -> ClaimedJob | None:
         """Zamanı gelmiş en eski QUEUED işi atomik olarak sahiplenir (SYNCING, yeni lease)."""
 
@@ -109,12 +117,6 @@ class JobRepository(Protocol):
         self, job_id: uuid.UUID, lease_token: uuid.UUID, outcome: JobOutcome
     ) -> JobRecord:
         """Sahiplik kontrollü tamamlanma; lease alanları temizlenir. Sahiplik yoksa LeaseLost."""
-
-    def request_retry(self, job_id: uuid.UUID, scope: JobScope) -> JobRecord:
-        """EK — POST /analysis/jobs/{id}/retry. Yalnız FAILED iş: retry_cycle+1,
-        attempts=0, QUEUED. Snapshot korunur. Başka durumda InvalidStateTransition,
-        kapsam dışıysa NotFound."""
-
 
 @runtime_checkable
 class ResultRepository(Protocol):
