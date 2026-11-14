@@ -108,6 +108,8 @@ fırlatır; repository hataları otomatik çevrilir.
 - JWT HS256, secret `JWT_SECRET` ortam değişkeninden. Claim'ler: `sub`(=`core.Users.user_id`),
   `iat`, `exp`, `iss`, `aud`, `jti`. Refresh token yok; süre bitince yeniden giriş.
 - Rol, aktiflik ve astronot bağlantısı her istekte DB'den doğrulanır.
+- Parola: `app/core/passwords.py` (Argon2id) — seed `hash_password` ile yazar, giriş
+  `verify_password` ile doğrular. Demo hesapları: `scripts/seed.py` (parolalar `.env`).
 - Dependency'ler `CurrentUser {user_id, role, astronaut_id}` döndürür:
   - `current_user()` — token + aktif hesap
   - `require_active_astronaut()` — ASTRONAUT, kendi profili, `is_display_only=0`

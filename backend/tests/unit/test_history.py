@@ -8,7 +8,7 @@ import pytest
 from app.core.snapshots import snapshot_hash
 from app.schemas.history import HistoryPolicy
 from app.services.history import HistoryDataError, build_history_snapshot
-from tests.fixtures.history import NOW, history_policy, job, profile, record, thresholds
+from tests.fixtures.history import EYE_PROTOCOL_VERSION, NOW, history_policy, job, profile, record, thresholds
 
 
 def build(records, **changes):
@@ -114,7 +114,8 @@ def eye_policy(minimum="0.8"):
 
 def eye(number=1, **changes):
     return record(number, **({"module": "sans", "measurement": "near_acuity", "unit": "logMAR",
-                              "eye": "OD", "quality_score": "0.9", "value_num": "-0.1"} | changes))
+                              "protocol_version": EYE_PROTOCOL_VERSION, "eye": "OD",
+                              "quality_score": "0.9", "value_num": "-0.1"} | changes))
 
 
 def test_quality_policy_must_be_configured_and_low_quality_is_not_sent():
@@ -125,6 +126,18 @@ def test_quality_policy_must_be_configured_and_low_quality_is_not_sent():
     assert len(result["history_records"]) == 1
     assert result["history_records"][0]["record_id"] == rows[2].record_id
     assert result["exclusion_counts"] == {"low_quality": 1, "quality_score_missing": 1}
+
+
+def test_a6_seed_eye_definitions_match_history_policy():
+    from scripts.seed import DEFINITIONS, PROTOCOL_VERSION
+
+    seeded = {(module, code, unit, PROTOCOL_VERSION)
+              for code, module, unit, *_ in DEFINITIONS if module == "sans"}
+    configured = {feature.key() for feature in history_policy().features
+                  if feature.module.value == "sans"}
+    assert configured == seeded
+    result = build([eye(protocol_version=PROTOCOL_VERSION)])
+    assert result["exclusion_counts"] == {"quality_policy_not_configured": 1}
 
 
 def test_eyes_units_and_protocols_are_separate_groups():

@@ -10,6 +10,7 @@ from app.services.thresholds import load_policy_json
 
 ROOT = Path(__file__).parents[2]
 NOW = datetime(2027, 3, 20, 12, tzinfo=UTC)
+EYE_PROTOCOL_VERSION = "astra-v1"  # A6 MeasurementDefinitions seed
 
 
 def profile(**changes):

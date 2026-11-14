@@ -7,6 +7,7 @@ FastAPI + SQLAlchemy 2.0 + Alembic + MS SQL Server 2022. Kaynaklar: `BACKEND_TAB
 ```bash
 cp backend/.env.example .env       # değerleri doldur; .env git'e girmez
 docker compose run --rm migrate    # db → bootstrap → migration (sa)
+docker compose run --rm seed       # sözlük, M01, A007 + gösterim profili, 2 giriş hesabı (astra_app)
 docker compose up api              # API, astra_app hesabıyla açılır
 ```
 
@@ -19,6 +20,7 @@ Kontrol: http://localhost:8000/api/v1/health/ready adresi `"db_user": "astra_app
 | `db` | — | MS SQL açılır |
 | `bootstrap` (`scripts/bootstrap.py`) | sa | AstraHealth veritabanı, `astra_app` ve `astra_eval` login + USER. Tekrar çalıştırılabilir |
 | `migrate` (Alembic) | sa | Şemalar, roller, üyelik, GRANT/DENY, tablolar, VIEW'lar |
+| `seed` | **astra_app** | Ölçüm sözlüğü, demo profilleri ve giriş hesaplarını ekler; migrate sonrası çalışır |
 | `api` | **astra_app** | Uygulama + işçi. Migration çalıştırmaz, tablo oluşturamaz |
 
 | SQL hesabı | Rol | Erişim |
@@ -103,7 +105,7 @@ pip install -r requirements.lock.txt && pytest
 
 Ömer'in auth entegrasyonu: `contracts/auth-integration.md`. Auth router gerçek
 SQLAlchemy repository'sine bağlıdır. API başlangıcında güçlü `JWT_SECRET` zorunludur;
-`DB_USER=astra_app` kontrol edilir. A6 seed/A7 ve gerçek DB kabulü hâlâ ayrı teslimdir.
+`DB_USER=astra_app` kontrol edilir. A6 seed hazırdır; A7 ve gerçek DB kabulü ayrı teslimdir.
 
 Ö2 analiz işi API'si: `contracts/analysis-jobs.md`. Başlatma/durum/retry router'ları
 hazırdır ve A3 gerçek job repository'sine bağlıdır. Eksik repository kurulumunda
@@ -116,7 +118,8 @@ yalnız A3 ve iki gerçek pipeline bağlandığında başlatır; şu an üretimd
 Ö4 geçmiş/snapshot: `contracts/history-thresholds.md`. A5 ölçüm repository'siyle
 74 gün özet + 7 gün ayrıntı hazırlar. config/thresholds.json klinik sayılar gelene
 kadar boştur. Demo referans tarihi ANOMALY_REFERENCE_DATE ile açıkça seçilebilir;
-veri yeterliliği ve kalite sınırları kendiliğinden uydurulmaz.
+veri yeterliliği ve kalite sınırları kendiliğinden uydurulmaz. SANS tanımları A6
+seed ile aynı `astra-v1` protokolünü kullanır.
 
 - [x] A0: klasör yapısı, tek Base, 6 şema, 2 rol (SANS rolü yok), evaluation DENY, bootstrap, ayrı migrate, sınırlı API hesabı, `/api/v1/health/live|ready`
 - [x] A1 core: Missions/Astronauts/Users, FK/UQ/CHECK, filtreli UQ, app izinleri (DELETE yok), flight_day eşlemesi, kimlik repository'si
@@ -125,4 +128,5 @@ veri yeterliliği ve kalite sınırları kendiliğinden uydurulmaz.
 - [x] A3 ops: AnalysisJobs (+request_json önerisi), Alerts, NotificationEvents, EventReceipts; migration 0004; iş ve alarm repository'leri (Ömer'e teslim)
 - [x] A4 behavioral (3) + evaluation.gercek_durum; migration 0005; eval yalnız astra_eval_role'e açık
 - [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
-- [ ] A6 seed · [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
+- [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
+- [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
