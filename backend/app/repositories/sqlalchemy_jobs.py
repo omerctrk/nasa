@@ -155,7 +155,9 @@ class SqlAlchemyJobRepository:
                 """
                 WITH next_job AS (
                     SELECT TOP (1) * FROM ops.AnalysisJobs WITH (UPDLOCK, READPAST, ROWLOCK)
-                    WHERE state = 'QUEUED' AND next_attempt_at <= SYSUTCDATETIME()
+                    -- next_attempt_at DATETIME2(3)'e yuvarlanarak (bazen yukarı) yazılır; aynı hassasiyetle
+                    -- karşılaştırılmazsa az önce oluşan iş 1 ms boyunca "gelecekte" kalır.
+                    WHERE state = 'QUEUED' AND next_attempt_at <= CAST(SYSUTCDATETIME() AS datetime2(3))
                     ORDER BY next_attempt_at, created_at
                 )
                 UPDATE next_job

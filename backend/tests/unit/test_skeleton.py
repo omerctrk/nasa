@@ -50,3 +50,11 @@ def test_bootstrap_guvensiz_adi_reddeder(bad):
 def test_bootstrap_odbc_ozel_karakterleri_kacirir():
     b = _load("scripts/bootstrap.py", "bootstrap")
     assert b.odbc_value("a;b}c") == "{a;b}}c}"
+
+
+def test_bootstrap_password_policy():
+    bootstrap = _load("scripts/bootstrap.py", "bootstrap")
+    assert bootstrap.password_problem("App-Astra2026x") is None
+    assert bootstrap.password_problem("Abc12!") == "en az 8 karakter olmalı"
+    assert "en az üçünü" in bootstrap.password_problem("astrapassword")
+    assert bootstrap.password_problem("astra-2026x") is None  # küçük + rakam + sembol

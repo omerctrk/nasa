@@ -97,7 +97,19 @@ def _same(stored: dict[str, Any], wanted: dict[str, Any]) -> bool:
 
 
 def _insert_or_replay(db: Session, row: Any, find, wanted: dict[str, Any], as_dict) -> tuple[Any, bool]:
-    """Ekle; UNIQUE çakışmasında mevcut kaydı oku: aynı içerik → (mevcut, False), farklı → 409."""
+    """Ekle; kayıt varsa onu döndür: aynı içerik → (mevcut, False), farklı → 409.
+
+    Önce okunur (yaygın tekrar durumu, Session'da aynı kimlikli iki nesne oluşmaz); iki
+    istek aynı anda gelirse UNIQUE kuralı yakalar ve aynı karşılaştırma yapılır."""
+
+    def replay(existing: Any) -> tuple[Any, bool]:
+        if not _same(as_dict(existing), wanted):
+            raise IdempotencyConflict("Aynı istek anahtarı farklı içerikle kullanıldı")
+        return existing, False
+
+    existing = find()
+    if existing is not None:
+        return replay(existing)
     try:
         with db.begin_nested():
             db.add(row)
@@ -106,9 +118,7 @@ def _insert_or_replay(db: Session, row: Any, find, wanted: dict[str, Any], as_di
         existing = find()
         if existing is None:
             raise  # FK vb. gerçek hata gizlenmez
-        if not _same(as_dict(existing), wanted):
-            raise IdempotencyConflict("Aynı istek anahtarı farklı içerikle kullanıldı") from None
-        return existing, False
+        return replay(existing)
 
 
 # --- Check-in --------------------------------------------------------------------------
