@@ -1,0 +1,14 @@
+{
+  "detail": {
+    "code": "VALIDATION_ERROR",
+    "message": "İstek alanlarını kontrol edin.",
+    "trace_id": "b6bc5389-179b-4b66-8103-ab430713cbcb",
+    "fields": [
+      {
+        "field": "eye",
+        "code": "INVALID_VALUE",
+        "message": "OD veya OS olmalıdır."
+      }
+    ]
+  }
+}

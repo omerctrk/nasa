@@ -1,0 +1,29 @@
+[project]
+name = "astra-health-backend"
+version = "0.1.0"
+description = "ASTRA HEALTH merkezi backend (FastAPI + SQLAlchemy + Alembic + MS SQL Server)"
+requires-python = ">=3.12"
+# Ortak dosya (iş bölümü §4.2): yeni bağımlılık eklerken requirements.lock.txt de güncellenir:
+#   pip-compile --extra dev pyproject.toml -o requirements.lock.txt
+dependencies = [
+    "alembic>=1.13",
+    "fastapi>=0.115",
+    "pydantic-settings>=2.4",
+    "pyodbc>=5.1",
+    "sqlalchemy>=2.0,<2.2",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["httpx2>=2.16", "pytest>=8"]  # httpx2: FastAPI/Starlette TestClient
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

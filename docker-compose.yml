@@ -1,0 +1,74 @@
+# ASTRA HEALTH — yerel geliştirme (şema §8: SQL hazır → bootstrap → ayrı migrate → sınırlı hesapla API)
+#
+#   cp backend/.env.example .env       # değerleri doldur (bu dosya git'e girmez)
+#   docker compose run --rm migrate    # db + bootstrap'i de başlatır, sonra migration'ları sa ile uygular
+#   docker compose up api              # API astra_app hesabıyla açılır; migration ÇALIŞTIRMAZ
+#
+# Her servis yalnız kendi değerlerini alır. SANS'a SQL bağlantısı verilmez (rev.3).
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    # platform: linux/amd64   # Apple Silicon Mac: aç + Docker Desktop'ta Rosetta emülasyonunu etkinleştir
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?.env içinde MSSQL_SA_PASSWORD yok}
+    ports: ["1433:1433"]
+    volumes: [mssql-data:/var/opt/mssql]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -b -Q \"SELECT 1\" -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # Kontrollü kurulum: veritabanı + astra_app/astra_eval login + USER (tekrar çalıştırılabilir)
+  bootstrap:
+    build: ./backend
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-AstraHealth}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      ASTRA_APP_DB_PASSWORD: ${ASTRA_APP_DB_PASSWORD:?.env içinde ASTRA_APP_DB_PASSWORD yok}
+      ASTRA_EVAL_DB_PASSWORD: ${ASTRA_EVAL_DB_PASSWORD:?.env içinde ASTRA_EVAL_DB_PASSWORD yok}
+    command: ["python", "scripts/bootstrap.py"]
+    restart: "no"
+
+  # Ayrı, kontrollü migration adımı (sa). Profil sayesinde `up` ile kendiliğinden çalışmaz.
+  migrate:
+    build: ./backend
+    profiles: ["tools"]
+    depends_on:
+      bootstrap: { condition: service_completed_successfully }
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-AstraHealth}
+      DB_USER: sa
+      DB_PASSWORD: ${MSSQL_SA_PASSWORD}
+    volumes: ["./backend:/app"]   # autogenerate ile üretilen migration dosyası senin klasörüne yazılır
+    command: ["alembic", "upgrade", "head"]
+
+  # API + işçi: yalnız astra_app ve SANS API ayarlarını alır (sa şifresi yok)
+  api:
+    build: ./backend
+    depends_on:
+      bootstrap: { condition: service_completed_successfully }
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-AstraHealth}
+      DB_USER: astra_app
+      DB_PASSWORD: ${ASTRA_APP_DB_PASSWORD}
+      SANS_API_BASE_URL: ${SANS_API_BASE_URL:-}
+      SANS_API_ANALYZE_PATH: ${SANS_API_ANALYZE_PATH:-/v1/sans/analyze}
+      SANS_API_TOKEN: ${SANS_API_TOKEN:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+    ports: ["8000:8000"]
+    volumes: ["./backend:/app"]   # geliştirme: kod değişince yeniden yüklenir
+    # Tek API worker
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--reload"]
+
+volumes:
+  mssql-data:

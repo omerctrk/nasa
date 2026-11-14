@@ -1,0 +1,8 @@
+{
+  "detail": {
+    "code": "IDEMPOTENCY_CONFLICT",
+    "message": "Aynı istek anahtarı farklı içerikle kullanıldı.",
+    "trace_id": "b6bc5389-179b-4b66-8103-ab430713cbcb",
+    "fields": []
+  }
+}
