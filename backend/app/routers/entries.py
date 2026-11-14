@@ -20,7 +20,6 @@ from app.schemas.behavioral import (
 )
 from app.schemas.common import CurrentUser
 from app.schemas.measurements import PhysiologicalIn, PhysiologicalOut
-from app.schemas.sans import EyeSessionIn, EyeSessionOut, HeadacheIn, HeadacheOut
 from app.services import data_entry
 
 router = APIRouter(prefix="/me", tags=["veri girişi"])
@@ -74,21 +73,4 @@ def post_physiological(body: PhysiologicalIn, response: Response,
                        user: CurrentUser = Astronaut, db: Session = DB):
     out = data_entry.create_physiological(db, user, body)
     _status(response, out.created)
-    return out
-
-
-@router.post("/eye-sessions", response_model=EyeSessionOut, status_code=201)
-def post_eye_session(body: EyeSessionIn, response: Response, user: CurrentUser = Astronaut,
-                     db: Session = DB):
-    """Tam göz oturumu (3 test × OD/OS). Tekrar test için retest_of verilir."""
-    out, created = data_entry.create_eye_session(db, user, body)
-    _status(response, created)
-    return out
-
-
-@router.post("/symptoms/headache", response_model=HeadacheOut, status_code=201)
-def post_headache(body: HeadacheIn, response: Response, user: CurrentUser = Astronaut,
-                  db: Session = DB):
-    out, created = data_entry.record_headache(db, user, body)
-    _status(response, created)
     return out

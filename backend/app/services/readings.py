@@ -14,15 +14,13 @@ import json
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Astronaut, Checkin, CognitiveTest, Oturum, TestKaydi, WeeklyAssessment
+from app.models import Astronaut, Checkin, CognitiveTest, WeeklyAssessment
 from app.repositories.errors import NotFound, ValidationFailed
 from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 from app.schemas.behavioral import CheckinOut, WeeklyOut
 from app.schemas.common import MeasurementDTO, MeasurementModule
 from app.schemas.readings import (
     CognitiveDetailOut,
-    EyeSessionDetailOut,
-    EyeTestOut,
     ProfileOut,
 )
 from app.services.data_entry import _aware, _checkin_out
@@ -106,31 +104,6 @@ def my_cognitive(db: Session, astronaut_id: str, start: dt.date, end: dt.date,
         median_rt_ms=r.median_rt_ms, lapses=r.lapses, false_starts=r.false_starts,
         accuracy=r.accuracy, correct_count=r.correct_count, valid=r.valid,
         invalid_reason=r.invalid_reason, device=r.device) for r in rows]
-
-
-def my_eye_sessions(db: Session, astronaut_id: str, start_day: int,
-                    end_day: int) -> list[EyeSessionDetailOut]:
-    if end_day <= start_day or end_day - start_day > 400:
-        raise ValidationFailed("Gün aralığı geçersiz ([start_day, end_day), en fazla 400 gün)")
-    sessions = db.scalars(
-        select(Oturum).where(Oturum.astronaut_id == astronaut_id,
-                             Oturum.flight_day >= start_day, Oturum.flight_day < end_day)
-        .order_by(Oturum.flight_day, Oturum.session_id)
-    ).all()
-    tests: dict[str, list[TestKaydi]] = {}
-    if sessions:
-        for t in db.scalars(select(TestKaydi).where(
-                TestKaydi.session_id.in_([s.session_id for s in sessions]))
-                .order_by(TestKaydi.test, TestKaydi.eye)):
-            tests.setdefault(t.session_id, []).append(t)
-    return [EyeSessionDetailOut(
-        session_id=s.session_id, date=s.date, flight_day=s.flight_day, is_retest=s.is_retest,
-        retest_of=s.retest_of, quality_score=s.quality_score, source=s.source,
-        tests=[EyeTestOut(eye=t.eye.strip(), test=t.test, value=t.value, unit=t.unit,
-                          amsler_cells=json.loads(t.amsler_cells) if t.amsler_cells else None,
-                          n_correct=t.n_correct, n_presented=t.n_presented)
-               for t in tests.get(s.session_id, [])],
-    ) for s in sessions]
 
 
 def measurements(db: Session, astronaut_id: str, start: dt.date, end: dt.date,

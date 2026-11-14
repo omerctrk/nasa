@@ -6,9 +6,7 @@ panelde gösterilmesi gerekmez ve hassastır.
 from __future__ import annotations
 
 import datetime as dt
-from typing import Any
-
-from app.schemas.common import ContractModel, JsonDecimal
+from app.schemas.common import ContractModel
 
 
 class ProfileOut(ContractModel):
@@ -38,24 +36,3 @@ class CognitiveDetailOut(ContractModel):
     valid: bool
     invalid_reason: str | None
     device: str
-
-
-class EyeTestOut(ContractModel):
-    eye: str
-    test: str
-    value: JsonDecimal
-    unit: str
-    amsler_cells: list[Any] | None
-    n_correct: int | None
-    n_presented: int | None
-
-
-class EyeSessionDetailOut(ContractModel):
-    session_id: str
-    date: dt.date
-    flight_day: int
-    is_retest: bool
-    retest_of: str | None
-    quality_score: JsonDecimal
-    source: str
-    tests: list[EyeTestOut]

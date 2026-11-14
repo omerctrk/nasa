@@ -23,11 +23,17 @@ def test_every_view_code_is_in_seed_dictionary():
     assert codes == {d[0] for d in seed.DEFINITIONS}
 
 
-def test_eye_catalog_matches_schema():
-    d = {c: (u, k, w) for c, _, u, k, w in seed.DEFINITIONS}
-    assert d["near_acuity"] == ("logMAR", "numeric", "higher")
-    assert d["contrast"] == ("logCS", "numeric", "lower")
-    assert d["amsler"] == ("cells", "integer", "higher")
+def test_physiological_seed_matches_history_policy():
+    """Ömer'in geçmiş politikası ile seed sözlüğü aynı kod/birim/protokolü kullanmalı;
+    aksi halde fizyolojik ölçümler girişte reddedilir ya da analize girmez."""
+    import json
+
+    policy = json.loads((ROOT / "config/history-policy.json").read_text(encoding="utf-8"))
+    confirmed = {(f["measurement"], f["unit"], f["protocol_version"]) for f in policy["features"]
+                 if f["module"] == "physiological" and f.get("definition_confirmed")}
+    seeded = {(c, u, seed.PHYSIOLOGICAL_PROTOCOL) for c, m, u, *_ in seed.PHYSIOLOGICAL_DEFINITIONS}
+    assert seeded == confirmed
+    assert all(d == "unconfirmed" for *_, d in seed.PHYSIOLOGICAL_DEFINITIONS)
 
 
 def test_no_invented_score_directions():

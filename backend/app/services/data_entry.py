@@ -6,7 +6,6 @@ Ortak kurallar:
 - Tekrar güvenliği: aynı client_request_id / aynı oturum + AYNI içerik → mevcut kayıt
   (created=False); farklı içerik → 409. Tekillik DB UNIQUE kuralıyla sağlanır.
 - Check-in kişi+gün tek satırdır; güncelleme If-Match (ETag) ister, eskiyse 412.
-- Baş ağrısının tek kaynağı sans.semptom; check-in'e yazılmaz.
 - Commit bu katmanda yapılır (repository yapmaz); hata olursa tamamı geri alınır.
 """
 from __future__ import annotations
@@ -27,9 +26,6 @@ from app.models import (
     CognitiveTest,
     MeasurementDefinition,
     MeasurementRecord,
-    Oturum,
-    Semptom,
-    TestKaydi,
     WeeklyAssessment,
 )
 from app.repositories.errors import (
@@ -51,12 +47,6 @@ from app.schemas.behavioral import (
 )
 from app.schemas.common import CurrentUser
 from app.schemas.measurements import PhysiologicalIn, PhysiologicalOut
-from app.schemas.sans import (
-    EyeSessionIn,
-    EyeSessionOut,
-    HeadacheIn,
-    HeadacheOut,
-)
 
 NOW = func.sysutcdatetime()
 
@@ -291,90 +281,3 @@ def create_physiological(db: Session, user: CurrentUser,
     return PhysiologicalOut(record_id=saved.record_id, measurement=saved.measurement_code,
                             measured_date=saved.measured_date, mission_day=saved.mission_day,
                             created=created)
-
-
-# --- Göz oturumu ------------------------------------------------------------------------------
-
-
-def session_id_for(astronaut_id: str, flight_day: int) -> str:
-    """S-A007-D074, uçuş öncesi S-A007-M060."""
-    return f"S-{astronaut_id}-{'M' if flight_day < 0 else 'D'}{abs(flight_day):03d}"
-
-
-def _eye_dict(tests) -> set[tuple]:
-    return {(t["eye"], t["test"], Decimal(t["value"]).normalize(), t["unit"],
-             json.dumps(t["amsler_cells"]) if t["amsler_cells"] is not None else None,
-             t["n_correct"], t["n_presented"],
-             Decimal(t["duration_s"]).normalize() if t["duration_s"] is not None else None)
-            for t in tests}
-
-
-def create_eye_session(db: Session, user: CurrentUser,
-                       body: EyeSessionIn) -> tuple[EyeSessionOut, bool]:
-    astro = _writer(db, user)
-    sid = session_id_for(astro.astronaut_id, body.flight_day)
-    if body.retest_of is not None:
-        prev = db.get(Oturum, body.retest_of)
-        if prev is None or prev.astronaut_id != astro.astronaut_id:
-            raise ValidationFailed("retest_of bu astronotun mevcut bir oturumu olmalı")
-        if prev.flight_day >= body.flight_day:
-            raise ValidationFailed("Tekrar test önceki oturumdan sonraki bir günde olmalı")
-    tests = [t.model_dump() for t in body.tests]
-    session_values = dict(flight_day=body.flight_day, is_retest=body.retest_of is not None,
-                          retest_of=body.retest_of,
-                          quality_score=Decimal(body.quality_score).normalize(),
-                          checklist=body.checklist)
-
-    existing = db.get(Oturum, sid)
-    if existing is not None:
-        stored_tests = [dict(eye=k.eye.strip(), test=k.test, value=k.value, unit=k.unit,
-                             amsler_cells=json.loads(k.amsler_cells) if k.amsler_cells else None,
-                             n_correct=k.n_correct, n_presented=k.n_presented,
-                             duration_s=k.duration_s)
-                        for k in db.scalars(select(TestKaydi).where(TestKaydi.session_id == sid))]
-        stored = dict(flight_day=existing.flight_day, is_retest=existing.is_retest,
-                      retest_of=existing.retest_of,
-                      quality_score=Decimal(existing.quality_score).normalize(),
-                      checklist=json.loads(existing.checklist_json) if existing.checklist_json else None)
-        if stored != session_values or _eye_dict(stored_tests) != _eye_dict(tests):
-            raise IdempotencyConflict(f"{sid} zaten farklı içerikle kayıtlı")
-        return EyeSessionOut(session_id=sid, flight_day=existing.flight_day,
-                             is_retest=existing.is_retest, retest_of=existing.retest_of,
-                             quality_score=existing.quality_score,
-                             test_count=len(stored_tests)), False
-
-    try:
-        with db.begin_nested():
-            db.add(Oturum(session_id=sid, astronaut_id=astro.astronaut_id,
-                          date=astro.mission.start_date + dt.timedelta(days=body.flight_day),
-                          flight_day=body.flight_day, is_retest=body.retest_of is not None,
-                          retest_of=body.retest_of, quality_score=body.quality_score,
-                          checklist_json=to_json(body.checklist), source="test_screen"))
-            db.flush()
-            for t in body.tests:
-                db.add(TestKaydi(session_id=sid, astronaut_id=astro.astronaut_id,
-                                 flight_day=body.flight_day, eye=t.eye.value, test=t.test,
-                                 value=t.value, unit=t.unit,
-                                 amsler_cells=to_json(t.amsler_cells), n_correct=t.n_correct,
-                                 n_presented=t.n_presented, duration_s=t.duration_s))
-    except IntegrityError:
-        raise IdempotencyConflict(f"{sid} aynı anda başka istekle oluşturuldu") from None
-    db.commit()
-    return EyeSessionOut(session_id=sid, flight_day=body.flight_day,
-                         is_retest=body.retest_of is not None, retest_of=body.retest_of,
-                         quality_score=body.quality_score, test_count=len(body.tests)), True
-
-
-# --- Baş ağrısı ---------------------------------------------------------------------------------
-
-
-def record_headache(db: Session, user: CurrentUser, body: HeadacheIn) -> tuple[HeadacheOut, bool]:
-    astro = _writer(db, user)
-    row = Semptom(astronaut_id=astro.astronaut_id, flight_day=body.flight_day,
-                  headache=body.headache)
-    saved, created = _insert_or_replay(
-        db, row, lambda: db.get(Semptom, (astro.astronaut_id, body.flight_day)),
-        {"headache": body.headache}, lambda r: {"headache": r.headache},
-    )
-    db.commit()
-    return HeadacheOut(flight_day=saved.flight_day, headache=saved.headache), created

@@ -112,4 +112,6 @@ pip install -r requirements.lock.txt && pytest
 - [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
 - [x] A7 veri giriş API'leri (/api/v1/me/...): check-in PUT+ETag, haftalık, bilişsel, fizyolojik, göz oturumu+retest, baş ağrısı. Yetki: Ömer'in app/core/security.py dependency'leri (app/routers/deps.py yeniden dışa aktarır)
 - [x] Okuma uçları: GET /me/profile, /me/checkins, /me/weekly-assessments, /me/cognitive-tests, /me/eye-sessions, /me/measurements; GET /ground/astronauts, /ground/astronauts/{id}/measurements
-- [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
+- [x] SANS/göz modülü projeden çıkarıldı (takım kararı): göz oturumu, baş ağrısı ve göz okuma uçları kaldırıldı; DB tabloları boş ve zararsız olarak duruyor (geri alınabilir)
+- [x] Seed: Ömer'in history-policy.json'undaki 5 fizyolojik ölçüm (heart_rate, systolic_bp, diastolic_bp, blood_glucose, body_temperature)
+- [ ] A8 sentetik veri (fizyolojik + davranış) · ~~A9 a007_aktarim.json~~ (SANS kapsam dışı)

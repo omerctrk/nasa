@@ -7,6 +7,11 @@ Bu belgedeki bir değeri değiştirmek sözleşme değişikliğidir: ikinizin on
 Kapsam dışı (bu sözleşme karar vermez): model sağlayıcısı, klinik eşikler, veri yeterlilik
 şartları, SANS API'nin URL/auth/sözleşmesi.
 
+> **Kapsam değişikliği (14 Kasım, takım kararı):** SANS modeli ve göz testleri projeden
+> çıkarıldı. API'deki göz/baş ağrısı uçları kaldırıldı; `sans` tabloları ve VIEW'ları DB'de
+> boş olarak duruyor (geri alınabilir). Ömer: SANS iş türünü ve `history-policy.json`'daki
+> göz satırlarını kaldırınca seed'deki 3 göz kodu da birlikte kaldırılacak.
+
 ## 1. Dosyalar ve sorumluluklar
 
 | Dosya | İçerik | Sorumlu |
@@ -124,8 +129,6 @@ fırlatır; repository hataları otomatik çevrilir.
 | `POST /api/v1/me/weekly-assessments` | `client_request_id` tekrarı aynı içerik 200, farklı 409 |
 | `POST /api/v1/me/cognitive-tests` | Aynı; metrikler test türüne göre, `taken_at` saat dilimli |
 | `POST /api/v1/me/physiological` | Aynı; yalnız sözlükte `physiological` kod ve kanonik birim |
-| `POST /api/v1/me/eye-sessions` | 3 test × OD/OS; `session_id` = `S-<astronot>-D074` / `M060`; retest için `retest_of` |
-| `POST /api/v1/me/symptoms/headache` | Baş ağrısının tek kaynağı; check-in'de `headache` → 422 |
 
 Yeni kayıt 201, aynı isteğin tekrarı 200. Gösterim profili → 403. `astronaut_id` ve
 `mission_day` istemciden alınmaz. `mood_index` formülü teyit edilene kadar istemciden gelir
@@ -144,7 +147,6 @@ Aralıklar `[start, end)`, en fazla 120 gün; ihlal → 422.
 | `GET /api/v1/me/checkins?start&end` | astronot | check-in listesi |
 | `GET /api/v1/me/weekly-assessments?start&end` | astronot | yalnız kendisi; kuleye verilmez |
 | `GET /api/v1/me/cognitive-tests?start&end[&test_type]` | astronot | metrikler (`speed` yok) |
-| `GET /api/v1/me/eye-sessions?start_day&end_day` | astronot | oturum + 6 test |
 | `GET /api/v1/me/measurements?start&end[&module]` | astronot | `MeasurementDTO` listesi (grafikler) |
 | `GET /api/v1/ground/astronauts` | kule | iki demo profili |
 | `GET /api/v1/ground/astronauts/{id}/measurements?start&end[&module]` | kule | `MeasurementDTO` (haftalık hariç) |

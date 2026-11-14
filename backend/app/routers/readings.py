@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.routers.deps import require_active_astronaut, require_ground_control
 from app.schemas.behavioral import CheckinOut, WeeklyOut
 from app.schemas.common import CurrentUser, MeasurementDTO, MeasurementModule
-from app.schemas.readings import CognitiveDetailOut, EyeSessionDetailOut, ProfileOut
+from app.schemas.readings import CognitiveDetailOut, ProfileOut
 from app.services import readings
 
 me = APIRouter(prefix="/me", tags=["astronot okuma"])
@@ -48,13 +48,6 @@ def list_my_cognitive(start: dt.date = Start, end: dt.date = End,
                       test_type: Literal["pvt", "rotation", "dsst"] | None = None,
                       user: CurrentUser = Astronaut, db: Session = DB):
     return readings.my_cognitive(db, user.astronaut_id, start, end, test_type)
-
-
-@me.get("/eye-sessions", response_model=list[EyeSessionDetailOut])
-def list_my_eye_sessions(start_day: int = Query(description="Görev günü (dahil), negatif olabilir"),
-                         end_day: int = Query(description="Görev günü (hariç)"),
-                         user: CurrentUser = Astronaut, db: Session = DB):
-    return readings.my_eye_sessions(db, user.astronaut_id, start_day, end_day)
 
 
 @me.get("/measurements", response_model=list[MeasurementDTO])

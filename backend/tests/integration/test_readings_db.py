@@ -35,19 +35,13 @@ def test_profile_and_checkin_history(api, astronaut):
     assert bad.status_code == 422
 
 
-def test_cognitive_and_eye_history(api, astronaut):
+def test_cognitive_history(api, astronaut):
     api.post("/api/v1/me/cognitive-tests", json=dict(
         client_request_id=str(uuid.uuid4()), taken_at="2027-03-20T09:30:00Z", test_type="pvt",
         duration_s=180, n_trials=50, mean_rt_ms=310.0, speed=3.1, device="tablet", raw=[]))
     cog = api.get("/api/v1/me/cognitive-tests",
                   params={"start": "2027-03-20", "end": "2027-03-21", "test_type": "pvt"}).json()
     assert len(cog) == 1 and cog[0]["mean_rt_ms"] == 310.0 and "speed" not in cog[0]
-    tests = [dict(eye=e, test=t, value=v, unit=u) for e in ("OD", "OS")
-             for t, v, u in (("near_acuity", -0.05, "logMAR"), ("contrast", 1.8, "logCS"),
-                             ("amsler", 0, "cells"))]
-    api.post("/api/v1/me/eye-sessions", json=dict(flight_day=74, quality_score=0.9, tests=tests))
-    eye = api.get("/api/v1/me/eye-sessions", params={"start_day": -60, "end_day": 80}).json()
-    assert len(eye) == 1 and len(eye[0]["tests"]) == 6
 
 
 def test_measurements_for_charts_and_ground(api, astronaut):

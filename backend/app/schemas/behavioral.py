@@ -13,9 +13,6 @@ from pydantic import Field, field_validator, model_validator
 
 from app.schemas.common import ContractModel
 
-HEADACHE_CODES = {"headache", "bas_agrisi", "baş_ağrısı"}
-
-
 def utc(v: dt.datetime) -> dt.datetime:
     if v.tzinfo is None or v.utcoffset() is None:
         raise ValueError("zaman saat dilimi içermeli (UTC, 'Z')")
@@ -46,14 +43,7 @@ class CheckinIn(ContractModel):
     bed_time: dt.time
     wake_time: dt.time
     sleep_quality: int = Field(ge=1, le=5)
-    symptoms: list[str] | None = None  # baş ağrısı HARİÇ belirti kodları
-
-    @field_validator("symptoms")
-    @classmethod
-    def _no_headache(cls, v: list[str] | None) -> list[str] | None:
-        if v and any(s.strip().lower() in HEADACHE_CODES for s in v):
-            raise ValueError("Baş ağrısı buraya yazılmaz; POST /me/symptoms/headache kullanın")
-        return v
+    symptoms: list[str] | None = None  # belirti kodları (JSON listesi)
 
 
 class CheckinOut(ContractModel):
