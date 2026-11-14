@@ -84,9 +84,8 @@ class WorkerSettings:
 class AnalysisWorker:
     def __init__(self, transactions: Transactions,
                  pipelines: Mapping[AnalysisModule, AnalysisPipeline], settings: WorkerSettings):
-        # claim_next_job has no module filter. Do not consume jobs for an absent pipeline.
-        if set(pipelines) != set(AnalysisModule):
-            raise ValueError("İşçi etkinleşmeden iki modülün pipeline'ı da bağlanmalıdır.")
+        if not pipelines or not set(pipelines) <= set(AnalysisModule):
+            raise ValueError("İşçi için en az bir geçerli modül pipeline'ı gereklidir.")
         self.transactions, self.pipelines, self.settings = transactions, dict(pipelines), settings
 
     async def _db(self, operation):
@@ -97,7 +96,10 @@ class AnalysisWorker:
 
     async def tick(self) -> bool:
         await self._db(lambda repo: repo.recover_expired_jobs(self.settings.max_attempts))
-        claim = await self._db(lambda repo: repo.claim_next_job(self.settings.lease_seconds))
+        # Claim only modules with a live pipeline. This prevents old SANS jobs
+        # from being consumed after that module was removed from the API.
+        claim = await self._db(lambda repo: repo.claim_next_job(
+            self.settings.lease_seconds, tuple(self.pipelines)))
         if claim is None:
             return False
         await self._process(claim)

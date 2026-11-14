@@ -88,6 +88,15 @@ class WorkerTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(job_id, self.store.leases)
         self.assertFalse(await self.worker.tick())
 
+    async def test_anomaly_only_worker_leaves_legacy_sans_job_queued(self):
+        sans_id = self.create("sans")
+        anomaly_id = self.create("anomaly")
+        worker = AnalysisWorker(self.store.transaction,
+                                {AnalysisModule.ANOMALY: self.pipeline}, self.settings)
+        self.assertTrue(await worker.tick())
+        self.assertEqual(self.store.jobs[anomaly_id].record.state, JobState.COMPLETED)
+        self.assertEqual(self.store.jobs[sans_id].record.state, JobState.QUEUED)
+
     async def test_transient_retry_is_delayed_and_uses_same_snapshot(self):
         job_id = self.create()
         self.pipeline.actions = [TransientModelError("PRIVATE")]

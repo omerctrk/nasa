@@ -172,9 +172,16 @@ class SqlAlchemyJobRepository:
         ).one_or_none()
         return _job(row) if row else None
 
-    def claim_next_job(self, lease_seconds: int) -> ClaimedJob | None:
+    def claim_next_job(self, lease_seconds: int,
+                       modules: tuple[AnalysisModule, ...] = tuple(AnalysisModule)) -> ClaimedJob | None:
         if type(lease_seconds) is not int or lease_seconds <= 0:
             raise ValidationFailed("Lease süresi pozitif tam sayı olmalı")
+        if not modules:
+            return None
+        if any(not isinstance(module, AnalysisModule) for module in modules):
+            raise ValidationFailed("İş modülü geçersiz")
+        module_params = {f"module_{i}": module.value for i, module in enumerate(modules)}
+        module_filter = "AND queued.module IN (" + ", ".join(f":{name}" for name in module_params) + ")"
         # Serialize only short claim transactions. This closes the race where
         # two claimers each see no active SANS job for the same astronaut.
         # Transaction ownership releases the lock on commit/rollback; never
@@ -194,12 +201,13 @@ class SqlAlchemyJobRepository:
         token = uuid.uuid4()
         claimed = self.session.execute(
             text(
-                """
+                f"""
                 WITH next_job AS (
                     SELECT TOP (1) queued.* FROM ops.AnalysisJobs AS queued WITH (UPDLOCK, READPAST, ROWLOCK)
                     -- next_attempt_at DATETIME2(3)'e yuvarlanarak (bazen yukarı) yazılır; aynı hassasiyetle
                     -- karşılaştırılmazsa az önce oluşan iş 1 ms boyunca "gelecekte" kalır.
                     WHERE queued.state = 'QUEUED'
+                      {module_filter}
                       AND queued.next_attempt_at <= CAST(SYSUTCDATETIME() AS datetime2(3))
                       AND (queued.module <> 'sans' OR NOT EXISTS (
                           SELECT 1 FROM ops.AnalysisJobs AS active_sans
@@ -216,7 +224,7 @@ class SqlAlchemyJobRepository:
                 OUTPUT inserted.job_id;
                 """
             ),
-            {"token": str(token), "lease": int(lease_seconds)},
+            {"token": str(token), "lease": int(lease_seconds), **module_params},
         ).scalar_one_or_none()
         if claimed is None:
             return None

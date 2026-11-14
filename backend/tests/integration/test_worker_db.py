@@ -12,6 +12,7 @@ from app.models import User
 from app.repositories.errors import LeaseLost
 from app.repositories.records import JobOutcome, JobRequestData, JobScope
 from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
+from app.schemas.common import AnalysisModule
 from app.services.analysis import canonical_request_hash
 from app.workers.analysis import snapshot_hash
 
@@ -52,6 +53,17 @@ def test_real_claim_snapshot_and_delayed_retry(db, queued_job):
                           "FROM ops.AnalysisJobs WHERE job_id=:job_id"), {"job_id": str(job.job_id)}).one()
     assert row.input_hash == digest and row.input_snapshot_json
     assert row.lease_token is None and row.lease_until is None
+
+
+def test_anomaly_worker_does_not_claim_legacy_sans_job(db, queued_job):
+    repo, scope, anomaly = queued_job
+    request = JobRequestData(module="sans", session_id="TEST-ONLY-LEGACY-SANS")
+    sans = repo.create_or_get_job(scope, uuid4(), canonical_request_hash(request), request).job
+    modules = (AnalysisModule.ANOMALY,)
+    claimed = repo.claim_next_job(120, modules)
+    assert claimed is not None and claimed.job.job_id == anomaly.job_id
+    assert repo.claim_next_job(120, modules) is None
+    assert repo.get_job(sans.job_id, scope).state == "QUEUED"
 
 
 def test_real_expired_lease_is_not_renewed_and_is_recovered(db, queued_job):

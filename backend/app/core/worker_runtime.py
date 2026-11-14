@@ -25,7 +25,7 @@ def build_worker(settings, pipelines):
     )
     if not all(callable(getattr(SqlAlchemyRepository, name, None)) for name in WORKER_REPOSITORY_METHODS):
         return None
-    if not pipelines or set(pipelines) != set(AnalysisModule):
+    if not pipelines or set(pipelines) != {AnalysisModule.ANOMALY}:
         return None
     if not all(callable(getattr(pipeline, name, None))
                for pipeline in pipelines.values() for name in ("prepare", "evaluate", "persist")):

@@ -37,14 +37,15 @@ def test_complete_pipeline_and_repository_can_enable_worker(monkeypatch):
     async def evaluate(*args):
         return {}
     pipeline = SimpleNamespace(prepare=prepare, evaluate=evaluate, persist=lambda *args: None)
-    assert build_worker(settings(), {module: pipeline for module in AnalysisModule}) is not None
+    assert build_worker(settings(), {AnalysisModule.ANOMALY: pipeline}) is not None
+    assert build_worker(settings(), {module: pipeline for module in AnalysisModule}) is None
 
 
 def test_sync_network_pipeline_is_not_enabled(monkeypatch):
     for name in WORKER_REPOSITORY_METHODS:
         monkeypatch.setattr(SqlAlchemyRepository, name, lambda *args: None, raising=False)
     pipeline = SimpleNamespace(prepare=lambda *args: {}, evaluate=lambda *args: {}, persist=lambda *args: None)
-    assert build_worker(settings(), {module: pipeline for module in AnalysisModule}) is None
+    assert build_worker(settings(), {AnalysisModule.ANOMALY: pipeline}) is None
 
 
 class LifecycleTests(unittest.IsolatedAsyncioTestCase):

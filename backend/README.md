@@ -125,8 +125,15 @@ pip install -r requirements.lock.txt && pytest
 - [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
 - [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
 - [x] 0007: `dbo.knowledge_cards` ek tablosu. `astra_app_role` için SELECT/INSERT/UPDATE/DELETE; `astra_collaborator` üyelikten devralır. Diğer tablolarda DELETE izni yoktur.
+- [x] Knowledge Card CRUD: `/api/v1/knowledge-cards`, ground-control JWT, SQLAlchemy repository.
+- [x] Alarm/bildirim API: `/api/v1/ground/alerts` listeleme/onay/kapatma, `/api/v1/notifications/pending` ve `/{event_id}/receipt`.
+- [x] Anomali sonuç okuma: `/api/v1/anomaly/results/{result_id}`; astronot yalnız kendi sonucunu, kule tüm sonuçları görür.
+- [x] WebSocket: `/ws/v1/notifications`; token doğrulaması, kalıcı olay teslimi ve receipt ile yeniden bağlantıda tekrar oynatma.
+- [x] İşçi yalnız bağlı anomali pipeline'ının işlerini sahiplenir; eski SANS işleri tüketilmez.
 - [x] A7 veri giriş API'leri (/api/v1/me/...): check-in PUT+ETag, haftalık, bilişsel, fizyolojik. Yetki: Ömer'in app/core/security.py dependency'leri (app/routers/deps.py yeniden dışa aktarır)
 - [x] Okuma uçları: GET /me/profile, /me/checkins, /me/weekly-assessments, /me/cognitive-tests, /me/measurements; GET /ground/astronauts, /ground/astronauts/{id}/measurements
 - [x] SANS/göz modülü kapsam dışı: göz oturumu, baş ağrısı ve göz okuma uçları kaldırıldı; eski DB tabloları korunuyor.
 - [x] Seed: Ömer'in history-policy.json'undaki 5 fizyolojik ölçüm (heart_rate, systolic_bp, diastolic_bp, blood_glucose, body_temperature)
 - [ ] A8 sentetik veri (fizyolojik + davranış) · ~~A9 a007_aktarim.json~~ (SANS kapsam dışı)
+- [ ] Gerçek anomali model sağlayıcısı ve doğrulanmış sonuç pipeline'ı henüz bağlı değil; bu nedenle analiz işçisi başlatılmaz.
+- [ ] Eşik kuralları/veri yeterliliği değerleri, frontend gerçek API entegrasyonu ve Knowledge Card RAG indeksleme tamamlanmadı.

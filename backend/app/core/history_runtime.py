@@ -9,7 +9,7 @@ from app.services.history import HistoryPreparer
 @contextmanager
 def history_sources():
     from app.db.session import SessionLocal
-    with SessionLocal.begin() as session:
+    with SessionLocal() as session, session.begin():
         yield SqlAlchemyRepository(session)
 
 

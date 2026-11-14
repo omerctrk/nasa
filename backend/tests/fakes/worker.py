@@ -59,13 +59,14 @@ class WorkerJobRepository(FakeJobRepository):
             raise LeaseLost()
         return stored
 
-    def claim_next_job(self, lease_seconds):
+    def claim_next_job(self, lease_seconds, modules=tuple(AnalysisModule)):
         active_sans = {stored.record.astronaut_id for stored in self.store.jobs.values()
                        if stored.record.module == AnalysisModule.SANS
                        and stored.record.state in (JobState.SYNCING, JobState.ANALYZING)}
         for stored in sorted(self.store.jobs.values(), key=lambda s: (s.record.created_at, str(s.record.job_id))):
             job = stored.record
-            if job.state != JobState.QUEUED or self.store.scheduled.get(job.job_id, self.store.clock) > self.store.clock:
+            if (job.state != JobState.QUEUED or job.module not in modules
+                    or self.store.scheduled.get(job.job_id, self.store.clock) > self.store.clock):
                 continue
             if job.module == AnalysisModule.SANS and job.astronaut_id in active_sans:
                 continue

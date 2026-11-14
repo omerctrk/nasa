@@ -32,22 +32,27 @@ def test_complete_a3_api_enables_real_service(monkeypatch):
 
 def test_real_transaction_factory_commits_on_exit_and_closes():
     events = []
-    session = object()
 
-    @contextmanager
-    def begin():
-        events.append("open")
-        try:
-            yield session
-        except Exception:
-            events.append("rollback")
-            raise
-        else:
-            events.append("commit")
-        finally:
+    class Session:
+        def __enter__(self):
+            events.append("open")
+            return self
+
+        def __exit__(self, *args):
             events.append("close")
 
-    module = SimpleNamespace(SessionLocal=SimpleNamespace(begin=begin))
+        @contextmanager
+        def begin(self):
+            try:
+                yield self
+            except Exception:
+                events.append("rollback")
+                raise
+            else:
+                events.append("commit")
+
+    session = Session()
+    module = SimpleNamespace(SessionLocal=lambda: session)
     with patch.dict("sys.modules", {"app.db.session": module}):
         with analysis_transaction() as repo:
             assert isinstance(repo, SqlAlchemyRepository) and repo.session is session

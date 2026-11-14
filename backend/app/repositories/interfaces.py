@@ -40,7 +40,7 @@ from app.repositories.records import (
     SansStateData,
     UserRecord,
 )
-from app.schemas.common import AlertStatus, MeasurementDTO
+from app.schemas.common import AlertStatus, AnalysisModule, MeasurementDTO
 
 
 @runtime_checkable
@@ -91,8 +91,9 @@ class JobApiRepository(Protocol):
 
 @runtime_checkable
 class JobRepository(JobApiRepository, Protocol):
-    def claim_next_job(self, lease_seconds: int) -> ClaimedJob | None:
-        """Zamanı gelmiş en eski QUEUED işi atomik sahiplenir: SYNCING, yeni lease,
+    def claim_next_job(self, lease_seconds: int,
+                       modules: tuple[AnalysisModule, ...] = tuple(AnalysisModule)) -> ClaimedJob | None:
+        """Yalnız etkin modüllerdeki en eski QUEUED işi atomik sahiplenir: SYNCING, yeni lease,
         attempts+1. Aynı astronotun SANS işlerini atomik olarak sıralar."""
 
     def renew_job_lease(
