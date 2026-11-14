@@ -62,9 +62,9 @@ export const SettingsPage: React.FC = () => {
       desc: t('Tüm değerler normal aralıkta.', 'All values stay within normal range.'),
     },
     {
-      id: 'warning_iop' as const,
-      title: t('Göz basıncı artışı (SANS)', 'Eye pressure rise (SANS)'),
-      desc: t('Göz içi basıncı ~22 mmHg seviyesine çıkar.', 'Eye pressure rises to ~22 mmHg.'),
+      id: 'hypertension' as const,
+      title: t('Tansiyon yükselmesi', 'Blood pressure rise'),
+      desc: t('Tansiyon ~146/93 mmHg seviyesine çıkar.', 'Blood pressure rises to ~146/93 mmHg.'),
     },
     {
       id: 'eva_exertion' as const,
@@ -72,9 +72,9 @@ export const SettingsPage: React.FC = () => {
       desc: t('Nabız ~108 bpm seviyesine çıkar.', 'Heart rate climbs to ~108 bpm.'),
     },
     {
-      id: 'hypoxia' as const,
-      title: t('Düşük oksijen', 'Low oxygen'),
-      desc: t('SpO₂ ~%94 seviyesine düşer.', 'SpO₂ drops to ~94%.'),
+      id: 'fever' as const,
+      title: t('Ateş', 'Fever'),
+      desc: t('Vücut ısısı ~38.4 °C seviyesine çıkar.', 'Body temperature rises to ~38.4 °C.'),
     },
   ];
 

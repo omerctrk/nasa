@@ -3,7 +3,7 @@ import { Siren, Send, SatelliteDish, Stethoscope, Radio, Loader2, Check, WifiOff
 import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
 import { newIdempotencyKey } from '../../lib/apiClient';
-import { emergencyApi, type EmergencyNotification, type EmergencyStatus } from '../../lib/backend/emergencyApi';
+import { emergencyApi, EMERGENCY_REMOTE_AVAILABLE, type EmergencyNotification, type EmergencyStatus } from '../../lib/backend/emergencyApi';
 import { mappingByVital } from '../../lib/backend/measurementCodes';
 import { useNotifications } from '../../lib/backend/notifications';
 import { formatDelay } from '../../data/missionProfiles';
@@ -73,7 +73,7 @@ export const EmergencyAlarm: React.FC = () => {
   // 2) Gönder (ağ hatasında aynı anahtarla tekrar)
   const sending = !!ep && !ep.record;
   useEffect(() => {
-    if (!ep || ep.record) return;
+    if (!ep || ep.record || !EMERGENCY_REMOTE_AVAILABLE) return;
     let stop = false;
     let timer: number | undefined;
     const send = async () => {
@@ -154,7 +154,9 @@ export const EmergencyAlarm: React.FC = () => {
   const delay = missionProfile.oneWayDelaySec;
   const longDelay = delay >= 60;
 
-  const statusLine = !rec
+  const statusLine = !EMERGENCY_REMOTE_AVAILABLE
+    ? t('Yer ekibine sesli kanaldan haber verin', 'Call the ground team on the voice loop')
+    : !rec
     ? ep.offline
       ? t('Bağlantı yok — yeniden deneniyor', 'No link — retrying')
       : t('Merkeze gönderiliyor…', 'Sending to Mission Control…')
@@ -286,6 +288,15 @@ export const EmergencyAlarm: React.FC = () => {
               )}
             </div>
           )}
+          {!EMERGENCY_REMOTE_AVAILABLE ? (
+            <div className="flex items-start gap-2 rounded-xl border border-amber-400/50 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-100">
+              <Radio className="w-4 h-4 mt-0.5 shrink-0" />
+              {t(
+                'Otomatik acil bildirim bu sürümde henüz merkeze bağlı değil. Görev Kontrol Merkezi’ne acil sesli kanaldan (Space-to-Ground 2) hemen haber verin.',
+                'Automatic emergency notification is not yet connected to Mission Control in this version. Call Mission Control on the emergency voice loop (Space-to-Ground 2) now.'
+              )}
+            </div>
+          ) : (
           <ol className="relative">
             {steps.map((s, i) => {
               const ok = i <= reached;
@@ -324,6 +335,7 @@ export const EmergencyAlarm: React.FC = () => {
               );
             })}
           </ol>
+          )}
           {longDelay && (
             <p className="mt-3 text-xs text-amber-200/90 leading-relaxed">
               {t(

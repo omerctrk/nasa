@@ -63,17 +63,17 @@ export const HazardsPanel: React.FC = () => {
   const dosePct = Math.min(100, Math.round((dose / CAREER_LIMIT_MSV) * 100));
   const radStatus: MetricStatus = dosePct >= 80 ? 'critical' : dosePct >= 50 ? 'warning' : 'normal';
 
-  // Yerçekimi: sıvı kayması (göz basıncı) ve kalp-damar göstergeleri
-  const gravStatus: MetricStatus = [vitals.iop.status, vitals.pulse.status].includes('critical')
+  // Yerçekimi: sıvı kayması ve kalp-damar göstergeleri (tansiyon, nabız)
+  const cv = [vitals.bp_systolic.status, vitals.bp_diastolic.status, vitals.pulse.status];
+  const gravStatus: MetricStatus = cv.includes('critical')
     ? 'critical'
-    : [vitals.iop.status, vitals.pulse.status].includes('warning')
+    : cv.includes('warning')
       ? 'warning'
       : 'normal';
 
-  // Kapalı ortam: kabin CO₂ (NASA hedefi < ~0.5%) ve kan oksijeni
+  // Kapalı ortam: kabin CO₂ (NASA hedefi < ~0.5%)
   const co2 = systemTelemetery.co2Percent;
-  const envStatus: MetricStatus =
-    vitals.oxygen.status === 'critical' || co2 > 0.7 ? 'critical' : vitals.oxygen.status === 'warning' || co2 > 0.5 ? 'warning' : 'normal';
+  const envStatus: MetricStatus = co2 > 0.7 ? 'critical' : co2 > 0.5 ? 'warning' : 'normal';
 
   const open = (fn: () => void) => () => {
     playUiBeep(760);
@@ -125,14 +125,17 @@ export const HazardsPanel: React.FC = () => {
           id="gravity"
           status={gravStatus}
           value={p.gravityG === 0 ? t('0 g (ağırlıksız)', '0 g (weightless)') : `${p.gravityG} g`}
-          sub={t(`Göz basıncı ${vitals.iop.value} mmHg · nabız ${vitals.pulse.value}`, `Eye pressure ${vitals.iop.value} mmHg · HR ${vitals.pulse.value}`)}
+          sub={t(
+            `Tansiyon ${vitals.bp_systolic.value}/${vitals.bp_diastolic.value} · nabız ${vitals.pulse.value}`,
+            `BP ${vitals.bp_systolic.value}/${vitals.bp_diastolic.value} · HR ${vitals.pulse.value}`
+          )}
           onClick={open(() => setSelectedAnatomyZone('musculoskeletal'))}
         />
         <HazardCard
           id="environment"
           status={envStatus}
           value={`CO₂ ${co2}%`}
-          sub={t(`Kabin O₂ ${systemTelemetery.cabinO2Percent}% · SpO₂ ${vitals.oxygen.value}%`, `Cabin O₂ ${systemTelemetery.cabinO2Percent}% · SpO₂ ${vitals.oxygen.value}%`)}
+          sub={t(`Kabin O₂ ${systemTelemetery.cabinO2Percent}% · basınç ${systemTelemetery.cabinPressureKPa} kPa`, `Cabin O₂ ${systemTelemetery.cabinO2Percent}% · pressure ${systemTelemetery.cabinPressureKPa} kPa`)}
           onClick={open(() => setSelectedAnatomyZone('chest'))}
         />
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Heart, Wind, Thermometer, Moon, Eye, Brain, Printer } from 'lucide-react';
+import { Download, Heart, Gauge, Thermometer, Moon, Brain, Printer } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
 import { playUiBeep } from '../../utils/audio';
@@ -69,7 +69,7 @@ const LineChart: React.FC<ChartProps> = ({ labels, data, color, minY, maxY, norm
 };
 
 export const ReportsPage: React.FC = () => {
-  const { astronaut, vitals, visionTestHistory, cognitiveTestHistory } = useTelemetry();
+  const { astronaut, vitals, cognitiveTestHistory } = useTelemetry();
   const { t, pick } = usePrefs();
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
 
@@ -78,21 +78,21 @@ export const ReportsPage: React.FC = () => {
     '24h': {
       labels: ['00', '03', '06', '09', '12', '15', '18', '21'].map((h) => `${h}:00`),
       pulse: [64, 62, 60, 78, 86, 75, 72, 68],
-      oxygen: [98.8, 98.6, 98.4, 98.1, 98.5, 98.7, 98.3, 98.5],
+      bp_systolic: [112, 110, 109, 118, 124, 121, 119, 116],
       temperature: [36.5, 36.4, 36.3, 36.7, 36.9, 36.8, 36.8, 36.7],
       sleep: [7.2, 7.5, 6.8, 7.8, 7.4, 7.1, 7.6, vitals.sleep.value],
     },
     '7d': {
       labels: [6, 5, 4, 3, 2, 1, 0].map((k) => (k ? `${t('Gün', 'Day')} ${astronaut.solDay - k}` : t('Bugün', 'Today'))),
       pulse: [71, 74, 68, 76, 73, 70, vitals.pulse.value],
-      oxygen: [98.2, 98.5, 98.8, 98.1, 98.6, 98.4, vitals.oxygen.value],
+      bp_systolic: [113, 115, 114, 118, 120, 122, vitals.bp_systolic.value],
       temperature: [36.7, 36.8, 36.7, 36.9, 36.8, 36.8, vitals.temperature.value],
       sleep: [7.2, 7.5, 6.8, 7.8, 7.4, 7.1, vitals.sleep.value],
     },
     '30d': {
       labels: [1, 2, 3, 4].map((w) => `${t('Hafta', 'Week')} ${w}`),
       pulse: [72, 73, 71, 74],
-      oxygen: [98.3, 98.4, 98.6, vitals.oxygen.value],
+      bp_systolic: [114, 115, 118, vitals.bp_systolic.value],
       temperature: [36.7, 36.8, 36.8, vitals.temperature.value],
       sleep: [7.3, 7.4, 7.5, vitals.sleep.value],
     },
@@ -102,24 +102,17 @@ export const ReportsPage: React.FC = () => {
 
   const charts = [
     { key: 'pulse', icon: <Heart className="w-4 h-4 text-rose-500" />, title: t('Nabız', 'Heart rate'), unit: 'bpm', color: '#E11D48', minY: 50, maxY: 100, nMin: 60, nMax: 90, live: `${vitals.pulse.value} bpm` },
-    { key: 'oxygen', icon: <Wind className="w-4 h-4 text-cyan-500" />, title: t('Oksijen (SpO₂)', 'Oxygen (SpO₂)'), unit: '%', color: '#0284C7', minY: 93, maxY: 100, nMin: 96, nMax: 100, live: `${vitals.oxygen.value}%` },
+    { key: 'bp_systolic', icon: <Gauge className="w-4 h-4 text-blue-500" />, title: t('Büyük tansiyon', 'Systolic BP'), unit: 'mmHg', color: '#2563EB', minY: 100, maxY: 150, nMin: 90, nMax: 130, live: `${vitals.bp_systolic.value}/${vitals.bp_diastolic.value} mmHg` },
     { key: 'temperature', icon: <Thermometer className="w-4 h-4 text-amber-500" />, title: t('Vücut ısısı', 'Body temperature'), unit: '°C', color: '#D97706', minY: 36, maxY: 37.6, nMin: 36.3, nMax: 37.2, live: `${vitals.temperature.value} °C` },
     { key: 'sleep', icon: <Moon className="w-4 h-4 text-purple-500" />, title: t('Uyku süresi', 'Sleep duration'), unit: t('saat', 'h'), color: '#7C3AED', minY: 6, maxY: 9, nMin: 7, nMax: 8.5, live: `${vitals.sleep.value} ${t('sa', 'h')}` },
   ] as const;
 
-  const riskLabel = (r: string) => (r === 'high' ? t('Yüksek', 'High') : r === 'medium' ? t('Orta', 'Medium') : t('Düşük', 'Low'));
-  const riskCls = (r: string) =>
-    r === 'high'
-      ? 'bg-red-100 text-red-800 border-red-200'
-      : r === 'medium'
-        ? 'bg-amber-100 text-amber-800 border-amber-200'
-        : 'bg-emerald-100 text-emerald-800 border-emerald-200';
 
   const exportCsv = () => {
     playUiBeep(880);
     const rows = [
-      ['label', 'heart_rate_bpm', 'spo2_percent', 'body_temp_c', 'sleep_h'],
-      ...ds.labels.map((l, i) => [l, ds.pulse[i], ds.oxygen[i], ds.temperature[i], ds.sleep[i] ?? '']),
+      ['label', 'heart_rate_bpm', 'systolic_bp_mmhg', 'body_temp_c', 'sleep_h'],
+      ...ds.labels.map((l, i) => [l, ds.pulse[i], ds.bp_systolic[i], ds.temperature[i], ds.sleep[i] ?? '']),
     ];
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -249,46 +242,8 @@ export const ReportsPage: React.FC = () => {
         </span>
       </p>
 
-      {/* Test geçmişi */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
-              <Eye className="w-4 h-4 text-blue-600" />
-              {t('Görme testleri', 'Vision tests')}
-            </h2>
-            <span className="text-xs text-slate-500">
-              {visionTestHistory.length} {t('kayıt', 'records')}
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 border-b border-slate-200">
-                <tr>
-                  <th className="py-2 pr-3 font-semibold">{t('Tarih', 'Date')}</th>
-                  <th className="py-2 pr-3 font-semibold">{t('Skor', 'Score')}</th>
-                  <th className="py-2 pr-3 font-semibold">{t('Göz basıncı', 'Eye pressure')}</th>
-                  <th className="py-2 pr-3 font-semibold">{t('SANS riski', 'SANS risk')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visionTestHistory.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="py-2.5 pr-3 text-slate-800">{pick(item.date)}</td>
-                    <td className="py-2.5 pr-3 font-mono font-bold text-blue-700">{item.acuityScore}</td>
-                    <td className="py-2.5 pr-3 font-mono text-slate-700">{item.eyePressureMmHg} mmHg</td>
-                    <td className="py-2.5 pr-3">
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${riskCls(item.sansRisk)}`}>
-                        {riskLabel(item.sansRisk)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
+      {/* Test geçmişi (göz testi kapsamdan çıkarıldı) */}
+      <div className="grid grid-cols-1 gap-5">
         <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">

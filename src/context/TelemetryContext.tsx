@@ -21,8 +21,8 @@ interface TelemetryContextType {
   setAstronautId: (id: string) => void;
   availableAstronauts: AstronautProfile[];
   vitals: Record<string, VitalMetric>;
-  simulationScenario: 'normal' | 'warning_iop' | 'eva_exertion' | 'hypoxia';
-  setSimulationScenario: (scenario: 'normal' | 'warning_iop' | 'eva_exertion' | 'hypoxia') => void;
+  simulationScenario: 'normal' | 'hypertension' | 'eva_exertion' | 'fever';
+  setSimulationScenario: (scenario: 'normal' | 'hypertension' | 'eva_exertion' | 'fever') => void;
   isSimulating: boolean;
   setIsSimulating: (active: boolean) => void;
   simulationIntervalMs: number;
@@ -144,20 +144,20 @@ const INITIAL_VITALS: Record<string, VitalMetric> = {
     category: 'metabolic',
     description: { tr: 'Plazma glukoz konsantrasyonu ve hücresel enerji dengesi', en: 'Plasma glucose concentration and cellular energy balance' },
   },
-  oxygen: {
-    id: 'oxygen',
-    name: { tr: 'Oksijen Seviyesi', en: 'Oxygen Saturation' },
-    shortName: 'SpO2',
-    value: 98.4,
-    unit: '%',
-    minNormal: 96,
-    maxNormal: 100,
+  bp_systolic: {
+    id: 'bp_systolic',
+    name: { tr: 'Büyük Tansiyon', en: 'Systolic BP' },
+    shortName: 'SYS',
+    value: 126,
+    unit: 'mmHg',
+    minNormal: 90,
+    maxNormal: 130,
     status: 'normal',
-    history: createInitialHistory(98.4, 0.4),
-    trend: 'stable',
-    changeRate: '+0.2%',
-    category: 'respiratory',
-    description: { tr: 'Arteriyel hemoglobin oksijen satürasyonu', en: 'Arterial hemoglobin oxygen saturation' },
+    history: createInitialHistory(122, 1.6),
+    trend: 'up',
+    changeRate: '+3 mmHg',
+    category: 'cardio',
+    description: { tr: 'Sistolik kan basıncı (backend: systolic_bp)', en: 'Systolic blood pressure (backend: systolic_bp)' },
   },
   temperature: {
     id: 'temperature',
@@ -174,20 +174,20 @@ const INITIAL_VITALS: Record<string, VitalMetric> = {
     category: 'thermal',
     description: { tr: 'Mikroyerçekimi termoregülasyon ve çekirdek vücut ısısı', en: 'Microgravity thermoregulation and core body temperature' },
   },
-  iop: {
-    id: 'iop',
-    name: { tr: 'Göz İçi Basıncı', en: 'Intraocular Pressure' },
-    shortName: 'IOP',
-    value: 15.8,
+  bp_diastolic: {
+    id: 'bp_diastolic',
+    name: { tr: 'Küçük Tansiyon', en: 'Diastolic BP' },
+    shortName: 'DIA',
+    value: 79,
     unit: 'mmHg',
-    minNormal: 10,
-    maxNormal: 21,
+    minNormal: 60,
+    maxNormal: 85,
     status: 'normal',
-    history: createInitialHistory(15.8, 0.6),
-    trend: 'up',
-    changeRate: '+0.4 mmHg',
-    category: 'ocular',
-    description: { tr: 'SANS riski ve sefalik sıvı kayması takibi', en: 'SANS risk and headward fluid shift tracking' },
+    history: createInitialHistory(77, 1.2),
+    trend: 'stable',
+    changeRate: '+1 mmHg',
+    category: 'cardio',
+    description: { tr: 'Diyastolik kan basıncı (backend: diastolic_bp)', en: 'Diastolic blood pressure (backend: diastolic_bp)' },
   },
   sleep: {
     id: 'sleep',
@@ -210,7 +210,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [currentTab, setCurrentTabState] = useState<NavigationTab>('dashboard');
   const [selectedAstronautId, setSelectedAstronautId] = useState<string>('A007');
   const [vitals, setVitals] = useState<Record<string, VitalMetric>>(INITIAL_VITALS);
-  const [simulationScenario, setSimulationScenario] = useState<'normal' | 'warning_iop' | 'eva_exertion' | 'hypoxia'>('normal');
+  const [simulationScenario, setSimulationScenario] = useState<'normal' | 'hypertension' | 'eva_exertion' | 'fever'>('normal');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [simulationIntervalMs, setSimulationIntervalMs] = useState<number>(2500);
   const [selectedAnatomyZone, setSelectedAnatomyZone] = useState<AnatomyZoneId | null>(null);
@@ -233,21 +233,21 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const missionProfile = getProfile(missionProfileId);
 
   const [currentAlert, setCurrentAlert] = useState<AnomalyAlert | null>({
-    id: 'ALT-71-402',
+    id: 'ALT-74-BP',
     severity: 'warning',
-    title: { tr: 'Göz İçi Basıncında Artış (SANS)', en: 'Intraocular Pressure Change Watch (SANS Protocol)' },
-    description: { tr: 'Ağırlıksız ortamda vücut sıvısının kafaya doğru kayması nedeniyle göz arkasında hafif bir basınç artışı saptandı. Görme testi yapmanız önerilir.', en: 'A mild pressure fluctuation in the optic nerve sheath was detected due to microgravity-induced headward fluid shift. A visual acuity test is recommended.' },
+    title: { tr: 'Tansiyonda Kişisel Referansa Göre Artış', en: 'Blood Pressure Above Personal Baseline' },
+    description: { tr: 'Büyük tansiyon genel aralıkta ama son ölçümlerde kişisel referansınızın üzerinde ve yükseliyor. Ağırlıksız ortamda sıvının üst vücuda kayması ve düşük sıvı alımı olası nedenler.', en: 'Systolic pressure is within the general range but above your personal baseline and rising across recent readings. Headward fluid shift in microgravity and low fluid intake are likely causes.' },
     timestamp: '10:14 UTC',
-    parameter: { tr: 'Göz İçi Basıncı (IOP: 18.2 mmHg)', en: 'Intraocular Pressure (IOP: 18.2 mmHg)' },
-    protocolCode: 'NASA-ESA/ISS-MED-OPT-04',
+    parameter: { tr: 'Büyük tansiyon (126 mmHg · kişisel referans 114 ± 5)', en: 'Systolic BP (126 mmHg · personal baseline 114 ± 5)' },
+    protocolCode: 'ISS-MED-CV-03',
     steps: [
-      { tr: 'Sırt üstü dinlenme pozisyonuna geçin ve baş aşağı / zorlayıcı hareketleri bırakın.', en: 'Move to a supine rest position and stop head-down / straining maneuvers.' },
-      { tr: 'Sıvıyı baştan uzaklaştırmak için 20 dakika alt vücut negatif basınç (LBNP, Chibis giysisi) uygulayın.', en: 'Apply 20 minutes of Lower Body Negative Pressure (LBNP, Chibis suit) to draw fluid away from the head.' },
-      { tr: 'Görme testini ve retina (OCT) taramasını tekrarlayın.', en: 'Repeat the Snellen vision test and the OCT retinal scan.' },
-      { tr: 'Uçuş cerrahıyla (Houston MCC) bir görüşme kaydı oluşturun.', en: 'Log a tele-consultation with the flight surgeon (Houston MCC).' }
+      { tr: '10 dakika oturarak dinlenin, sonra tansiyonu tekrar ölçün.', en: 'Rest seated for 10 minutes, then measure blood pressure again.' },
+      { tr: 'Önümüzdeki 2 saatte 600 ml elektrolitli su için.', en: 'Drink 600 ml of electrolyte water over the next 2 hours.' },
+      { tr: 'Bugünkü ağır direnç egzersizini (ARED) hafif aerobik egzersizle değiştirin.', en: 'Swap today’s heavy resistance exercise (ARED) for light aerobic work.' },
+      { tr: 'Yükselme sürerse uçuş cerrahıyla (Houston MCC) görüşme kaydı oluşturun.', en: 'If it keeps rising, log a consultation with the flight surgeon (Houston MCC).' },
     ],
-    countermeasure: { tr: 'LBNP seansı (-25 mmHg) ve elektrolitli sıvı takviyesi.', en: 'LBNP session (-25 mmHg) & electrolyte-supported hydration protocol.' },
-    notifiedGroundControl: true,
+    countermeasure: { tr: 'Sıvı-elektrolit dengesi, dinlenme ve egzersiz yükünün azaltılması.', en: 'Fluid–electrolyte balance, rest and reduced exercise load.' },
+    notifiedGroundControl: false,
   });
 
   const [recommendations] = useState<DailyRecommendation[]>([
@@ -368,63 +368,50 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           history: [...prev.pulse.history.slice(1), 118],
         },
       }));
-    } else if (metricKey === 'iop') {
+    } else if (metricKey === 'bp') {
       setCurrentAlert({
-        id: 'ALT-71-SANS-CRIT',
+        id: 'ALT-74-BP-HIGH',
         severity: 'warning',
-        title: { tr: 'SANS - Göz İçi Basınç Eşiği Aşıldı', en: 'SANS - Intraocular Pressure Threshold Exceeded' },
-        description: { tr: 'Mikroyerçekimi intrakraniyal basınç artışı kaynaklı optik kılıf dilatasyonu gözlemlendi.', en: 'Optic nerve sheath dilation observed, linked to microgravity-induced intracranial pressure rise.' },
+        title: { tr: 'Tansiyon Normal Aralığın Üzerinde', en: 'Blood Pressure Above Normal Range' },
+        description: { tr: 'Büyük tansiyon 142 mmHg değerine yükseldi. Sıvı kayması, stres veya egzersiz yükü olası nedenler.', en: 'Systolic pressure rose to 142 mmHg. Fluid shift, stress or exercise load are possible causes.' },
         timestamp: { tr: 'Şimdi', en: 'Now' },
-        parameter: { tr: 'Göz İçi Basıncı (22.8 mmHg > 21 mmHg normal)', en: 'Intraocular pressure (22.8 mmHg > 21 mmHg normal)' },
-        protocolCode: 'NASA-ESA/ISS-MED-SANS-02',
+        parameter: { tr: 'Tansiyon (142/91 mmHg > 130/85 normal)', en: 'Blood pressure (142/91 mmHg > 130/85 normal)' },
+        protocolCode: 'ISS-MED-CV-03',
         steps: [
-          { tr: 'Chibis Alt Vücut Negatif Basınç (LBNP) cihazında -30 mmHg seansı başlatılması.', en: 'Start a -30 mmHg session in the Chibis LBNP suit.' },
-          { tr: 'Astronotun baş aşağı veya ağırlıklı çalışmalarının durdurulması.', en: 'Stop head-down or heavy-load work.' },
-          { tr: 'Görme keskinliği Snellen ve kontrast duyarlılık testinin uygulanması.', en: 'Run the Snellen visual acuity and contrast sensitivity tests.' },
-          { tr: 'Göz damlası (Timolol/Brinzolamide) medikal kit rezervinin kontrolü.', en: 'Check the medical kit stock of eye drops (Timolol/Brinzolamide).' }
+          { tr: 'Fiziksel aktiviteyi bırakıp 10 dakika oturarak dinlenin.', en: 'Stop physical activity and rest seated for 10 minutes.' },
+          { tr: 'Tansiyonu iki koldan tekrar ölçün.', en: 'Re-measure blood pressure on both arms.' },
+          { tr: 'Tuz alımını kısıtlayın ve sıvı alımını artırın.', en: 'Limit salt and increase fluid intake.' },
+          { tr: 'Değer düşmezse uçuş cerrahına bildirin.', en: 'If it does not come down, report to the flight surgeon.' },
         ],
-        countermeasure: { tr: 'LBNP seansı ve karbonhidrat/sodyum kısıtlaması.', en: 'LBNP session and carbohydrate/sodium restriction.' },
-        notifiedGroundControl: true,
+        countermeasure: { tr: 'Dinlenme, sıvı dengesi ve tuz kısıtlaması.', en: 'Rest, fluid balance and salt restriction.' },
+        notifiedGroundControl: false,
       });
       setVitals((prev) => ({
         ...prev,
-        iop: {
-          ...prev.iop,
-          value: 22.8,
-          status: 'warning',
-          trend: 'up',
-          changeRate: '+3.5 mmHg',
-          history: [...prev.iop.history.slice(1), 22.8],
-        },
+        bp_systolic: { ...prev.bp_systolic, value: 142, status: 'warning', trend: 'up', changeRate: '+16 mmHg', history: [...prev.bp_systolic.history.slice(1), 142] },
+        bp_diastolic: { ...prev.bp_diastolic, value: 91, status: 'warning', trend: 'up', changeRate: '+12 mmHg', history: [...prev.bp_diastolic.history.slice(1), 91] },
       }));
-    } else if (metricKey === 'oxygen') {
+    } else if (metricKey === 'temperature') {
       setCurrentAlert({
-        id: 'ALT-71-HYPOXIA',
+        id: 'ALT-74-FEVER',
         severity: 'critical',
-        title: { tr: 'Hafif Hipoksi / SpO2 Desatürasyonu', en: 'Mild Hypoxia / SpO2 Desaturation' },
-        description: { tr: 'Astronot periferik oksijen satürasyonu %93.8 seviyesine geriledi.', en: 'Peripheral oxygen saturation dropped to 93.8%.' },
+        title: { tr: 'Yüksek Ateş', en: 'High Fever' },
+        description: { tr: 'Vücut ısısı 38.6 °C değerine yükseldi. Enfeksiyon veya ısı stresi şüphesi.', en: 'Body temperature rose to 38.6 °C. Possible infection or heat stress.' },
         timestamp: { tr: 'Şimdi', en: 'Now' },
-        parameter: { tr: 'SpO2 (%93.8 < %96 normal)', en: 'SpO2 (93.8% < 96% normal)' },
-        protocolCode: 'NASA-ESA/ISS-MED-PULM-01',
+        parameter: { tr: 'Vücut ısısı (38.6 °C > 37.8 °C kritik)', en: 'Body temperature (38.6 °C > 37.8 °C critical)' },
+        protocolCode: 'ISS-MED-GEN-02',
         steps: [
-          { tr: 'Kabin gaz analizörü ile Columbus modülü kısmi pO2 basıncının ölçülmesi.', en: 'Measure partial O2 pressure in the module with the cabin gas analyzer.' },
-          { tr: 'Astronota nazal kanül ile 2 L/dk takviye oksijen sağlanması.', en: 'Give 2 L/min supplemental oxygen via nasal cannula.' },
-          { tr: 'Solunum sayısı ve ventilasyon döngüsünün izlenmesi.', en: 'Monitor breathing rate and ventilation.' },
-          { tr: 'CO2 emici (CDRA) sistem filtelerinin re-generasyon durumunun denetlenmesi.', en: 'Check the regeneration status of the CO2 removal (CDRA) filters.' }
+          { tr: 'Efor gerektiren işleri bırakın ve serin bir modülde dinlenin.', en: 'Stop strenuous tasks and rest in a cool module.' },
+          { tr: 'Bol sıvı alın; tıbbi kitteki ateş düşürücüyü hazırda tutun.', en: 'Drink plenty of fluids; keep the fever reducer from the medical kit ready.' },
+          { tr: '30 dakika sonra ısıyı tekrar ölçün.', en: 'Re-measure your temperature in 30 minutes.' },
+          { tr: 'Mürettebatla yakın teması azaltın.', en: 'Reduce close contact with the crew.' },
         ],
-        countermeasure: { tr: 'Oksijen takviyesi ve kabin havalandırma debisinin artırılması.', en: 'Supplemental oxygen and increased cabin ventilation.' },
+        countermeasure: { tr: 'Dinlenme, sıvı takviyesi ve ateş düşürücü.', en: 'Rest, fluids and a fever reducer.' },
         notifiedGroundControl: true,
       });
       setVitals((prev) => ({
         ...prev,
-        oxygen: {
-          ...prev.oxygen,
-          value: 93.8,
-          status: 'critical',
-          trend: 'down',
-          changeRate: '-4.6%',
-          history: [...prev.oxygen.history.slice(1), 93.8],
-        },
+        temperature: { ...prev.temperature, value: 38.6, status: 'critical', trend: 'up', changeRate: '+1.8 °C', history: [...prev.temperature.history.slice(1), 38.6] },
       }));
     }
   };
@@ -458,37 +445,22 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const gStatus: MetricStatus =
           newGlucose > 120 || newGlucose < 65 ? 'critical' : newGlucose > 110 || newGlucose < 70 ? 'warning' : 'normal';
 
-        // Oxygen (SpO2)
-        let baseO2 = 98.4;
-        if (simulationScenario === 'hypoxia') {
-          baseO2 = 94.2;
-        }
-        const oFluct = (Math.random() - 0.49) * 0.3;
-        const newO2 = +(
-          Math.min(100, Math.max(90, (next.oxygen?.value || 98.4) * 0.85 + baseO2 * 0.15 + oFluct))
-        ).toFixed(1);
-        const oStatus: MetricStatus =
-          newO2 < 94 ? 'critical' : newO2 < 96 ? 'warning' : 'normal';
+        // Blood pressure (systolic / diastolic)
+        const baseSys = simulationScenario === 'hypertension' ? 146 : simulationScenario === 'eva_exertion' ? 132 : 124;
+        const baseDia = simulationScenario === 'hypertension' ? 93 : 78;
+        const newSys = Math.round(Math.min(185, Math.max(85, (next.bp_systolic?.value || 124) * 0.85 + baseSys * 0.15 + (Math.random() - 0.5) * 2)));
+        const newDia = Math.round(Math.min(120, Math.max(50, (next.bp_diastolic?.value || 78) * 0.85 + baseDia * 0.15 + (Math.random() - 0.5) * 1.5)));
+        const sStatus: MetricStatus = newSys > 160 || newSys < 80 ? 'critical' : newSys > 130 || newSys < 90 ? 'warning' : 'normal';
+        const dStatus: MetricStatus = newDia > 100 || newDia < 50 ? 'critical' : newDia > 85 || newDia < 60 ? 'warning' : 'normal';
 
         // Temperature (TEMP)
         const tFluct = (Math.random() - 0.49) * 0.08;
+        const baseTemp = simulationScenario === 'fever' ? 38.4 : 36.8;
         const newTemp = +(
-          Math.min(38.5, Math.max(35.8, (next.temperature?.value || 36.8) * 0.9 + 36.8 * 0.1 + tFluct))
+          Math.min(39.5, Math.max(35.8, (next.temperature?.value || 36.8) * 0.9 + baseTemp * 0.1 + tFluct))
         ).toFixed(1);
         const tStatus: MetricStatus =
           newTemp > 37.8 || newTemp < 35.8 ? 'critical' : newTemp > 37.2 || newTemp < 36.2 ? 'warning' : 'normal';
-
-        // Intraocular Pressure (IOP)
-        let baseIOP = 16.0;
-        if (simulationScenario === 'warning_iop') {
-          baseIOP = 22.4;
-        }
-        const iFluct = (Math.random() - 0.48) * 0.4;
-        const newIOP = +(
-          Math.min(26, Math.max(10, (next.iop?.value || 16.0) * 0.88 + baseIOP * 0.12 + iFluct))
-        ).toFixed(1);
-        const iStatus: MetricStatus =
-          newIOP > 22.5 ? 'critical' : newIOP > 20.0 ? 'warning' : 'normal';
 
         // Sleep (SLP) remains stable or slight adjustment
         const newSleep = next.sleep?.value || 7.6;
@@ -510,13 +482,21 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             changeRate: `${newGlucose >= (next.glucose?.value || 94) ? '+' : ''}${(newGlucose - (next.glucose?.value || 94)).toFixed(0)} mg/dL`,
             history: [...next.glucose.history.slice(1), newGlucose],
           },
-          oxygen: {
-            ...next.oxygen,
-            value: newO2,
-            status: oStatus,
-            trend: newO2 >= (next.oxygen?.value || 98.4) ? 'up' : 'down',
-            changeRate: `${newO2 >= (next.oxygen?.value || 98.4) ? '+' : ''}${(newO2 - (next.oxygen?.value || 98.4)).toFixed(1)}%`,
-            history: [...next.oxygen.history.slice(1), newO2],
+          bp_systolic: {
+            ...next.bp_systolic,
+            value: newSys,
+            status: sStatus,
+            trend: newSys >= (next.bp_systolic?.value || 124) ? 'up' : 'down',
+            changeRate: `${newSys >= (next.bp_systolic?.value || 124) ? '+' : ''}${newSys - (next.bp_systolic?.value || 124)} mmHg`,
+            history: [...next.bp_systolic.history.slice(1), newSys],
+          },
+          bp_diastolic: {
+            ...next.bp_diastolic,
+            value: newDia,
+            status: dStatus,
+            trend: newDia >= (next.bp_diastolic?.value || 78) ? 'up' : 'down',
+            changeRate: `${newDia >= (next.bp_diastolic?.value || 78) ? '+' : ''}${newDia - (next.bp_diastolic?.value || 78)} mmHg`,
+            history: [...next.bp_diastolic.history.slice(1), newDia],
           },
           temperature: {
             ...next.temperature,
@@ -525,14 +505,6 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             trend: 'stable',
             changeRate: `${newTemp >= (next.temperature?.value || 36.8) ? '+' : ''}${(newTemp - (next.temperature?.value || 36.8)).toFixed(1)} °C`,
             history: [...next.temperature.history.slice(1), newTemp],
-          },
-          iop: {
-            ...next.iop,
-            value: newIOP,
-            status: iStatus,
-            trend: newIOP >= (next.iop?.value || 16.0) ? 'up' : 'down',
-            changeRate: `${newIOP >= (next.iop?.value || 16.0) ? '+' : ''}${(newIOP - (next.iop?.value || 16.0)).toFixed(1)} mmHg`,
-            history: [...next.iop.history.slice(1), newIOP],
           },
           sleep: {
             ...next.sleep,

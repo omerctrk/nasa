@@ -44,37 +44,37 @@ export interface AiInsight {
 }
 
 export const PERSONAL_BASELINES: Record<string, PersonalBaseline> = {
-  iop: { mean: 13.9, sd: 0.8, basis: { tr: 'Uçuş öncesi 6 ölçüm + görevin ilk 30 günü', en: '6 pre-flight readings + first 30 mission days' } },
+  bp_systolic: { mean: 114, sd: 5, basis: { tr: 'Uçuş öncesi 6 ölçüm + görevin ilk 30 günü', en: '6 pre-flight readings + first 30 mission days' } },
+  bp_diastolic: { mean: 74, sd: 4, basis: { tr: 'Uçuş öncesi 6 ölçüm + görevin ilk 30 günü', en: '6 pre-flight readings + first 30 mission days' } },
   pulse: { mean: 66, sd: 5, basis: { tr: 'Görevdeki dinlenme nabzı ortalaması', en: 'In-mission resting heart rate average' } },
-  oxygen: { mean: 98.2, sd: 0.6, basis: { tr: 'Görevdeki SpO₂ ortalaması', en: 'In-mission SpO₂ average' } },
   glucose: { mean: 92, sd: 7, basis: { tr: 'Açlık ölçümleri ortalaması', en: 'Fasting reading average' } },
   temperature: { mean: 36.8, sd: 0.2, basis: { tr: 'Görevdeki vücut ısısı ortalaması', en: 'In-mission body temperature average' } },
 };
 
 export const AI_INSIGHTS: Record<string, AiInsight> = {
-  iop: {
-    metric: 'iop',
+  bp_systolic: {
+    metric: 'bp_systolic',
     interpretation: {
-      tr: 'Göz içi basıncınız genel normal aralıkta olsa da kendi referansınızın belirgin biçimde üzerinde ve son ölçümlerde artış eğiliminde. Bu örüntü, ağırlıksız ortamda vücut sıvısının başa doğru kaymasıyla ilişkili SANS (uzay uçuşuna bağlı nöro-oküler sendrom) için erken bir işaret olabilir.',
-      en: 'Your eye pressure is still within the general normal range, but clearly above your own baseline and trending up across recent readings. This pattern can be an early sign of SANS (spaceflight-associated neuro-ocular syndrome), linked to the headward fluid shift in microgravity.',
+      tr: 'Büyük tansiyonunuz genel normal aralıkta olsa da kendi referansınızın belirgin biçimde üzerinde ve son ölçümlerde artış eğiliminde. Ağırlıksız ortamda vücut sıvısının üst vücuda kayması ve bugünkü düşük sıvı alımı bu örüntüyle uyumlu. Tek başına acil bir durum değil; sonraki ölçümlerde sürüp sürmediği izlenecek.',
+      en: 'Your systolic pressure is still within the general normal range, but clearly above your own baseline and trending up across recent readings. The headward fluid shift in microgravity and today’s low fluid intake fit this pattern. It is not an emergency on its own; the next readings will show whether it persists.',
     },
     causes: [
-      { text: { tr: 'Sıvının başa doğru kayması (mikro yerçekimi)', en: 'Headward fluid shift (microgravity)' }, likelihood: 0.72 },
+      { text: { tr: 'Sıvının üst vücuda kayması (mikro yerçekimi)', en: 'Headward fluid shift (microgravity)' }, likelihood: 0.72 },
       { text: { tr: 'Bugün düşük sıvı alımı (1.8 / 2.4 L)', en: 'Low fluid intake today (1.8 / 2.4 L)' }, likelihood: 0.46 },
-      { text: { tr: 'Yüksek kabin CO₂ seviyesi', en: 'Elevated cabin CO₂' }, likelihood: 0.34 },
-      { text: { tr: 'Ağır direnç egzersizi (ARED) sırasında nefes tutma', en: 'Breath-holding during heavy resistance exercise (ARED)' }, likelihood: 0.21 },
+      { text: { tr: 'İş yükü ve stres', en: 'Workload and stress' }, likelihood: 0.34 },
+      { text: { tr: 'Ağır direnç egzersizi (ARED) sonrası', en: 'After heavy resistance exercise (ARED)' }, likelihood: 0.21 },
     ],
     recommendations: [
       { tr: 'Önümüzdeki 2 saatte 600 ml elektrolitli su için.', en: 'Drink 600 ml of electrolyte water over the next 2 hours.' },
+      { tr: '10 dakika oturarak dinlenip tansiyonu tekrar ölçün.', en: 'Rest seated for 10 minutes and re-measure.' },
       { tr: 'Bugünkü ağır ARED setlerini hafif aerobik egzersizle değiştirin.', en: 'Swap today’s heavy ARED sets for light aerobic exercise.' },
-      { tr: '20 dakikalık alt vücut negatif basınç (LBNP) seansı yapın.', en: 'Do a 20-minute lower body negative pressure (LBNP) session.' },
-      { tr: 'Akşam görme testini tekrarlayın.', en: 'Repeat the vision test this evening.' },
+      { tr: 'Akşam yemeğinde tuzu azaltın.', en: 'Cut down on salt at dinner.' },
     ],
     followUpReadings: 3,
     sources: [
-      { kind: 'nasa', title: 'Evidence Report: Risk of Spaceflight Associated Neuro-ocular Syndrome (SANS)', ref: 'NASA Human Research Program, 2017', relevance: 0.94 },
-      { kind: 'paper', title: 'Optic disc edema, globe flattening, choroidal folds and hyperopic shifts observed in astronauts after long-duration space flight', ref: 'Mader TH et al., Ophthalmology, 2011', relevance: 0.88 },
-      { kind: 'paper', title: 'Spaceflight associated neuro-ocular syndrome (SANS) and the neuro-ophthalmologic effects of microgravity', ref: 'Lee AG et al., npj Microgravity, 2020', relevance: 0.81 },
+      { kind: 'nasa', title: 'Evidence Report: Risk of Cardiovascular Adaptations Contributing to Adverse Mission Performance and Health Outcomes', ref: 'NASA Human Research Program', relevance: 0.91 },
+      { kind: 'paper', title: 'Heart in space: effect of the extraterrestrial environment on the cardiovascular system', ref: 'Hughson RL et al., Nature Reviews Cardiology, 2018', relevance: 0.87 },
+      { kind: 'nasa', title: 'NASA-STD-3001 Space Flight Human-System Standard, Vol. 1', ref: 'NASA', relevance: 0.74 },
     ],
   },
   pulse: {
@@ -99,26 +99,27 @@ export const AI_INSIGHTS: Record<string, AiInsight> = {
       { kind: 'nasa', title: 'NASA-STD-3001 Space Flight Human-System Standard, Vol. 1', ref: 'NASA', relevance: 0.74 },
     ],
   },
-  oxygen: {
-    metric: 'oxygen',
+  temperature: {
+    metric: 'temperature',
     interpretation: {
-      tr: 'Oksijen doygunluğunuz kendi referansınızın altında. Tek ölçümlük düşüşlerde sensör yerleşimi sık bir nedendir; ancak bölgesel CO₂ birikimi de değerlendirilmeli. Ölçüm tekrarlanana kadar efor gerektiren işlerden kaçının.',
-      en: 'Your oxygen saturation is below your own baseline. Sensor placement is a common cause of single-reading drops, but a local CO₂ pocket should also be considered. Avoid strenuous tasks until the reading is repeated.',
+      tr: 'Vücut ısınız kendi referansınızın çok üzerinde. Uzun görevlerde astronotların çekirdek vücut ısısının Dünya’ya göre biraz daha yüksek seyrettiği bilinse de bu değer ateş düzeyinde. En olası açıklama bir enfeksiyon; ısı stresi de değerlendirilmeli.',
+      en: 'Your body temperature is far above your own baseline. Astronauts’ core temperature is known to run slightly higher on long missions, but this value is at fever level. Infection is the most likely explanation; heat stress should also be considered.',
     },
     causes: [
-      { text: { tr: 'Sensör yerleşimi / hareket', en: 'Sensor placement / motion' }, likelihood: 0.52 },
-      { text: { tr: 'Bölgesel CO₂ birikimi (zayıf hava akışı)', en: 'Local CO₂ pocket (poor airflow)' }, likelihood: 0.41 },
-      { text: { tr: 'Solunum yolu enfeksiyonu', en: 'Respiratory infection' }, likelihood: 0.15 },
+      { text: { tr: 'Enfeksiyon (bağışıklık sistemi zayıflaması)', en: 'Infection (weakened immunity)' }, likelihood: 0.64 },
+      { text: { tr: 'Isı stresi / egzersiz sonrası', en: 'Heat stress / after exercise' }, likelihood: 0.38 },
+      { text: { tr: 'Sensör yerleşimi', en: 'Sensor placement' }, likelihood: 0.15 },
     ],
     recommendations: [
-      { tr: 'Sensörü yeniden takıp ölçümü tekrarlayın.', en: 'Refit the sensor and repeat the reading.' },
-      { tr: 'Havalandırması iyi bir modüle geçin.', en: 'Move to a well-ventilated module.' },
-      { tr: 'Nefes darlığı olursa hemen bildirin.', en: 'Report any shortness of breath right away.' },
+      { tr: 'Efor gerektiren işleri bırakın ve dinlenin.', en: 'Stop strenuous tasks and rest.' },
+      { tr: 'Bol sıvı alın.', en: 'Drink plenty of fluids.' },
+      { tr: '30 dakika sonra ısıyı tekrar ölçün.', en: 'Re-measure in 30 minutes.' },
+      { tr: 'Mürettebatla yakın teması azaltın.', en: 'Reduce close contact with the crew.' },
     ],
     followUpReadings: 1,
     sources: [
-      { kind: 'paper', title: 'Relationship between carbon dioxide levels and reported headaches on the International Space Station', ref: 'Law J et al., J Occup Environ Med, 2014', relevance: 0.83 },
-      { kind: 'nasa', title: 'NASA-STD-3001 Space Flight Human-System Standard, Vol. 2', ref: 'NASA', relevance: 0.77 },
+      { kind: 'paper', title: 'Increased core body temperature in astronauts during long-duration space missions', ref: 'Stahn AC et al., Scientific Reports, 2017', relevance: 0.88 },
+      { kind: 'nasa', title: 'NASA-STD-3001 Space Flight Human-System Standard, Vol. 1', ref: 'NASA', relevance: 0.72 },
     ],
   },
 };

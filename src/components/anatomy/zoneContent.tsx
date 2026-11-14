@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, Heart, Activity, Bone, Eye, Zap, LineChart } from 'lucide-react';
+import { Brain, Heart, Activity, Bone, Zap, LineChart } from 'lucide-react';
 import { AnatomyZoneId, MetricStatus, VitalMetric } from '../../types/telemetry';
 import type { NavigationTab } from '../../context/TelemetryContext';
 
@@ -30,7 +30,7 @@ const worst = (...s: MetricStatus[]): MetricStatus =>
   s.includes('critical') ? 'critical' : s.includes('warning') ? 'warning' : 'normal';
 
 /**
- * Vücut bölgeleri için içerik. Sabit değerler (optik sinir kılıfı, kemik kaybı vb.)
+ * Vücut bölgeleri için içerik. Sabit değerler (tepki süresi, kemik kaybı vb.)
  * şimdilik örnek veridir; backend bağlandığında buradan beslenebilir.
  */
 export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, VitalMetric>, t: T): ZoneContent => {
@@ -40,42 +40,43 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
     case 'head':
       return {
         id: zone,
-        title: t('Baş & Gözler', 'Head & Eyes'),
-        subtitle: t('Göz sağlığı, beyin ve dikkat', 'Eye health, brain and alertness'),
+        title: t('Baş & Zihin', 'Head & Mind'),
+        subtitle: t('Dikkat, uyku ve ruh hali', 'Alertness, sleep and mood'),
         icon: <Brain className="w-6 h-6 text-indigo-600" />,
-        status: vitals.iop.status,
+        status: vitals.sleep.status,
         metrics: [
-          { label: t('Göz içi basıncı', 'Eye pressure (IOP)'), value: `${vitals.iop.value} mmHg`, normal: '10–21 mmHg', status: vitals.iop.status },
-          { label: t('Optik sinir kılıfı', 'Optic nerve sheath'), value: '5.8 mm', normal: '4.5–5.9 mm', status: 'normal' },
-          { label: t('Tepki süresi', 'Reaction time'), value: '224 ms', normal: '< 260 ms', status: 'normal' },
           { label: t('Uyku', 'Sleep'), value: `${vitals.sleep.value} ${t('saat', 'h')}`, normal: t('7–8.5 saat', '7–8.5 h'), status: vitals.sleep.status },
+          { label: t('Tepki süresi (son PVT)', 'Reaction time (last PVT)'), value: '291 ms', normal: '250–400 ms', status: 'normal' },
         ],
         spaceEffect: t(
-          'Ağırlıksız ortamda yaklaşık 2 litre vücut sıvısı kafaya doğru kayar. Bu, göz arkasındaki basıncı artırıp görmeyi bulanıklaştırabilir. Buna SANS (uzay uçuşuna bağlı nöro-oküler sendrom) denir.',
-          'In weightlessness about 2 liters of body fluid shift toward the head. This can raise pressure behind the eyes and blur vision, a condition called SANS (Spaceflight-Associated Neuro-ocular Syndrome).'
+          'Düzensiz uyku, izolasyon, iş yükü ve radyasyon dikkat ile tepki süresini etkileyebilir. Yorgunluk, kritik görevlerde hata riskini artırır.',
+          'Irregular sleep, isolation, workload and radiation can affect alertness and reaction time. Fatigue raises the risk of mistakes during critical tasks.'
         ),
         actions: [
-          t('Haftada en az bir kez görme testi yapın.', 'Take a vision test at least once a week.'),
-          t('Baş aşağı pozisyonda uzun süre çalışmaktan kaçının.', 'Avoid long periods working head-down.'),
-          t('Göz basıncı yükselirse LBNP (alt vücut negatif basınç) seansı uygulayın.', 'If eye pressure rises, do an LBNP (lower body negative pressure) session.'),
+          t('Her gün 3 dakikalık tepki testini (PVT) yapın.', 'Take the 3-minute reaction test (PVT) every day.'),
           t('Düzenli uyku saatlerine uyun; yorgunluk dikkati düşürür.', 'Keep regular sleep hours; fatigue lowers alertness.'),
+          t('Günlük check-in ile ruh halinizi kaydedin.', 'Log your mood with the daily check-in.'),
         ],
         links: [
-          { label: t('Görme testi', 'Vision test'), tab: 'vision-test', icon: <Eye className="w-4 h-4" /> },
           { label: t('Refleks testi', 'Reflex test'), tab: 'cognitive-test', icon: <Zap className="w-4 h-4" /> },
+          { label: t('Davranış modülü', 'Behavior module'), tab: 'behavior', icon: <Activity className="w-4 h-4" /> },
         ],
       };
     case 'chest':
       return {
         id: zone,
         title: t('Kalp & Akciğerler', 'Heart & Lungs'),
-        subtitle: t('Kalp ritmi, oksijen ve tansiyon', 'Heart rhythm, oxygen and blood pressure'),
+        subtitle: t('Kalp ritmi ve tansiyon', 'Heart rhythm and blood pressure'),
         icon: <Heart className="w-6 h-6 text-rose-500" />,
-        status: worst(vitals.pulse.status, vitals.oxygen.status),
+        status: worst(vitals.pulse.status, vitals.bp_systolic.status, vitals.bp_diastolic.status),
         metrics: [
           { label: t('Nabız', 'Heart rate'), value: `${vitals.pulse.value} bpm`, normal: '60–90 bpm', status: vitals.pulse.status },
-          { label: t('Oksijen (SpO₂)', 'Oxygen (SpO₂)'), value: `${vitals.oxygen.value}%`, normal: '96–100%', status: vitals.oxygen.status },
-          { label: t('Tansiyon', 'Blood pressure'), value: '118/76 mmHg', normal: '90–120 / 60–80', status: 'normal' },
+          {
+            label: t('Tansiyon', 'Blood pressure'),
+            value: `${vitals.bp_systolic.value}/${vitals.bp_diastolic.value} mmHg`,
+            normal: '90–130 / 60–85',
+            status: worst(vitals.bp_systolic.status, vitals.bp_diastolic.status),
+          },
           { label: t('Kalp debisi', 'Cardiac output'), value: t('5.4 L/dk', '5.4 L/min'), normal: t('4.8–6.2 L/dk', '4.8–6.2 L/min'), status: 'normal' },
         ],
         spaceEffect: t(

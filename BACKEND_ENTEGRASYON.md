@@ -75,3 +75,20 @@ Uç noktalar **varsayımdır**, backend ile netleştirilecek:
 - WebSocket olayı: `event_type: "emergency.updated"` (gelince ekran kaydı yeniden okur; yoksa 1 sn'de bir sorgular)
 
 Kurallar: ağ hatasında aynı anahtarla otomatik tekrar denenir (aynı acil durum merkeze iki kez düşmez); "doktor yönlendirildi" bilgisi yalnız sunucudan gelir, ekran uydurmaz. Teyit beklenen: uç nokta yolları, uçuş cerrahı atamasının nasıl kaydedildiği, astronotun bu uca yazma yetkisi.
+
+## ASTRA backend uyarlaması (bachand dalı, 15 Kasım)
+
+Ekranlar değişmedi; uyarlama API katmanında. Sahte mod (`VITE_USE_MOCK`, varsayılan açık) eskisi gibi çalışır.
+
+- **Bağlantı:** `vite.config.ts` → `/api` ve `/ws` istekleri `localhost:8000`'e aktarılır.
+- **Adresler:** davranış uçları `/me/...` (`/me/checkins/{date}`, `/me/checkins`, `/me/cognitive-tests`, `/me/weekly-assessments`); görev günü `/me/profile`'daki `mission_start_date`'ten.
+- **Listeler:** düz dizi, `?start=&end=` (son 120 gün). Ekrana yeniden eskiye sıralı verilir.
+- **Hata biçimi:** `{"detail": {code, message, trace_id, fields}}` okunur; 422'de alan mesajları gösterilir; `X-Trace-Id` konsola yazılır.
+- **Check-in:** yeni kayıtta başlık yok, güncellemede `If-Match`; `mood_index` istemciden gönderilir.
+- **Test ve haftalık form:** hesaplanmış değerler gönderilir (ham denemeler `raw` alanında). Tüm formüller tek dosyada: `src/features/behavior/scoring.ts` (sahte backend de aynısını kullanır).
+- **Ölçüm kodları:** `heart_rate (BPM)`, `systolic_bp`, `diastolic_bp`, `blood_glucose`, `body_temperature`. Arayüzdeki göstergeler de bunlara indirildi: SpO₂ ve göz içi basıncı kaldırıldı, tansiyon artık sabit değil, `bp_systolic` / `bp_diastolic` göstergelerinden gelir.
+- **Analiz:** gövde `{module: "anomaly", idempotency_key, module_scope: "combined"}`. Sonuç ayrıntısı ucu olmadığından ekran yalnız "analiz tamamlandı" der.
+- **Bildirimler (WS):** `{type: "authenticate", access_token}`; olay `{event_id, type, created_at, payload}`.
+- **Backend'de olmayanlar:** `/emergencies` (gerçek modda istek gitmez, alarm sesli kanaldan haber verilmesini söyler) ve haftalık paylaşım ayarı (gerçek modda yalnız durum gösterilir).
+- **Giriş:** ekran yok; deneme için token `localStorage`'a `ahms-token` olarak konur.
+- **SANS/göz:** göz testi ekranı, SANS uyarısı ve göz basıncı kartları kaldırıldı. Varsayılan demo uyarısı ve yapay zekâ örneği tansiyon üzerine; demo düğmeleri: tansiyon, nabız, ateş.

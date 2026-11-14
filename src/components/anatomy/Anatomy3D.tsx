@@ -33,8 +33,8 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
   const { t } = usePrefs();
   const worst = (...st: string[]) => (st.includes('critical') ? 'critical' : st.includes('warning') ? 'warning' : 'normal') as 'normal' | 'warning' | 'critical';
   const zoneStatus = {
-    head: statusMeta(vitals.iop.status, t),
-    chest: statusMeta(worst(vitals.pulse.status, vitals.oxygen.status), t),
+    head: statusMeta(vitals.sleep.status, t),
+    chest: statusMeta(worst(vitals.pulse.status, vitals.bp_systolic.status, vitals.bp_diastolic.status), t),
     abdomen: statusMeta(worst(vitals.glucose.status, vitals.temperature.status), t),
     musculoskeletal: statusMeta('normal', t),
   };
@@ -383,7 +383,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
                 opacity: 0.75,
               });
             }
-            // 5. BRAIN / HEAD (Baş & SANS): Glowing Electric Blue & Cyan
+            // 5. BRAIN / HEAD (Baş & Zihin): Glowing Electric Blue & Cyan
             else if (name.includes('brain') || name.includes('head') || parentName.includes('nerves')) {
               mesh.material = new THREE.MeshStandardMaterial({
                 color: 0x38bdf8,
@@ -685,8 +685,8 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
               <Brain className="w-3 h-3" />
             </div>
             <div>
-              <div className="text-xs font-bold leading-none">{t('Baş & Gözler', 'Head & Eyes')}</div>
-              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{t('Göz basıncı', 'Eye pressure')} {vitals.iop.value} mmHg</div>
+              <div className="text-xs font-bold leading-none">{t('Baş & Zihin', 'Head & Mind')}</div>
+              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{t('Uyku', 'Sleep')} {vitals.sleep.value} {t('sa', 'h')}</div>
             </div>
             <span className={`w-2 h-2 rounded-full shrink-0 ${zoneStatus.head.dot}`} title={zoneStatus.head.label} />
           </div>
@@ -716,7 +716,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
             </div>
             <div>
               <div className="text-xs font-bold leading-none">{t('Kalp & Akciğer', 'Heart & Lungs')}</div>
-              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{vitals.pulse.value} bpm • SpO₂ {vitals.oxygen.value}%</div>
+              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{vitals.pulse.value} bpm • {vitals.bp_systolic.value}/{vitals.bp_diastolic.value}</div>
             </div>
             <span className={`w-2 h-2 rounded-full shrink-0 ${zoneStatus.chest.dot}`} title={zoneStatus.chest.label} />
           </div>

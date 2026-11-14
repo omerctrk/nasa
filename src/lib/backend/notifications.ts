@@ -7,9 +7,9 @@
  * - Her olay için teslim alındısı (receipt) gönderilir. Bu insan onayı değildir.
  * - Bağlantı koparsa yeniden bağlanılır; bekleyen olaylar sunucudan tekrar gelir.
  *
- * MESAJ BİÇİMLERİ VARSAYIMDIR (şemada verilmedi):
- *   istemci → { "type": "auth", "token": "<JWT>" }
- *   sunucu  → { "type": "event", "event": NotificationEvent }
+ * MESAJ BİÇİMLERİ (ASTRA backend, contracts/backend-contract.md §10):
+ *   istemci → { "type": "authenticate", "access_token": "<JWT>" }   (5 sn içinde)
+ *   sunucu  → { "event_id", "type", "created_at", "payload" }
  *   istemci → { "type": "receipt", "event_id": "<uuid>" }
  */
 import { useEffect, useRef } from 'react';
@@ -25,6 +25,22 @@ const wsUrl = (): string => {
   const base = API_BASE_URL.startsWith('http') ? new URL(API_BASE_URL) : new URL(API_BASE_URL, window.location.origin);
   const proto = base.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${base.host}/ws/v1/notifications`;
+};
+
+/** Sunucu olayını ekranın kullandığı şekle çevirir (eski {type:"event", event} biçimi de okunur) */
+const toEvent = (data: Record<string, unknown>): NotificationEvent | undefined => {
+  if (data.type === 'event' && data.event && typeof data.event === 'object') return data.event as NotificationEvent;
+  if (typeof data.event_id !== 'string') return undefined;
+  const payload = (data.payload ?? {}) as Record<string, unknown>;
+  return {
+    event_id: data.event_id,
+    event_type: String(data.type ?? data.event_type ?? '') as NotificationEvent['event_type'],
+    job_id: typeof payload.job_id === 'string' ? payload.job_id : null,
+    alert_id: typeof payload.alert_id === 'string' ? payload.alert_id : null,
+    audience: (payload.audience ?? data.audience ?? 'ASTRONAUT') as NotificationEvent['audience'],
+    payload_json: payload,
+    created_at: String(data.created_at ?? ''),
+  };
 };
 
 export class NotificationClient {
@@ -45,16 +61,16 @@ export class NotificationClient {
 
     ws.onopen = () => {
       this.retry = 0;
-      ws.send(JSON.stringify({ type: 'auth', token }));
+      ws.send(JSON.stringify({ type: 'authenticate', access_token: token }));
     };
     ws.onmessage = (msg) => {
-      let data: { type?: string; event?: NotificationEvent };
+      let data: Record<string, unknown>;
       try {
         data = JSON.parse(String(msg.data));
       } catch {
         return;
       }
-      const ev = data.type === 'event' ? data.event : undefined;
+      const ev = toEvent(data);
       if (!ev?.event_id) return;
       // Teslim alındısı her durumda gönderilir (tekrar gelen olay için de)
       ws.send(JSON.stringify({ type: 'receipt', event_id: ev.event_id }));
