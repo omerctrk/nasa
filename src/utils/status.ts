@@ -55,6 +55,10 @@ export const vitalLabel = (id: string, t: T) => {
       return t('Uyku', 'Sleep');
     case 'bp':
       return t('Tansiyon', 'Blood pressure');
+    case 'bp_systolic':
+      return t('Büyük tansiyon', 'Systolic BP');
+    case 'bp_diastolic':
+      return t('Küçük tansiyon', 'Diastolic BP');
     default:
       return id;
   }

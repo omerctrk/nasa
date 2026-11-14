@@ -45,7 +45,8 @@ export interface CheckinInput {
 }
 
 export interface Checkin extends Omit<CheckinInput, 'bed_time' | 'wake_time' | 'symptoms'> {
-  id: number;
+  /** Gerçek backend döndürmüyor (kayıt kişi+gün ile tekil) */
+  id?: number;
   date: string; // UTC, "2026-11-14"
   mission_day: number;
   mood_index: number; // 0–100
@@ -109,7 +110,8 @@ export interface CognitiveTest {
   valid: boolean;
   invalid_reason: string | null;
   device?: string;
-  source: DataSource;
+  /** Gerçek backend bu listede döndürmüyor */
+  source?: DataSource;
 }
 
 /** 0–1 oranı ekranda yüzdeye çevirir: 0.9375 → 93.8 */

@@ -7,7 +7,6 @@ import { AuroraBackground } from './components/layout/AuroraBackground';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { AnatomyPage } from './components/anatomy/AnatomyPage';
 import { TestsHubPage } from './components/tests/TestsHubPage';
-import { VisionTestPage } from './components/tests/VisionTestPage';
 import { CognitiveTestPage } from './components/tests/CognitiveTestPage';
 import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
@@ -27,8 +26,8 @@ const AppContent: React.FC = () => {
         return <AnatomyPage />;
       case 'tests':
         return <TestsHubPage />;
-      case 'vision-test':
-        return <VisionTestPage />;
+      case 'vision-test': // göz testi kapsamdan çıkarıldı (takım kararı); eski bağlantılar test listesine düşer
+        return <TestsHubPage />;
       case 'cognitive-test':
         return <CognitiveTestPage />;
       case 'behavior':

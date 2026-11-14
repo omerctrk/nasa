@@ -101,11 +101,11 @@ export const AiInsightPanel: React.FC = () => {
     const s = vitals[k as keyof typeof vitals]?.status;
     return (s === 'critical' ? 100 : s === 'warning' ? 50 : 0) + Math.abs(z(k));
   };
-  // Sapan gösterge yoksa açık uyarının göstergesi (demo uyarısı SANS → göz basıncı) odakta kalır;
+  // Sapan gösterge yoksa açık uyarının göstergesi (varsayılan demo uyarısı → tansiyon) odakta kalır;
   // böylece canlı değerler dalgalanırken panel göstergeler arasında atlamaz.
   const sorted = [...candidates].sort((a, b) => rank(b) - rank(a));
   const anyAbnormal = sorted.some((k) => vitals[k as keyof typeof vitals]?.status !== 'normal');
-  const focus = anyAbnormal || !currentAlert ? sorted[0] ?? 'iop' : 'iop';
+  const focus = anyAbnormal || !currentAlert ? sorted[0] ?? 'bp_systolic' : 'bp_systolic';
   const metric = vitals[focus as keyof typeof vitals];
   const base = PERSONAL_BASELINES[focus];
   const insight = AI_INSIGHTS[focus];

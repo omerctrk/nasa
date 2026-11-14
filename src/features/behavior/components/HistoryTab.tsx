@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { Button, Card, Skeleton } from '../../../components/ui';
 import { usePrefs } from '../../../context/PreferencesContext';
-import { behavioralApi, errorMessage } from '../api';
+import { behavioralApi, errorMessage, SHARING_EDITABLE } from '../api';
 import { formatDayMonth } from '../date';
 import type { BehaviorData } from '../useBehaviorData';
 import { accuracyPct, isSynthetic, type WeeklyAssessment } from '../types';
@@ -295,6 +295,10 @@ export const HistoryTab: React.FC<{ data: BehaviorData; loading: boolean; onChec
                     <td className="py-2.5 pr-3 font-mono text-slate-800">{w.phq2_score}</td>
                     <td className="py-2.5 pr-3 font-mono text-slate-800">{w.gad2_score}</td>
                     <td className="py-1.5 pr-3">
+                      {!SHARING_EDITABLE ? (
+                        // Backend'de paylaşım ayarı ucu henüz yok: yalnız durum gösterilir
+                        <span className="text-slate-600">{w.share_with_crew_medical ? t('Paylaşıldı', 'Shared') : t('Yalnız sende', 'Only you')}</span>
+                      ) : (
                       <button
                         type="button"
                         role="switch"
@@ -313,6 +317,7 @@ export const HistoryTab: React.FC<{ data: BehaviorData; loading: boolean; onChec
                           />
                         </span>
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Zap, RotateCw, Clock, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Button, Card, InfoBox, PageHeader } from '../../components/ui';
 import { usePrefs } from '../../context/PreferencesContext';
 import { useTelemetry } from '../../context/TelemetryContext';
@@ -12,6 +12,7 @@ import { TodayTab, type BehaviorAction } from './components/TodayTab';
 import { CheckinForm } from './components/CheckinForm';
 import { WeeklyForm } from './components/WeeklyForm';
 import { HistoryTab } from './components/HistoryTab';
+import { CognitiveTestCards } from './components/CognitiveTestCards';
 import { PvtTest } from './tests/PvtTest';
 import { RotationTest } from './tests/RotationTest';
 
@@ -144,43 +145,13 @@ export const BehaviorPage: React.FC = () => {
           )}
 
           {tab === 'tests' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {[
-                {
-                  id: 'pvt' as const,
-                  icon: <Zap className="w-6 h-6" />,
-                  title: t('Tepki testi (PVT)', 'Reaction test (PVT)'),
-                  desc: t(
-                    'Ekranda sayı belirdiğinde olabildiğince hızlı dokun. Uykusuzluk ve yorgunluğa en duyarlı ölçümdür.',
-                    'Tap as fast as you can when a number appears. The most sensitive measure of sleep loss and fatigue.'
-                  ),
-                  time: t('3 dakika · her gün', '3 minutes · daily'),
-                },
-                {
-                  id: 'rotation' as const,
-                  icon: <RotateCw className="w-6 h-6" />,
-                  title: t('Zihinsel döndürme', 'Mental rotation'),
-                  desc: t(
-                    'İki şeklin aynı mı yoksa ayna görüntüsü mü olduğuna karar ver. Uzamsal düşünmeyi ölçer.',
-                    'Decide whether two shapes are the same or mirror images. Measures spatial thinking.'
-                  ),
-                  time: t('~2 dakika · 2 günde bir', '~2 minutes · every 2 days'),
-                },
-              ].map((c) => (
-                <Card key={c.id} className="p-6 flex flex-col">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">{c.icon}</div>
-                  <h2 className="text-lg font-bold text-slate-900 mt-4">{c.title}</h2>
-                  <p className="text-sm text-slate-600 mt-1 leading-relaxed flex-1">{c.desc}</p>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-1.5 text-sm text-slate-500">
-                      <Clock className="w-4 h-4" />
-                      {c.time}
-                    </span>
-                    <Button onClick={() => setActiveTest(c.id)}>{t('Teste başla', 'Start test')}</Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <CognitiveTestCards
+              tests={data.tests}
+              onFinished={async () => {
+                setTab('today');
+                await reload();
+              }}
+            />
           )}
 
           {tab === 'history' && <HistoryTab data={data} loading={loading} onCheckin={() => onAction('checkin')} onReload={reload} />}

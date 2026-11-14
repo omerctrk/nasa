@@ -53,7 +53,12 @@ export interface MeasurementDTO {
   value_num: number | null;
   value_text: string | null;
   unit: string;
-  measured_at: string; // gün hassasiyetinde YYYY-MM-DD, saat varsa UTC timestamp
+  /** Her zaman dolu (YYYY-MM-DD) */
+  measured_date: string;
+  /** Yalnız gerçek saat biliniyorsa UTC timestamp; yoksa null */
+  measured_at: string | null;
+  time_precision?: 'date' | 'timestamp';
+  protocol_version?: string;
   mission_day: number | null;
   eye: EyeCode | null;
   source: RecordSource;

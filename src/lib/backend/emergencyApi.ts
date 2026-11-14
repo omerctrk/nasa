@@ -128,6 +128,12 @@ const mock = {
 
 // ---------------------------------------------------------------- dışa açık API
 
+/**
+ * ASTRA backend'inde /emergencies ucu henüz YOK (takımca karar verilecek).
+ * Gerçek modda istek gönderilmez; alarm ekranı astronota sesli kanaldan haber vermesini söyler.
+ */
+export const EMERGENCY_REMOTE_AVAILABLE = USE_MOCK;
+
 export const emergencyApi = {
   /** oneWayDelaySec yalnız sahte modda süreleri canlandırmak için kullanılır */
   async create(idempotencyKey: string, req: EmergencyRequest, oneWayDelaySec: number): Promise<EmergencyNotification> {

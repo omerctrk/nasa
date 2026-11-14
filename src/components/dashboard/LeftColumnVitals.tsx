@@ -3,9 +3,7 @@ import {
   Activity,
   Heart,
   Droplet,
-  Wind,
   Thermometer,
-  Eye,
   Moon,
   Gauge,
   Info,
@@ -90,9 +88,7 @@ const METRIC_ICONS: Record<string, React.ReactNode> = {
   pulse: <Heart className="w-3.5 h-3.5 text-rose-500" />,
   bp: <Gauge className="w-3.5 h-3.5 text-blue-500" />,
   glucose: <Droplet className="w-3.5 h-3.5 text-sky-500" />,
-  oxygen: <Wind className="w-3.5 h-3.5 text-cyan-500" />,
   temperature: <Thermometer className="w-3.5 h-3.5 text-amber-500" />,
-  iop: <Eye className="w-3.5 h-3.5 text-indigo-500" />,
   sleep: <Moon className="w-3.5 h-3.5 text-purple-500" />,
 };
 
@@ -100,7 +96,24 @@ export const LeftColumnVitals: React.FC = () => {
   const { vitals, setSelectedAnatomyZone, triggerManualAlert, currentAlert } = useTelemetry();
   const { t, pick } = usePrefs();
 
-  const all = Object.values(vitals);
+  const worstOf = (...st: MetricStatus[]): MetricStatus =>
+    st.includes('critical') ? 'critical' : st.includes('warning') ? 'warning' : 'normal';
+  const bpStatus = worstOf(vitals.bp_systolic.status, vitals.bp_diastolic.status);
+
+  // Backend'in ölçtüğü göstergeler: nabız, tansiyon (büyük/küçük), kan şekeri, vücut ısısı
+  const cards: {
+    id: string;
+    value: string | number;
+    unit: string;
+    status: MetricStatus;
+  }[] = [
+    { id: 'pulse', value: vitals.pulse.value, unit: vitals.pulse.unit, status: vitals.pulse.status },
+    { id: 'bp', value: `${vitals.bp_systolic.value}/${vitals.bp_diastolic.value}`, unit: 'mmHg', status: bpStatus },
+    { id: 'glucose', value: vitals.glucose.value, unit: vitals.glucose.unit, status: vitals.glucose.status },
+    { id: 'temperature', value: vitals.temperature.value, unit: vitals.temperature.unit, status: vitals.temperature.status },
+  ];
+
+  const all = cards;
   const counts = {
     normal: all.filter((m) => m.status === 'normal').length,
     warning: all.filter((m) => m.status === 'warning').length,
@@ -108,7 +121,7 @@ export const LeftColumnVitals: React.FC = () => {
   };
 
   // Genel durum: göstergelerin ve açık uyarının EN KÖTÜ seviyesi (sayısal puan yok).
-  // Backend'de seviyeler: anomali watch/review → WARNING, SANS red → CRITICAL.
+  // Backend'de seviyeler: anomali watch → WARNING, review → WARNING/CRITICAL.
   const worst =
     counts.critical > 0 || currentAlert?.severity === 'critical'
       ? 'critical'
@@ -123,7 +136,7 @@ export const LeftColumnVitals: React.FC = () => {
         : { text: t('Müdahale gerekli', 'Action required'), color: '#EF4444', cls: 'text-red-700' };
 
   const zoneFor = (id: string) =>
-    id === 'pulse' || id === 'oxygen' || id === 'bp'
+    id === 'pulse' || id === 'bp'
       ? 'chest'
       : id === 'glucose' || id === 'temperature'
         ? 'abdomen'
@@ -136,11 +149,9 @@ export const LeftColumnVitals: React.FC = () => {
 
   const ranges: Record<string, string> = {
     pulse: '60–90 bpm',
-    bp: '90–120 / 60–80',
+    bp: '90–130 / 60–85',
     glucose: '70–110 mg/dL',
-    oxygen: '96–100 %',
     temperature: '36.3–37.2 °C',
-    iop: '10–21 mmHg',
     sleep: t('7–8.5 saat', '7–8.5 h'),
   };
 
@@ -148,27 +159,9 @@ export const LeftColumnVitals: React.FC = () => {
   const shortLabel: Record<string, string> = {
     pulse: t('Nabız', 'Pulse'),
     bp: t('Tansiyon', 'BP'),
-    oxygen: 'SpO₂',
     glucose: t('Şeker', 'Glucose'),
     temperature: t('Isı', 'Temp.'),
-    iop: t('Göz', 'IOP'),
   };
-
-  // Tansiyon şimdilik sabit (backend bağlanınca gerçek veri gelecek)
-  const cards: {
-    id: string;
-    value: string | number;
-    unit: string;
-    status: MetricStatus;
-    history?: number[];
-  }[] = [
-    { id: 'pulse', value: vitals.pulse.value, unit: vitals.pulse.unit, status: vitals.pulse.status, history: vitals.pulse.history },
-    { id: 'oxygen', value: vitals.oxygen.value, unit: vitals.oxygen.unit, status: vitals.oxygen.status, history: vitals.oxygen.history },
-    { id: 'bp', value: '118/76', unit: 'mmHg', status: 'normal' },
-    { id: 'glucose', value: vitals.glucose.value, unit: vitals.glucose.unit, status: vitals.glucose.status, history: vitals.glucose.history },
-    { id: 'temperature', value: vitals.temperature.value, unit: vitals.temperature.unit, status: vitals.temperature.status, history: vitals.temperature.history },
-    { id: 'iop', value: vitals.iop.value, unit: vitals.iop.unit, status: vitals.iop.status, history: vitals.iop.history },
-  ];
 
   return (
     <div className="flex flex-col gap-5">
@@ -220,7 +213,7 @@ export const LeftColumnVitals: React.FC = () => {
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                 {t('Yaşamsal bulgular', 'Vital signs')}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(2,max-content)] 2xl:grid-cols-[repeat(3,max-content)] gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-[repeat(2,max-content)] gap-1.5">
                 {cards.map((c) => {
                   const meta = statusMeta(c.status, t);
                   const hazard = METRIC_HAZARD[c.id];
@@ -269,9 +262,9 @@ export const LeftColumnVitals: React.FC = () => {
         <FlaskConical className="w-3.5 h-3.5" />
         <span>{t('Demo uyarısı:', 'Demo alert:')}</span>
         {[
-          { k: 'iop', l: t('Göz basıncı', 'Eye pressure') },
+          { k: 'bp', l: t('Tansiyon', 'Blood pressure') },
           { k: 'pulse', l: t('Nabız', 'Heart rate') },
-          { k: 'oxygen', l: t('Oksijen', 'Oxygen') },
+          { k: 'temperature', l: t('Ateş', 'Fever') },
         ].map((d) => (
           <button
             key={d.k}

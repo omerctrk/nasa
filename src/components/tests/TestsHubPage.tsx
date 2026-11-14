@@ -1,60 +1,44 @@
 import React from 'react';
-import { Eye, Brain, ArrowRight, Clock, CalendarCheck, Info } from 'lucide-react';
+import { Brain, ArrowRight, Clock, CalendarCheck, Info } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { DisplayOnlyNotice } from '../common/DisplayOnlyNotice';
 import { usePrefs } from '../../context/PreferencesContext';
 import { playUiBeep } from '../../utils/audio';
+import { useBehaviorData } from '../../features/behavior/useBehaviorData';
+import { formatDayMonth } from '../../features/behavior/date';
 
 export const TestsHubPage: React.FC = () => {
-  const { setCurrentTab, visionTestHistory, cognitiveTestHistory, astronaut } = useTelemetry();
+  const { setCurrentTab, astronaut } = useTelemetry();
   const readOnly = !!astronaut.isDisplayOnly;
-  const { t, pick } = usePrefs();
+  const { t, lang } = usePrefs();
+  // Refleks testleri Davranış modülüne kaydedilir; son sonuç backend cevabından gelir
+  const { data: behavior } = useBehaviorData();
 
-  const lastV = visionTestHistory[0];
-  const lastC = cognitiveTestHistory[0];
+  const lastPvt = behavior.tests
+    .filter((x) => x.test_type === 'pvt' && x.valid && x.mean_rt_ms !== null)
+    .sort((a, b) => b.taken_at.localeCompare(a.taken_at))[0];
 
   const cards = [
-    {
-      tab: 'vision-test' as const,
-      icon: <Eye className="w-7 h-7" />,
-      gradient: 'from-sky-500 to-blue-700',
-      button: 'bg-blue-600 hover:bg-blue-700',
-      tag: t('Göz sağlığı', 'Eye health'),
-      tagCls: 'bg-sky-100 text-sky-800 border-sky-200',
-      title: t('Görme Keskinliği Testi', 'Visual Acuity Test'),
-      why: t(
-        'Uzayda vücut sıvısı kafaya doğru kayar ve göz arkasındaki basıncı artırabilir (SANS). Görmedeki küçük değişiklikleri erken yakalamak için düzenli test önemlidir.',
-        'In space, body fluid shifts toward the head and can raise pressure behind the eyes (SANS). Regular testing catches small changes in vision early.'
-      ),
-      how: t(
-        'Ekranda giderek küçülen harfleri görün ve doğru seçeneği işaretleyin.',
-        'Read letters that get smaller and pick the matching option.'
-      ),
-      minutes: 2,
-      freq: t('Haftada 1', 'Weekly'),
-      last: lastV ? `${lastV.acuityScore} • ${pick(lastV.date)}` : null,
-      cta: t('Görme testine başla', 'Start vision test'),
-    },
     {
       tab: 'cognitive-test' as const,
       icon: <Brain className="w-7 h-7" />,
       gradient: 'from-indigo-500 to-purple-700',
       button: 'bg-indigo-600 hover:bg-indigo-700',
-      tag: t('Dikkat & bellek', 'Alertness & memory'),
+      tag: t('Dikkat & tepki', 'Alertness & reaction'),
       tagCls: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-      title: t('Refleks & Bilişsel Test', 'Reflex & Cognitive Test'),
+      title: t('Refleks Testleri', 'Reflex Tests'),
       why: t(
         'Uyku düzensizliği, izolasyon ve radyasyon dikkat ile tepki süresini etkileyebilir. Bu test, kritik görevlerden önce zihinsel hazır olup olmadığınızı gösterir.',
         'Disrupted sleep, isolation and radiation can affect alertness and reaction time. This test shows whether you are mentally ready before critical tasks.'
       ),
       how: t(
-        'Işık yandığında hızla tıklayın, ardından gösterilen sırayı tekrar edin.',
-        'Click as soon as the light appears, then repeat the sequence you are shown.'
+        'Tepki testi (PVT): ekranda sayı belirince olabildiğince hızlı dokunun (3 dk). Zihinsel döndürme: iki şeklin aynı mı ayna mı olduğunu seçin (~2 dk).',
+        'Reaction test (PVT): tap as fast as you can when a number appears (3 min). Mental rotation: decide if two shapes are the same or mirrored (~2 min).'
       ),
       minutes: 3,
       freq: t('Günde 1', 'Daily'),
-      last: lastC ? `${lastC.reactionTimeMs} ms • ${pick(lastC.date)}` : null,
-      cta: t('Refleks testine başla', 'Start reflex test'),
+      last: lastPvt ? `${Math.round(lastPvt.mean_rt_ms!)} ms • ${formatDayMonth(lastPvt.taken_at.slice(0, 10), lang)}` : null,
+      cta: t('Refleks testlerine git', 'Go to reflex tests'),
     },
   ];
 
@@ -72,7 +56,7 @@ export const TestsHubPage: React.FC = () => {
 
       {readOnly && <DisplayOnlyNotice compact />}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5 max-w-2xl">
         {cards.map((c) => (
           <article key={c.tab} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col">
             <div className="flex items-center justify-between">
