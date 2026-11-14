@@ -30,3 +30,11 @@ class NotFound(RepositoryError):
 
 class ValidationFailed(RepositoryError):
     """Girdi veri kuralına uymuyor (ör. boş kapatma notu, hatalı hash) → 422."""
+
+
+class PreconditionFailed(RepositoryError):
+    """Kayıt istemci okuduktan sonra değişti (ETag/If-Match uyuşmuyor) → 412."""
+
+
+class Forbidden(RepositoryError):
+    """İşlem bu hesap/profil için yasak (ör. gösterim profiline veri girişi) → 403."""

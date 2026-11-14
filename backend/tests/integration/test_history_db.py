@@ -42,7 +42,12 @@ def test_a5_read_freezes_original_values_and_policy(db, astronaut, tmp_path):
     frozen_hash = snapshot_hash(snapshot)
     assert snapshot["history_records"][0]["value_num_exact"] == "12.345678"
     assert snapshot["model_input"]["threshold_findings"][0]["status"] == "not_configured"
-    source.value_num = Decimal("99")
+    # Fizyolojik kayıtlar değiştirilemez (astra_app'te UPDATE izni yok, şema kararı):
+    # kaynakta "değişim" yeni ölçüm satırı olarak gelir. Dondurulmuş snapshot etkilenmemeli.
+    db.add(MeasurementRecord(record_id=uuid4(), astronaut_id=astronaut, measurement_code=code,
+                             client_request_id=uuid4(), eye_code="NA", value_num=Decimal("99"),
+                             valid=True, measured_date=NOW.date(), measured_at=None,
+                             time_precision="date", mission_day=74, source="synthetic"))
     db.flush()
     assert snapshot["history_records"][0]["value_num_exact"] == "12.345678"
     assert snapshot_hash(snapshot) == frozen_hash

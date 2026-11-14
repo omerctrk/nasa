@@ -8,9 +8,6 @@
     {"module": "physiological", "measurement": "systolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "definition_confirmed": true},
     {"module": "physiological", "measurement": "diastolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "definition_confirmed": true},
     {"module": "physiological", "measurement": "blood_glucose", "unit": "mg/dL", "protocol_version": "module-v2", "definition_confirmed": true},
-    {"module": "physiological", "measurement": "body_temperature", "unit": "°C", "protocol_version": "module-v2", "definition_confirmed": true},
-    {"module": "sans", "measurement": "near_acuity", "unit": "logMAR", "protocol_version": "astra-v1", "definition_confirmed": true},
-    {"module": "sans", "measurement": "contrast", "unit": "logCS", "protocol_version": "astra-v1", "definition_confirmed": true},
-    {"module": "sans", "measurement": "amsler", "unit": "cells", "protocol_version": "astra-v1", "definition_confirmed": true}
+    {"module": "physiological", "measurement": "body_temperature", "unit": "°C", "protocol_version": "module-v2", "definition_confirmed": true}
   ]
 }

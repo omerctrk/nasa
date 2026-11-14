@@ -1,7 +1,7 @@
 """A6: tekrar çalıştırılabilir seed (şema v5.0 §1, iş bölümü A6).
 
 Ne ekler:
-- anomaly.MeasurementDefinitions: VIEW'ın kullandığı göz + davranış kodları
+- anomaly.MeasurementDefinitions: VIEW'ın kullandığı davranış kodları (göz/SANS kapatıldı)
 - core.Missions: M01 (gün 0 = 2027-01-05)
 - core.Astronauts: A007 (aktif) + bir gösterim profili (is_display_only=1)
 - core.Users: bir ASTRONAUT (A007) ve bir GROUND_CONTROL hesabı (Argon2 hash)
@@ -40,12 +40,10 @@ MISSION_DAY0 = date(2027, 1, 5)
 ACTIVE_ASTRONAUT_ID = "A007"
 
 # (kod, modül, kanonik birim, değer türü, kötüleşme yönü)
-# Göz: şema §8 katalog tanımı. Davranış: birimler şema aralıklarından; puan yönleri
+# Göz kodları (near_acuity/contrast/amsler) SANS modülüyle birlikte kaldırıldı (takım kararı).
+# Davranış: birimler şema aralıklarından; puan yönleri
 # teyit edilmediği için "unconfirmed" (şema: teyitsiz yön varsayılmaz).
 DEFINITIONS: tuple[tuple[str, str, str, str, str], ...] = (
-    ("near_acuity", "sans", "logMAR", "numeric", "higher"),
-    ("contrast", "sans", "logCS", "numeric", "lower"),
-    ("amsler", "sans", "cells", "integer", "higher"),
     ("mood", "behavioral", "score_0_10", "integer", "unconfirmed"),
     ("energy", "behavioral", "score_0_10", "integer", "unconfirmed"),
     ("stress", "behavioral", "score_0_10", "integer", "unconfirmed"),
@@ -62,7 +60,18 @@ DEFINITIONS: tuple[tuple[str, str, str, str, str], ...] = (
     ("rotation_accuracy", "behavioral", "ratio_0_1", "numeric", "unconfirmed"),
     ("dsst_accuracy", "behavioral", "ratio_0_1", "numeric", "unconfirmed"),
     ("dsst_correct_count", "behavioral", "count", "integer", "unconfirmed"),
-    # Fizyolojik kodlar ekipçe belirlenince buraya eklenir (birim + protokol ile).
+)
+
+# Fizyolojik kodlar: Ömer'in backend/config/history-policy.json'undaki "definition_confirmed"
+# tanımlarla AYNI kod/birim/protokol (tests/unit/test_a6.py eşitliği denetler). Protokol farklı
+# olursa geçmiş hazırlığı bu ölçümleri görmez. Kötüleşme yönü teyit edilmedi.
+PHYSIOLOGICAL_PROTOCOL = "module-v2"
+PHYSIOLOGICAL_DEFINITIONS: tuple[tuple[str, str, str, str, str], ...] = (
+    ("heart_rate", "physiological", "BPM", "numeric", "unconfirmed"),
+    ("systolic_bp", "physiological", "mmHg", "numeric", "unconfirmed"),
+    ("diastolic_bp", "physiological", "mmHg", "numeric", "unconfirmed"),
+    ("blood_glucose", "physiological", "mg/dL", "numeric", "unconfirmed"),
+    ("body_temperature", "physiological", "°C", "numeric", "unconfirmed"),
 )
 
 # --- GEÇİCİ (belgelerde yok; ekip teyidi bekliyor) ---------------------------------
@@ -87,9 +96,11 @@ class SeedReport:
 
 def _definitions(db: Session, report: SeedReport) -> None:
     existing = {d.measurement_code: d for d in db.scalars(select(MeasurementDefinition))}
-    for code, module, unit, kind, direction in DEFINITIONS:
+    rows = [(*d, PROTOCOL_VERSION) for d in DEFINITIONS] + [
+        (*d, PHYSIOLOGICAL_PROTOCOL) for d in PHYSIOLOGICAL_DEFINITIONS]
+    for code, module, unit, kind, direction, protocol in rows:
         want = dict(module=module, canonical_unit=unit, value_kind=kind,
-                    protocol_version=PROTOCOL_VERSION, worsening_direction=direction)
+                    protocol_version=protocol, worsening_direction=direction)
         row = existing.get(code)
         if row is None:
             db.add(MeasurementDefinition(measurement_code=code, **want))

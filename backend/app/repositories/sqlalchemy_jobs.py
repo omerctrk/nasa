@@ -197,7 +197,10 @@ class SqlAlchemyJobRepository:
                 """
                 WITH next_job AS (
                     SELECT TOP (1) queued.* FROM ops.AnalysisJobs AS queued WITH (UPDLOCK, READPAST, ROWLOCK)
-                    WHERE queued.state = 'QUEUED' AND queued.next_attempt_at <= SYSUTCDATETIME()
+                    -- next_attempt_at DATETIME2(3)'e yuvarlanarak (bazen yukarı) yazılır; aynı hassasiyetle
+                    -- karşılaştırılmazsa az önce oluşan iş 1 ms boyunca "gelecekte" kalır.
+                    WHERE queued.state = 'QUEUED'
+                      AND queued.next_attempt_at <= CAST(SYSUTCDATETIME() AS datetime2(3))
                       AND (queued.module <> 'sans' OR NOT EXISTS (
                           SELECT 1 FROM ops.AnalysisJobs AS active_sans
                           WHERE active_sans.astronaut_id = queued.astronaut_id

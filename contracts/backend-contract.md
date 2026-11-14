@@ -7,6 +7,11 @@ Bu belgedeki bir değeri değiştirmek sözleşme değişikliğidir: ikinizin on
 Kapsam dışı (bu sözleşme karar vermez): model sağlayıcısı, klinik eşikler, veri yeterlilik
 şartları, SANS API'nin URL/auth/sözleşmesi.
 
+> **Kapsam değişikliği (14 Kasım, takım kararı):** SANS modeli ve göz testleri projeden
+> çıkarıldı. API'deki göz/baş ağrısı uçları kaldırıldı; `sans` tabloları ve VIEW'ları DB'de
+> boş olarak duruyor (geri alınabilir). Ömer: SANS iş türünü ve `history-policy.json`'daki
+> göz satırlarını kaldırınca seed'deki 3 göz kodu da birlikte kaldırılacak.
+
 ## 1. Dosyalar ve sorumluluklar
 
 | Dosya | İçerik | Sorumlu |
@@ -115,6 +120,36 @@ fırlatır; repository hataları otomatik çevrilir.
   - `require_active_astronaut()` — ASTRONAUT, kendi profili, `is_display_only=0`
   - `require_ground_control()` — GROUND_CONTROL
 - Astronotun veri girişinde `astronaut_id` istemciden **alınmaz**; `CurrentUser`'dan atanır.
+
+### 5.1 Veri giriş uçları (A7, Aybala) — hepsi `require_active_astronaut`
+
+| Uç | Kural |
+|---|---|
+| `GET/PUT /api/v1/me/checkins/{date}` | Kişi+gün tek kayıt. PUT yeni gün 201; güncelleme `If-Match: <ETag>` ister, eski/eksik → 412 |
+| `POST /api/v1/me/weekly-assessments` | `client_request_id` tekrarı aynı içerik 200, farklı 409 |
+| `POST /api/v1/me/cognitive-tests` | Aynı; metrikler test türüne göre, `taken_at` saat dilimli |
+| `POST /api/v1/me/physiological` | Aynı; yalnız sözlükte `physiological` kod ve kanonik birim |
+
+Yeni kayıt 201, aynı isteğin tekrarı 200. Gösterim profili → 403. `astronaut_id` ve
+`mission_day` istemciden alınmaz. `mood_index` formülü teyit edilene kadar istemciden gelir
+(açık karar); `sleep_hours` yatış→uyanış süresinden hesaplanır.
+
+`app/routers/deps.py` şimdilik yer tutucudur (her isteğe 401); Ömer Ö1'de `current_user()`
+gövdesini yazar, imzalar değişmez.
+
+### 5.2 Okuma uçları (Aybala)
+
+Aralıklar `[start, end)`, en fazla 120 gün; ihlal → 422.
+
+| Uç | Yetki | Dönüş |
+|---|---|---|
+| `GET /api/v1/me/profile` | astronot | profil + görev (genetik/SANS başlangıç alanları YOK) |
+| `GET /api/v1/me/checkins?start&end` | astronot | check-in listesi |
+| `GET /api/v1/me/weekly-assessments?start&end` | astronot | yalnız kendisi; kuleye verilmez |
+| `GET /api/v1/me/cognitive-tests?start&end[&test_type]` | astronot | metrikler (`speed` yok) |
+| `GET /api/v1/me/measurements?start&end[&module]` | astronot | `MeasurementDTO` listesi (grafikler) |
+| `GET /api/v1/ground/astronauts` | kule | iki demo profili |
+| `GET /api/v1/ground/astronauts/{id}/measurements?start&end[&module]` | kule | `MeasurementDTO` (haftalık hariç) |
 
 ## 6. Repository sözleşmesi
 
