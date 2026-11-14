@@ -134,6 +134,21 @@ Yeni kayıt 201, aynı isteğin tekrarı 200. Gösterim profili → 403. `astron
 `app/routers/deps.py` şimdilik yer tutucudur (her isteğe 401); Ömer Ö1'de `current_user()`
 gövdesini yazar, imzalar değişmez.
 
+### 5.2 Okuma uçları (Aybala)
+
+Aralıklar `[start, end)`, en fazla 120 gün; ihlal → 422.
+
+| Uç | Yetki | Dönüş |
+|---|---|---|
+| `GET /api/v1/me/profile` | astronot | profil + görev (genetik/SANS başlangıç alanları YOK) |
+| `GET /api/v1/me/checkins?start&end` | astronot | check-in listesi |
+| `GET /api/v1/me/weekly-assessments?start&end` | astronot | yalnız kendisi; kuleye verilmez |
+| `GET /api/v1/me/cognitive-tests?start&end[&test_type]` | astronot | metrikler (`speed` yok) |
+| `GET /api/v1/me/eye-sessions?start_day&end_day` | astronot | oturum + 6 test |
+| `GET /api/v1/me/measurements?start&end[&module]` | astronot | `MeasurementDTO` listesi (grafikler) |
+| `GET /api/v1/ground/astronauts` | kule | iki demo profili |
+| `GET /api/v1/ground/astronauts/{id}/measurements?start&end[&module]` | kule | `MeasurementDTO` (haftalık hariç) |
+
 ## 6. Repository sözleşmesi
 
 Kaynak: `app/repositories/interfaces.py` (imzalar) ve `records.py` (veri modelleri).

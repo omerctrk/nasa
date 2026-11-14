@@ -11,7 +11,7 @@ from app.core.analysis_runtime import configure_analysis
 from app.core.worker_runtime import analysis_worker_lifespan
 from app.core.history_runtime import configure_history
 from app.core.config import get_settings
-from app.routers import entries, health
+from app.routers import entries, health, readings
 from app.schemas.common import API_PREFIX
 
 app = FastAPI(title="ASTRA HEALTH Backend", version="0.1.0", lifespan=analysis_worker_lifespan)
@@ -19,6 +19,8 @@ install_error_handling(app)
 
 app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(entries.router, prefix=API_PREFIX)
+app.include_router(readings.me, prefix=API_PREFIX)
+app.include_router(readings.ground, prefix=API_PREFIX)
 configure_auth(app, get_settings())
 configure_analysis(app)
 configure_history(app, get_settings())

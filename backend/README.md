@@ -111,4 +111,5 @@ pip install -r requirements.lock.txt && pytest
 - [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
 - [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
 - [x] A7 veri giriş API'leri (/api/v1/me/...): check-in PUT+ETag, haftalık, bilişsel, fizyolojik, göz oturumu+retest, baş ağrısı. Yetki: Ömer'in app/core/security.py dependency'leri (app/routers/deps.py yeniden dışa aktarır)
+- [x] Okuma uçları: GET /me/profile, /me/checkins, /me/weekly-assessments, /me/cognitive-tests, /me/eye-sessions, /me/measurements; GET /ground/astronauts, /ground/astronauts/{id}/measurements
 - [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
