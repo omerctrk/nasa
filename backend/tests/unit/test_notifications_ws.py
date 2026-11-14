@@ -22,8 +22,11 @@ def token(exp_in=3600):
 
 
 class FakeAuth:
+    def __init__(self):
+        self.revoked = False
+
     def resolve_user(self, tok):
-        if tok == "bad":
+        if tok == "bad" or self.revoked:
             raise ApiError(401, ErrorCode.UNAUTHORIZED, "x")
         return USER
 
@@ -79,6 +82,19 @@ def test_expired_token_closes_4401(client):
     with c.websocket_connect("/ws/v1/notifications") as ws:
         ws.send_json({"type": "authenticate", "access_token": token(exp_in=-1)})
         assert ws.receive_json()["type"] == "authenticated"
+        with pytest.raises(WebSocketDisconnect) as exc:
+            for _ in range(5):
+                ws.receive_json()
+    assert exc.value.code == 4401
+
+
+def test_deactivated_account_is_disconnected(client, monkeypatch):
+    c = client[0]
+    monkeypatch.setattr(ws_mod, "_pending", lambda user_id, already: [])
+    with c.websocket_connect("/ws/v1/notifications") as ws:
+        ws.send_json({"type": "authenticate", "access_token": token()})
+        assert ws.receive_json()["type"] == "authenticated"
+        c.app.state.auth_service.revoked = True  # hesap devre dışı bırakıldı
         with pytest.raises(WebSocketDisconnect) as exc:
             for _ in range(5):
                 ws.receive_json()

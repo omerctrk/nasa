@@ -103,6 +103,7 @@ def test_unmatched_metric_escalates_to_review():
     ev = evaluate_snapshot(job(), snap, CARDS)
     assert ev.result.level is AnomalyLevel.REVIEW
     assert ev.result.recommendation.startswith("Uçuş hekimine bildirin")
+    assert ev.provider_metadata["level_reason"].startswith("physician_escalation")
 
 
 def test_model_answer_is_used_and_metadata_recorded():
@@ -113,7 +114,10 @@ def test_model_answer_is_used_and_metadata_recorded():
     ev = evaluate_snapshot(job(), snap, CARDS, sor=sor, model_name="qwen3:14b")
     assert ev.result.summary == "Nabız yüksek."
     assert ev.result.model_version == "qwen3:14b"
-    assert ev.provider_metadata["algorithm"] == "threshold_rules_plus_llm"
+    meta = ev.provider_metadata
+    assert meta["algorithm"] == "threshold_rules_plus_llm" and meta["provider"] == "ollama"
+    assert meta["raw_model_outputs"][0]["summary"] == "Nabız yüksek."  # ham cevap saklanır
+    assert meta["prompt_version"] and meta["level_reason"]
 
 
 def test_snapshot_for_other_astronaut_or_module_is_rejected():
@@ -148,19 +152,27 @@ class FakeRepo:
         self.events.append(event)
 
 
-def test_persist_watch_creates_result_alert_and_two_events():
+def test_persist_risk_creates_result_alert_and_alert_events_only():
     snap = snapshot([record("r1", value="112")], [finding("r1", "above_range", delta="12")])
     ev = evaluate_snapshot(job(), snap, CARDS)
     j, repo = job(), FakeRepo()
     out = persist_evaluation(repo, j, ev)
     assert out.evaluation_status is EvaluationStatus.EVALUATED and out.anomaly_result_id
-    severity = {AnomalyLevel.WATCH: Severity.WARNING, AnomalyLevel.REVIEW: Severity.CRITICAL}
-    assert repo.alerts[0].severity is severity[ev.result.level]
-    types = {(e.event_type, e.audience) for e in repo.events}
-    assert types == {(EventType.ANALYSIS_COMPLETED, Audience.ASTRONAUT),
-                     (EventType.RISK_ALERT_CREATED, Audience.GROUND_CONTROL)}
-    done = next(e for e in repo.events if e.audience is Audience.ASTRONAUT)
-    assert done.target_user_id == repo.user and done.job_id == j.job_id
+    assert repo.alerts[0].severity is Severity.WARNING  # İş Bölümü §5: watch/review → WARNING
+    # Şema §8: riskli sonuçta olay alert_id taşır; ayrıca tamamlanma olayı üretilmez.
+    assert {(e.event_type, e.audience) for e in repo.events} == {
+        (EventType.RISK_ALERT_CREATED, Audience.GROUND_CONTROL),
+        (EventType.RISK_ALERT_CREATED, Audience.ASTRONAUT)}
+    assert all(e.alert_id and e.job_id is None for e in repo.events)
+    mine = next(e for e in repo.events if e.audience is Audience.ASTRONAUT)
+    assert mine.target_user_id == repo.user and mine.payload["job_id"] == str(j.job_id)
+
+
+@pytest.mark.parametrize("level", [AnomalyLevel.WATCH, AnomalyLevel.REVIEW])
+def test_every_risky_level_maps_to_warning(level):
+    from app.services.anomaly import ALERT_SEVERITY
+    assert ALERT_SEVERITY[level] is Severity.WARNING
+    assert AnomalyLevel.NORMAL not in ALERT_SEVERITY
 
 
 def test_persist_normal_has_no_alert_and_insufficient_has_no_result():

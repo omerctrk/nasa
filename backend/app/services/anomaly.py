@@ -13,7 +13,10 @@ Karar kuralları (sayı UYDURMAZ; eşikler config/thresholds.json'dan, ekip dold
   - En az bir ihlal → en az watch (sözleşmedeki "minimum watch kuralı").
   - Kart önericisi doktora yükseltme derse (acil kart, kartsız bulgu, spo2↓ …) → review.
     Bu yükseltme kararını Yusuf'un KODU verir, model değil.
-  - Alarm şiddeti: watch → WARNING, review → CRITICAL (TEYİT BEKLİYOR, ALERT_SEVERITY).
+  - Alarm şiddeti (İş Bölümü §5 "tek eşleme"): anomali watch/review → WARNING; normal → alarm yok.
+  - Bildirim (şema §8): riskli sonuçta olay alert_id taşır (kule + astronot); normal/sonuçsuz
+    tamamlanmada astronota job_id'li analysis.completed. Riskli işe ayrıca tamamlanma olayı yok.
+  - provider_metadata: sağlayıcı/model/prompt sürümü, ham model cevapları, seviye gerekçesi.
   - baseline_status=provisional: veri yeterlilik politikası yok, ready denmez.
 """
 from __future__ import annotations
@@ -56,7 +59,8 @@ CARD_METRIC = {
     "body_temperature": "body_temp",
     "crew": "crew_relation",
 }
-ALERT_SEVERITY = {AnomalyLevel.WATCH: Severity.WARNING, AnomalyLevel.REVIEW: Severity.CRITICAL}
+ALERT_SEVERITY = {AnomalyLevel.WATCH: Severity.WARNING, AnomalyLevel.REVIEW: Severity.WARNING}
+PROMPT_VERSION = "kart_onerici@401648d"  # Yusuf'un LLM dalındaki sürüm
 CONFIGURED = {"within_range", "below_range", "above_range"}
 DIRECTION = {"above_range": "up", "below_range": "down"}
 
@@ -105,9 +109,13 @@ def _deviations(drivers: list[dict]) -> dict:
     return out
 
 
-def _advice(deviations: dict, cards: list[dict], sor: Sor | None) -> dict:
+def _advice(deviations: dict, cards: list[dict], sor: Sor | None, raw: list) -> dict:
     if sor is not None:
-        return kart_onerici.oner(deviations, cards, sor=sor)
+        def recording_sor(mesajlar, sema, deneme=0):
+            answer = sor(mesajlar, sema, deneme)
+            raw.append(answer)  # ham model cevabı yalnız provider_metadata'ya gider
+            return answer
+        return kart_onerici.oner(deviations, cards, sor=recording_sor)
     # Model bağlı değil: Yusuf'un kod kararları (kart seçimi, acil kart, yükseltme) yine çalışır.
     bos = {"summary": "", "explanations": [], "recommendations": [], "unmatched_findings": []}
     unmatched = kart_onerici.eslesmeyenler(deviations, cards)
@@ -132,8 +140,8 @@ def evaluate_snapshot(job: JobRecord, snapshot: dict, cards: list[dict],
     model_input = snapshot["model_input"]
     if model_input.get("astronaut_id") != job.astronaut_id:
         raise InvalidModelOutput()
-    meta = {"algorithm": "threshold_rules", "threshold_policy_version":
-            model_input.get("threshold_policy_version")}
+    meta = {"algorithm": "threshold_rules", "provider": None, "model": None,
+            "threshold_policy_version": model_input.get("threshold_policy_version")}
     if not model_input.get("current_measurements"):
         return Evaluation(EvaluationStatus.INSUFFICIENT_DATA,
                           outcome={"reason": "no_current_measurements",
@@ -149,9 +157,13 @@ def evaluate_snapshot(job: JobRecord, snapshot: dict, cards: list[dict],
 
     drivers = _breaches(model_input)
     summary, recommendation, level = "Güncel ölçümler tanımlı eşikler içinde.", "", AnomalyLevel.NORMAL
+    meta["level_reason"] = "no_threshold_breach"
     if drivers:
-        advice = _advice(_deviations(drivers), cards, sor)
+        raw: list = []
+        advice = _advice(_deviations(drivers), cards, sor, raw)
         level = AnomalyLevel.REVIEW if advice["escalate_to_physician"] else AnomalyLevel.WATCH
+        meta["level_reason"] = ("physician_escalation: " + "; ".join(advice["escalation_reasons"])
+                                if advice["escalate_to_physician"] else "threshold_breach_minimum_watch")
         summary = advice["summary"].strip() or _code_summary(drivers)
         actions = [r["action"] for r in advice["recommendations"]]
         if advice["escalate_to_physician"]:
@@ -164,7 +176,9 @@ def evaluate_snapshot(job: JobRecord, snapshot: dict, cards: list[dict],
                         "unmatched_findings": advice["unmatched_findings"],
                         "escalation_reasons": advice["escalation_reasons"]})
         if sor is not None:
-            meta |= {"algorithm": "threshold_rules_plus_llm", "model": model_name,
+            meta |= {"algorithm": "threshold_rules_plus_llm", "provider": "ollama",
+                     "model": model_name, "prompt_version": PROMPT_VERSION,
+                     "raw_model_outputs": raw,
                      "llm_attempts": advice.get("attempts"),
                      "llm_dropped": len(advice.get("dropped", [])),
                      "llm_error": bool(advice.get("error"))}
@@ -195,7 +209,21 @@ def persist_evaluation(repo, job: JobRecord, evaluation: Evaluation) -> JobOutco
                 astronaut_id=job.astronaut_id, module=AnalysisModule.ANOMALY,
                 severity=severity, anomaly_result_id=result_id))
     astronaut_user = repo.get_user_for_astronaut(job.astronaut_id)
-    if astronaut_user is not None:
+    if alert is not None:
+        # Riskli sonuç: olay alert_id taşır; kule ve (varsa) astronot hesabı alır.
+        payload = {"alert_id": str(alert.alert_id), "astronaut_id": job.astronaut_id,
+                   "module": "anomaly", "severity": alert.severity.value,
+                   "level": evaluation.result.level.value, "job_id": str(job.job_id),
+                   "anomaly_result_id": str(result_id)}
+        repo.create_notification_event(NotificationEventCreate(
+            event_type=EventType.RISK_ALERT_CREATED, audience=Audience.GROUND_CONTROL,
+            target_user_id=None, alert_id=alert.alert_id, payload=payload))
+        if astronaut_user is not None:
+            repo.create_notification_event(NotificationEventCreate(
+                event_type=EventType.RISK_ALERT_CREATED, audience=Audience.ASTRONAUT,
+                target_user_id=astronaut_user, alert_id=alert.alert_id, payload=payload))
+    elif astronaut_user is not None:
+        # Normal veya sonuçsuz tamamlanma: job_id'li tek tamamlanma olayı.
         repo.create_notification_event(NotificationEventCreate(
             event_type=EventType.ANALYSIS_COMPLETED, audience=Audience.ASTRONAUT,
             target_user_id=astronaut_user, job_id=job.job_id,
@@ -203,14 +231,6 @@ def persist_evaluation(repo, job: JobRecord, evaluation: Evaluation) -> JobOutco
                      "evaluation_status": evaluation.status.value,
                      "anomaly_result_id": str(result_id) if result_id else None,
                      "level": evaluation.result.level.value if evaluation.result else None}))
-    if alert is not None:
-        repo.create_notification_event(NotificationEventCreate(
-            event_type=EventType.RISK_ALERT_CREATED, audience=Audience.GROUND_CONTROL,
-            target_user_id=None, alert_id=alert.alert_id,
-            payload={"alert_id": str(alert.alert_id), "astronaut_id": job.astronaut_id,
-                     "module": "anomaly", "severity": alert.severity.value,
-                     "level": evaluation.result.level.value,
-                     "anomaly_result_id": str(result_id)}))
     return JobOutcome(state=JobState.COMPLETED, evaluation_status=evaluation.status,
                       anomaly_result_id=result_id, outcome=evaluation.outcome,
                       provider_metadata=evaluation.provider_metadata or None)

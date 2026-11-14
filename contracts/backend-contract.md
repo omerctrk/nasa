@@ -274,9 +274,12 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
   açıklama, öneri). Boşsa kart seçimi/yükseltme yine kodla yapılır, özet kodla yazılır.
   Kart metrik adları: `pvt_mean_rt→pvt_mean_rt_ms`, `rotation_mean_rt→rotation_mean_rt_ms`,
   `body_temperature→body_temp`, `crew→crew_relation`.
-- **Ö6 yazım** (aynı Session): `anomaly_results` → (watch/review ise) `ops.Alerts` →
-  astronota `analysis.completed`, kuleye `risk.alert.created` olayı.
-- **Teyit bekleyen**: alarm şiddeti eşlemesi `watch→WARNING`, `review→CRITICAL`.
+- **Ö6 yazım** (aynı Session): `anomaly_results` → (watch/review ise) `ops.Alerts` → olaylar.
+  Riskli sonuç: `risk.alert.created` (alert_id) kuleye ve astronota; ayrıca tamamlanma olayı yok.
+  Normal/sonuçsuz: astronota `analysis.completed` (job_id). (Şema §8 Bildirim)
+- Alarm şiddeti (İş Bölümü §5 tek eşleme): anomali `watch`/`review` → `WARNING`.
+- `provider_metadata_json`: sağlayıcı, model, prompt sürümü, ham model cevapları, seviye gerekçesi.
+- WebSocket her gönderim turunda hesabı yeniden doğrular; devre dışı hesap 4401 ile kapanır.
 - Uçlar: `GET /me/anomaly-results?start&end`, `GET /me/anomaly-results/{id}`,
   `GET /me/alerts?status=`; kule: `GET /ground/astronauts/{id}/anomaly-results?start&end`,
   `GET /ground/anomaly-results/{id}`, `GET /ground/alerts?status=&astronaut_id=`,

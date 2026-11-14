@@ -56,9 +56,10 @@ def test_persist_review_writes_result_alert_events_and_reads_back(db, astronaut,
     assert [r.id for r in listed] == [out.anomaly_result_id]
 
     open_alerts = svc.alerts(db, [AlertStatus.OPEN], astronaut)
-    assert len(open_alerts) == 1 and open_alerts[0].severity.value == "CRITICAL"
-    events = repo.list_pending_events(users["astro"])
-    assert [e.event_type for e in events if e.job_id == job.job_id] == [EventType.ANALYSIS_COMPLETED]
+    assert len(open_alerts) == 1 and open_alerts[0].severity.value == "WARNING"
+    mine = [e for e in repo.list_pending_events(users["astro"])
+            if e.alert_id == open_alerts[0].alert_id]
+    assert [e.event_type for e in mine] == [EventType.RISK_ALERT_CREATED]  # tamamlanma olayı yok
     ground_events = [e for e in repo.list_pending_events(users["ground1"])
                      if e.alert_id == open_alerts[0].alert_id]
     assert [e.event_type for e in ground_events] == [EventType.RISK_ALERT_CREATED]
@@ -86,3 +87,6 @@ def test_normal_result_has_no_alert(db, astronaut, users, job):
     out = persist_evaluation(repo, job, evaluate_snapshot(job, snapshot(astronaut, "within_range"), CARDS))
     assert svc.result(db, out.anomaly_result_id).level is AnomalyLevel.NORMAL
     assert svc.alerts(db, None, astronaut) == []
+    done = [e for e in SqlAlchemyRepository(db).list_pending_events(users["astro"])
+            if e.job_id == job.job_id]
+    assert [e.event_type for e in done] == [EventType.ANALYSIS_COMPLETED]

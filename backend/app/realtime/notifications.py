@@ -8,6 +8,8 @@ Protokol:
   3. İstemci her olay için {"type":"receipt","event_id"} gönderir → EventReceipts.
      Teslim alınmayan olay yeniden bağlanınca tekrar gelir; frontend event_id ile ayıklar.
   4. Token süresi dolunca bağlantı 4401 ile kapanır (istemci yeni token'la yeniden bağlanır).
+  5. Hesap her gönderim turunda yeniden doğrulanır (şema §8): devre dışı/silinmiş hesabın
+     bağlantısı 4401 ile kapanır.
 
 Yeni olaylar ws_poll_seconds aralığıyla DB'den okunur (tek API worker; ayrı mesaj kuyruğu yok).
 Her DB işlemi kendi thread'inde kendi Session'ını açar/kapatır.
@@ -70,34 +72,40 @@ async def _authenticate(ws: WebSocket, timeout: float):
     try:
         message = await asyncio.wait_for(ws.receive_json(), timeout)
     except (TimeoutError, json.JSONDecodeError, WebSocketDisconnect):
-        return None, None
+        return None, None, None
     if not isinstance(message, dict) or message.get("type") != "authenticate" \
             or not isinstance(message.get("access_token"), str):
-        return None, None
+        return None, None, None
     service = getattr(ws.app.state, "auth_service", None)
     if service is None:
-        return None, None
+        return None, None, None
     token = message["access_token"]
     try:
         user = await run_in_threadpool(service.resolve_user, token)
-        return user, _token_expiry(token)
+        return user, _token_expiry(token), token
     except (ApiError, jwt.InvalidTokenError, KeyError, ValueError):
-        return None, None
+        return None, None, None
 
 
 @router.websocket(WS_NOTIFICATIONS_PATH)
 async def notifications(ws: WebSocket):
     settings = get_settings()
     await ws.accept()
-    user, expires_at = await _authenticate(ws, settings.ws_auth_timeout_seconds)
+    user, expires_at, token = await _authenticate(ws, settings.ws_auth_timeout_seconds)
     if user is None:
         await ws.close(code=CLOSE_UNAUTHORIZED)
         return
     await ws.send_json({"type": "authenticated", "user_id": str(user.user_id), "role": user.role.value})
     sent: set[uuid.UUID] = set()
 
+    service = ws.app.state.auth_service
+
     async def sender():
         while True:
+            try:  # hesap hâlâ etkin mi? (her turda)
+                await run_in_threadpool(service.resolve_user, token)
+            except ApiError:
+                return  # → bağlantı 4401 ile kapanır
             for event in await run_in_threadpool(_pending, user.user_id, sent):
                 await ws.send_json(event)
                 sent.add(uuid.UUID(event["event_id"]))
@@ -126,7 +134,7 @@ async def notifications(ws: WebSocket):
             nonlocal expired
             try:
                 await part()
-                expired = part is expiry
+                expired = part is not receiver  # süre doldu veya hesap geçersizleşti
             except WebSocketDisconnect:
                 pass
             except Exception:  # noqa: BLE001 — bağlantı kapanır, içerik loglanmaz
