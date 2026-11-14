@@ -26,3 +26,7 @@ class SnapshotConflict(RepositoryError):
 
 class NotFound(RepositoryError):
     """Kayıt yok veya çağıranın erişim kapsamında değil → 404."""
+
+
+class ValidationFailed(RepositoryError):
+    """Girdi veri kuralına uymuyor (ör. boş kapatma notu, hatalı hash) → 422."""

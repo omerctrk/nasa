@@ -7,7 +7,12 @@ from pathlib import Path
 import pytest
 
 from app.db.base import Base
-from app.repositories.interfaces import IdentityRepository, ResultRepository
+from app.repositories.interfaces import (
+    AlertRepository,
+    IdentityRepository,
+    JobRepository,
+    ResultRepository,
+)
 from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 from app.repositories.sqlalchemy_results import to_json
 
@@ -65,7 +70,7 @@ def test_app_role_permissions_in_0003():
     assert all("DELETE" not in p for p in perms.values())
 
 
-@pytest.mark.parametrize("proto", [IdentityRepository, ResultRepository])
+@pytest.mark.parametrize("proto", [IdentityRepository, ResultRepository, JobRepository, AlertRepository])
 def test_sqlalchemy_repository_matches_protocols(proto):
     for name, fn in inspect.getmembers(proto, inspect.isfunction):
         if name.startswith("_"):
