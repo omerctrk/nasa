@@ -189,7 +189,7 @@ export interface NotificationEvent {
   event_id: string; // tekrarları ayıklamak için
   job_id: string | null;
   alert_id: string | null;
-  event_type: 'analysis.completed' | 'risk.alert.created';
+  event_type: 'analysis.completed' | 'risk.alert.created' | 'emergency.updated';
   audience: UserRole;
   payload_json: unknown;
   created_at: string;

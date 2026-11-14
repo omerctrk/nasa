@@ -84,7 +84,7 @@ export const HazardsPanel: React.FC = () => {
     <section aria-labelledby="hazards-heading">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2 px-1">
         <h2 id="hazards-heading" className="text-sm font-bold text-slate-800">
-          {t('Uzay uçuşunun 5 tehlikesi', 'The 5 hazards of spaceflight')}
+          {t('Görev Ortam Koşulları', 'Mission Environment Conditions')}
         </h2>
         <span className="text-xs text-slate-500">{t('NASA İnsan Araştırma Programı çerçevesi', 'NASA Human Research Program framework')}</span>
       </div>

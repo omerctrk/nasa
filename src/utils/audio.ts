@@ -95,6 +95,30 @@ export const playWarningTone = () => {
   }
 };
 
+// Acil durum sireni: iki tonlu kısa alarm (döngü çağıran tarafta)
+export const playSirenTone = () => {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(960, now);
+    osc.frequency.setValueAtTime(720, now + 0.22);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.06, now + 0.02);
+    gain.gain.setValueAtTime(0.06, now + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.46);
+  } catch {
+    // Ignore
+  }
+};
+
 // Reaction test cue beep
 export const playCueBeep = () => {
   const ctx = getAudioContext();

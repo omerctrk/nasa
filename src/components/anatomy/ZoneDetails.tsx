@@ -35,11 +35,11 @@ export const ZoneDetails: React.FC<{ content: ZoneContent; onNavigate?: () => vo
         </div>
       </section>
 
-      {/* Uzayda ne oluyor? */}
+      {/* Uzay etkisi */}
       <section className="p-4 bg-sky-50 rounded-xl border border-sky-200">
         <h3 className="flex items-center gap-1.5 text-sm font-bold text-sky-800">
           <Orbit className="w-4 h-4" />
-          {t('Uzayda ne oluyor?', 'What happens in space?')}
+          {t('Uzay Etkisi', 'Spaceflight Effect')}
         </h3>
         <p className="text-sm text-slate-700 leading-relaxed mt-1.5">{content.spaceEffect}</p>
       </section>

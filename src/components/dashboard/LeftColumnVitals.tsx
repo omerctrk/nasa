@@ -14,63 +14,20 @@ import {
 import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
 import { MetricStatus } from '../../types/telemetry';
-import { AnalysisStatus } from './AnalysisStatus';
+import { AiInsightPanel } from './AiInsightPanel';
 import { TodayGoals } from './TodayGoals';
 import { playUiBeep } from '../../utils/audio';
 import { statusMeta, vitalLabel } from '../../utils/status';
 import { HAZARDS, METRIC_HAZARD } from '../../data/hazards';
-
-// Mini trend grafiği
-const Sparkline: React.FC<{ data: number[]; color: string }> = ({ data, color }) => {
-  const gid = useId().replace(/:/g, '');
-  if (!data || data.length < 2) return null;
-
-  const width = 120;
-  const height = 30;
-  const pad = 3;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  const pts = data.map((d, i) => [
-    pad + (i / (data.length - 1)) * (width - 2 * pad),
-    height - pad - ((d - min) / range) * (height - 2 * pad),
-  ]);
-  const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const [lx, ly] = pts[pts.length - 1];
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-8" preserveAspectRatio="none" aria-hidden>
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`${line} ${width - pad},${height} ${pad},${height}`} fill={`url(#${gid})`} />
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-        points={line}
-        style={{ filter: `drop-shadow(0 0 3px ${color})` }}
-      />
-      <circle cx={lx} cy={ly} r="2.5" fill={color} vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-};
 
 // Normal aralıktaki gösterge oranı (ortak "sağlık puanı" değildir; backend böyle bir puan üretmez).
 // Neon görünüm: parlayan halka, yavaş dönen yörünge, ışıldayan sayı.
 const ScoreRing: React.FC<{ normal: number; total: number; color: string }> = ({ normal, total, color }) => {
   const gid = useId().replace(/:/g, '');
   const ratio = total ? normal / total : 0;
-  const size = 148;
+  const size = 136;
   const c = size / 2;
-  const radius = 56;
+  const radius = 51;
   const stroke = 9;
   const circ = 2 * Math.PI * radius;
   return (
@@ -130,13 +87,13 @@ const ScoreRing: React.FC<{ normal: number; total: number; color: string }> = ({
 };
 
 const METRIC_ICONS: Record<string, React.ReactNode> = {
-  pulse: <Heart className="w-4 h-4 text-rose-500" />,
-  bp: <Gauge className="w-4 h-4 text-blue-500" />,
-  glucose: <Droplet className="w-4 h-4 text-sky-500" />,
-  oxygen: <Wind className="w-4 h-4 text-cyan-500" />,
-  temperature: <Thermometer className="w-4 h-4 text-amber-500" />,
-  iop: <Eye className="w-4 h-4 text-indigo-500" />,
-  sleep: <Moon className="w-4 h-4 text-purple-500" />,
+  pulse: <Heart className="w-3.5 h-3.5 text-rose-500" />,
+  bp: <Gauge className="w-3.5 h-3.5 text-blue-500" />,
+  glucose: <Droplet className="w-3.5 h-3.5 text-sky-500" />,
+  oxygen: <Wind className="w-3.5 h-3.5 text-cyan-500" />,
+  temperature: <Thermometer className="w-3.5 h-3.5 text-amber-500" />,
+  iop: <Eye className="w-3.5 h-3.5 text-indigo-500" />,
+  sleep: <Moon className="w-3.5 h-3.5 text-purple-500" />,
 };
 
 export const LeftColumnVitals: React.FC = () => {
@@ -187,6 +144,16 @@ export const LeftColumnVitals: React.FC = () => {
     sleep: t('7–8.5 saat', '7–8.5 h'),
   };
 
+  // Küçük kutucuklar için kısa adlar (tam ad üzerine gelince görünür)
+  const shortLabel: Record<string, string> = {
+    pulse: t('Nabız', 'Pulse'),
+    bp: t('Tansiyon', 'BP'),
+    oxygen: 'SpO₂',
+    glucose: t('Şeker', 'Glucose'),
+    temperature: t('Isı', 'Temp.'),
+    iop: t('Göz', 'IOP'),
+  };
+
   // Tansiyon şimdilik sabit (backend bağlanınca gerçek veri gelecek)
   const cards: {
     id: string;
@@ -196,8 +163,8 @@ export const LeftColumnVitals: React.FC = () => {
     history?: number[];
   }[] = [
     { id: 'pulse', value: vitals.pulse.value, unit: vitals.pulse.unit, status: vitals.pulse.status, history: vitals.pulse.history },
-    { id: 'bp', value: '118/76', unit: 'mmHg', status: 'normal' },
     { id: 'oxygen', value: vitals.oxygen.value, unit: vitals.oxygen.unit, status: vitals.oxygen.status, history: vitals.oxygen.history },
+    { id: 'bp', value: '118/76', unit: 'mmHg', status: 'normal' },
     { id: 'glucose', value: vitals.glucose.value, unit: vitals.glucose.unit, status: vitals.glucose.status, history: vitals.glucose.history },
     { id: 'temperature', value: vitals.temperature.value, unit: vitals.temperature.unit, status: vitals.temperature.status, history: vitals.temperature.history },
     { id: 'iop', value: vitals.iop.value, unit: vitals.iop.unit, status: vitals.iop.status, history: vitals.iop.history },
@@ -225,85 +192,74 @@ export const LeftColumnVitals: React.FC = () => {
             </span>
           </div>
 
-          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-5">
-            <div className="flex items-center gap-5 shrink-0">
-            <ScoreRing normal={counts.normal} total={all.length} color={verdict.color} />
-            <div className="min-w-0">
-              <div className={`text-lg font-bold leading-snug ${verdict.cls}`}>{verdict.text}</div>
-              <ul className="mt-2 space-y-1 text-sm text-slate-600">
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="font-mono font-bold text-slate-800">{counts.normal}</span> {t('normal', 'normal')}
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="font-mono font-bold text-slate-800">{counts.warning}</span> {t('dikkat', 'caution')}
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="font-mono font-bold text-slate-800">{counts.critical}</span> {t('kritik', 'critical')}
-                </li>
-              </ul>
-            </div>
+          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-4">
+            {/* Odak: halka */}
+            <div className="flex flex-1 items-center md:justify-center gap-3 min-w-0">
+              <ScoreRing normal={counts.normal} total={all.length} color={verdict.color} />
+              <div className="min-w-0">
+                <div className={`text-base font-bold leading-snug ${verdict.cls}`}>{verdict.text}</div>
+                <ul className="mt-2 space-y-1 text-sm text-slate-600">
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="font-mono font-bold text-slate-800">{counts.normal}</span> {t('normal', 'normal')}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="font-mono font-bold text-slate-800">{counts.warning}</span> {t('dikkat', 'caution')}
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="font-mono font-bold text-slate-800">{counts.critical}</span> {t('kritik', 'critical')}
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            {/* Anomali analizi: geniş ekranda sağda */}
-            <div className="flex-1 min-w-0 md:pl-6 md:border-l md:border-slate-200/70 md:[&>div]:mt-0 md:[&>div]:pt-0 md:[&>div]:border-t-0">
-              <AnalysisStatus />
+            {/* Yaşamsal bulgular: küçük kutucuklar */}
+            <div className="min-w-0 md:flex-none md:pl-4 md:border-l md:border-slate-200/70" aria-label={t('Yaşamsal bulgular', 'Vital signs')}>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                {t('Yaşamsal bulgular', 'Vital signs')}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(2,max-content)] 2xl:grid-cols-[repeat(3,max-content)] gap-1.5">
+                {cards.map((c) => {
+                  const meta = statusMeta(c.status, t);
+                  const hazard = METRIC_HAZARD[c.id];
+                  const tip = [
+                    `${vitalLabel(c.id, t)}: ${c.value} ${c.unit}`,
+                    `${t('Aralık', 'Range')}: ${ranges[c.id]}`,
+                    c.status !== 'normal' ? meta.label : '',
+                    hazard ? `${t('İlişkili tehlike', 'Related hazard')}: ${pick(HAZARDS[hazard].name)}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => handleCardClick(c.id)}
+                      title={tip}
+                      className={`text-left rounded-lg border px-2.5 py-1.5 md:min-w-[5.75rem] transition-all hover:-translate-y-0.5 ${meta.card}`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="flex items-center gap-1 min-w-0">
+                          {METRIC_ICONS[c.id] ?? <Activity className="w-3.5 h-3.5 text-slate-500" />}
+                          <span className="text-[11px] font-semibold text-slate-500 truncate">{shortLabel[c.id] ?? vitalLabel(c.id, t)}</span>
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1 whitespace-nowrap">
+                        <span className={`text-sm font-bold font-mono tracking-tight ${meta.text}`}>{c.value}</span>
+                        <span className="text-[10px] text-slate-500">{c.unit}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
 
-      {/* Yaşamsal bulgular: sade kartlar */}
-      <section aria-labelledby="vitals-heading">
-        <h2 id="vitals-heading" className="text-sm font-bold text-slate-800 mb-2.5 px-1">
-          {t('Yaşamsal Bulgular', 'Vital Signs')}
-        </h2>
-
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
-          {cards.map((c) => {
-            const meta = statusMeta(c.status, t);
-            const hazard = METRIC_HAZARD[c.id];
-            return (
-              <button
-                type="button"
-                key={c.id}
-                onClick={() => handleCardClick(c.id)}
-                title={hazard ? `${t('İlişkili tehlike', 'Related hazard')}: ${pick(HAZARDS[hazard].name)}` : undefined}
-                className={`text-left rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 ${meta.card}`}
-              >
-                <div className="flex items-center justify-between gap-1">
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    {METRIC_ICONS[c.id] ?? <Activity className="w-4 h-4 text-slate-500" />}
-                    <span className="text-xs font-semibold text-slate-600 truncate">{vitalLabel(c.id, t)}</span>
-                  </span>
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} title={meta.label} />
-                </div>
-
-                <div className="mt-2 flex items-baseline gap-1 whitespace-nowrap">
-                  <span className={`text-2xl font-bold font-mono tracking-tight ${meta.text}`}>{c.value}</span>
-                  <span className="text-xs text-slate-500">{c.unit}</span>
-                </div>
-
-                <div className="mt-1 h-8">
-                  {c.history ? (
-                    <Sparkline data={c.history} color={meta.hex === '#10B981' ? '#0EA5E9' : meta.hex} />
-                  ) : (
-                    <div className="h-full flex items-center text-xs text-slate-400">{t('Manuel ölçüm', 'Manual reading')}</div>
-                  )}
-                </div>
-
-                <div className="mt-1 flex items-center justify-between gap-1 text-[11px]">
-                  <span className="text-slate-400 font-mono truncate">{ranges[c.id]}</span>
-                  {c.status !== 'normal' && (
-                    <span className={`px-1.5 py-0.5 rounded-md border font-semibold shrink-0 ${meta.badge}`}>{meta.label}</span>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Yapay zekâ sağlık asistanı */}
+      <AiInsightPanel />
 
       {/* Bugünkü hedefler: yatay */}
       <TodayGoals horizontal />

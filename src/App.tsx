@@ -13,6 +13,7 @@ import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { BehaviorPage } from './features/behavior/BehaviorPage';
 import { ActionPlanModal } from './components/dashboard/ActionPlanModal';
+import { EmergencyAlarm } from './components/emergency/EmergencyAlarm';
 import { AnatomyDetailsModal } from './components/anatomy/AnatomyDetailsModal';
 
 const AppContent: React.FC = () => {
@@ -54,6 +55,7 @@ const AppContent: React.FC = () => {
 
       {/* Global Modals */}
       <ActionPlanModal />
+      <EmergencyAlarm />
       <AnatomyDetailsModal
         zone={selectedAnatomyZone}
         onClose={() => setSelectedAnatomyZone(null)}

@@ -63,3 +63,15 @@ Ekranlar kendi modelleriyle çalışmaya devam eder. Backend verisi tek bir katm
 | Haftalık `POST /behavioral/weekly-assessments` | `Idempotency-Key: <UUID>` | `client_request_id` (aynı UUID) |
 
 Ağ hatasında aynı UUID ile tekrar gönderilir; şemadaki `UQ (astronaut_id, client_request_id)` çift kaydı önler.
+
+## Acil durum bildirimi (kırmızı alarm)
+
+Bir yaşamsal bulgu `critical` olduğunda ekran otomatik olarak Dünya'daki Görev Kontrol Merkezi'ne acil bildirim gönderir (`src/lib/backend/emergencyApi.ts`, ekran: `src/components/emergency/EmergencyAlarm.tsx`).
+
+Uç noktalar **varsayımdır**, backend ile netleştirilecek:
+
+- `POST /emergencies` + `Idempotency-Key` başlığı. Gövde: `client_request_id, astronaut_id, measurement_code, value, unit, detected_at, severity: "CRITICAL"`
+- `GET /emergencies/{emergency_id}` → `status: SENT | RECEIVED | SURGEON_ASSIGNED | SURGEON_CONNECTED` ve her adımın zamanı (`sent_at, received_at, surgeon_assigned_at, surgeon_connected_at`)
+- WebSocket olayı: `event_type: "emergency.updated"` (gelince ekran kaydı yeniden okur; yoksa 1 sn'de bir sorgular)
+
+Kurallar: ağ hatasında aynı anahtarla otomatik tekrar denenir (aynı acil durum merkeze iki kez düşmez); "doktor yönlendirildi" bilgisi yalnız sunucudan gelir, ekran uydurmaz. Teyit beklenen: uç nokta yolları, uçuş cerrahı atamasının nasıl kaydedildiği, astronotun bu uca yazma yetkisi.
