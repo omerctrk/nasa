@@ -2,16 +2,31 @@
 
 Kural (iş bölümü §5): repository kendi başına commit yapmaz; commit servis sınırında yapılır.
 Model/API beklerken transaction açık tutulmaz.
+
+Engine ilk kullanımda oluşturulur: uygulama/araçlar DB ayarı olmadan import edilebilir
+(birim testleri, OpenAPI üretimi). Bağlantı yalnız gerçekten gerektiğinde açılır.
 """
 from collections.abc import Iterator
+from functools import lru_cache
 
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
 
-engine = create_engine(get_settings().database_url, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+@lru_cache
+def get_engine() -> Engine:
+    return create_engine(get_settings().database_url, pool_pre_ping=True)
+
+
+@lru_cache
+def _factory() -> sessionmaker[Session]:
+    return sessionmaker(bind=get_engine(), autoflush=False, expire_on_commit=False)
+
+
+def SessionLocal() -> Session:  # noqa: N802 — eski adıyla çağrılabilsin
+    return _factory()()
 
 
 def get_db() -> Iterator[Session]:

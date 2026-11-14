@@ -110,4 +110,5 @@ pip install -r requirements.lock.txt && pytest
 - [x] A4 behavioral (3) + evaluation.gercek_durum; migration 0005; eval yalnız astra_eval_role'e açık
 - [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
 - [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
-- [ ] [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
+- [x] A7 veri giriş API'leri (/api/v1/me/...): check-in PUT+ETag, haftalık, bilişsel, fizyolojik, göz oturumu+retest, baş ağrısı. Yetki: app/routers/deps.py YER TUTUCU (Ömer Ö1)
+- [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import

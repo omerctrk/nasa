@@ -116,6 +116,24 @@ fırlatır; repository hataları otomatik çevrilir.
   - `require_ground_control()` — GROUND_CONTROL
 - Astronotun veri girişinde `astronaut_id` istemciden **alınmaz**; `CurrentUser`'dan atanır.
 
+### 5.1 Veri giriş uçları (A7, Aybala) — hepsi `require_active_astronaut`
+
+| Uç | Kural |
+|---|---|
+| `GET/PUT /api/v1/me/checkins/{date}` | Kişi+gün tek kayıt. PUT yeni gün 201; güncelleme `If-Match: <ETag>` ister, eski/eksik → 412 |
+| `POST /api/v1/me/weekly-assessments` | `client_request_id` tekrarı aynı içerik 200, farklı 409 |
+| `POST /api/v1/me/cognitive-tests` | Aynı; metrikler test türüne göre, `taken_at` saat dilimli |
+| `POST /api/v1/me/physiological` | Aynı; yalnız sözlükte `physiological` kod ve kanonik birim |
+| `POST /api/v1/me/eye-sessions` | 3 test × OD/OS; `session_id` = `S-<astronot>-D074` / `M060`; retest için `retest_of` |
+| `POST /api/v1/me/symptoms/headache` | Baş ağrısının tek kaynağı; check-in'de `headache` → 422 |
+
+Yeni kayıt 201, aynı isteğin tekrarı 200. Gösterim profili → 403. `astronaut_id` ve
+`mission_day` istemciden alınmaz. `mood_index` formülü teyit edilene kadar istemciden gelir
+(açık karar); `sleep_hours` yatış→uyanış süresinden hesaplanır.
+
+`app/routers/deps.py` şimdilik yer tutucudur (her isteğe 401); Ömer Ö1'de `current_user()`
+gövdesini yazar, imzalar değişmez.
+
 ## 6. Repository sözleşmesi
 
 Kaynak: `app/repositories/interfaces.py` (imzalar) ve `records.py` (veri modelleri).
