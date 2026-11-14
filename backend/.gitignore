@@ -1,0 +1,23 @@
+# Gizli bilgiler (iş bölümü §6, §9)
+.env
+*.env
+!.env.example
+
+# Eski SANS SQLite dosyası ve üretilmiş sentetik veri
+*.sqlite
+*.sqlite3
+*.db
+backend/data/
+backend/scripts/output/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Editör / işletim sistemi
+.vscode/
+.idea/
+.DS_Store

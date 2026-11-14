@@ -1,0 +1,23 @@
+{
+  "record_id": "eye:42",
+  "astronaut_id": "A007",
+  "mission_id": "M01",
+  "module": "sans",
+  "measurement": "near_acuity",
+  "value_num": 0.12,
+  "value_text": null,
+  "unit": "logMAR",
+  "protocol_version": "module-v2",
+  "measured_date": "2027-03-20",
+  "measured_at": null,
+  "time_precision": "date",
+  "mission_day": 74,
+  "eye": "OD",
+  "source": "manual",
+  "valid": true,
+  "quality_score": 0.95,
+  "session_id": "S-A007-D074",
+  "metadata_json": {
+    "original_source": "test_screen"
+  }
+}

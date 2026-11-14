@@ -1,0 +1,14 @@
+# Secret ve önbellekler imaja alınmaz (şema §11)
+.env
+*.env
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+*.sqlite
+*.sqlite3
+data/
+scripts/output/
+tests/

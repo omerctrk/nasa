@@ -1,0 +1,4 @@
+# Gerçek gizli değerler (şema §8) — proje kökündeki .env
+.env
+*.env
+!.env.example

@@ -1,0 +1,4 @@
+{
+  "type": "authenticate",
+  "access_token": "<jwt>"
+}
