@@ -13,6 +13,20 @@ docker compose up api              # API, astra_app hesabıyla açılır
 
 Kontrol: http://localhost:8000/api/v1/health/ready adresi `"db_user": "astra_app"` döndürmeli. `sa` değil `astra_app` yazması, API'nin sınırlı hesapla çalıştığını kanıtlar. Swagger: http://localhost:8000/docs
 
+## Knowledge Card API (0007)
+
+`/api/v1/knowledge-cards` altında listeleme, oluşturma, kimlikle okuma, tam güncelleme
+(`PUT`) ve silme uçları vardır. Tüm uçlar `GROUND_CONTROL` token'ı ister. İsteklerde
+`metrics` bir metin dizisidir; SQL'de JSON olarak saklanır. `content_hash`, kartın
+içerik alanlarının kanonik JSON'undan SHA-256 ile sunucuda hesaplanır. Repository
+transaction'ı kapatmaz; yazma işlemini servis commit eder.
+
+Gerçek SQL CRUD kabul testi, her testten sonra rollback yapar:
+
+```bash
+docker compose run --rm -e RUN_DB_TESTS=1 api pytest -q tests/integration/test_knowledge_db.py
+```
+
 ## Kurulum sırası (şema §8)
 
 | Adım | Hesap | Ne yapar |
