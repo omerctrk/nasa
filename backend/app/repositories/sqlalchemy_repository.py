@@ -2,19 +2,27 @@
 
     repo = SqlAlchemyRepository(session)
 
-Her alanın gerçek uygulaması kendi dosyasındadır ve tablolar oluştukça buraya eklenir:
+Her alanın gerçek uygulaması kendi dosyasındadır:
     A1  SqlAlchemyIdentityRepository   get_user_by_email, get_user_by_id, get_astronaut
     A2  SqlAlchemyResultRepository     save_anomaly_result, save_sans_analysis, update_sans_state
-    A3  iş, alarm, bildirim             (sonraki)
+    A3  SqlAlchemyJobRepository        create_or_get_job … request_retry
+    A3  SqlAlchemyAlertRepository      create_alert … mark_event_sent
     A5  get_measurements, get_sans_context (VIEW'lardan; sonraki)
-O zamana kadar Ömer eksik kısımlar için tests/fakes/ uygulamasıyla çalışır.
+O zamana kadar Ömer A5 kısmı için tests/fakes/ uygulamasıyla çalışır.
 """
 from sqlalchemy.orm import Session
 
+from app.repositories.sqlalchemy_alerts import SqlAlchemyAlertRepository
 from app.repositories.sqlalchemy_identity import SqlAlchemyIdentityRepository
+from app.repositories.sqlalchemy_jobs import SqlAlchemyJobRepository
 from app.repositories.sqlalchemy_results import SqlAlchemyResultRepository
 
 
-class SqlAlchemyRepository(SqlAlchemyIdentityRepository, SqlAlchemyResultRepository):
+class SqlAlchemyRepository(
+    SqlAlchemyIdentityRepository,
+    SqlAlchemyResultRepository,
+    SqlAlchemyJobRepository,
+    SqlAlchemyAlertRepository,
+):
     def __init__(self, session: Session) -> None:
-        self.session = session
+        SqlAlchemyJobRepository.__init__(self, session)
