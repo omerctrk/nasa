@@ -4,6 +4,11 @@
 Auth/Ö2 önce GitHub'a gönderildi. Ö3, aynı A3 sözleşmesini kullanan işçi çekirdeğini
 ve testlerini ekler; ORM/migration/gerçek SQL repository sahibi Aybala'dır.
 
+Güncelleme: bachand A3/A4 (3da69ef) birleştirildi. Dört uyumluluk noktası gerçek
+repository'de düzeltildi: recovery imzası, reschedule_job, tüm lease yazımlarında
+süre kontrolü ve aynı astronot SANS claim sıralaması. Bu düzeltmeler kullanıcı
+isteğiyle yapıldı; merge edilmiş migration'lar değiştirilmedi.
+
 ## Uygulanan akış
 
 Her tur önce süresi dolmuş işleri kurtarır, sonra zamanı gelmiş bir işi atomik
@@ -92,18 +97,25 @@ input_hash ve orijinal istek korunur. Uygun değilse InvalidStateTransition;
 sahiplik/süre yoksa LeaseLost. Repository commit yapmaz.
 
 recover_expired_jobs artık opsiyonel max_attempts alır (varsayılan 2). Mevcut
-çağrılarda davranış değişmez. Ancak ANALYZING SANS işi otomatik kuyruğa alınmaz.
-SYNCING SANS kurtarması dış çağrı öncesi olabilir; snapshot varsa işçi yine reconcile
-yoluna girer. Recovery aktif state/token/süre kontrolünü atomik yapmalıdır.
+çağrılarda en fazla iki deneme korunur; daha düşük konfigürasyon limiti aşılmaz.
+SANS işi SYNCING veya ANALYZING aşamasında da otomatik kuyruğa alınmaz;
+FAILED/SANS_RECONCILIATION_REQUIRED olur. Recovery süre sınırında <= kontrolü yapar.
 
 Claim attempts+1 yapar ve tek işi iki işçiye vermez. Aynı astronotun SANS işleri
 için yalnız ayrı satırlara UPDLOCK koymak yeterli olmayabilir; kontrol ve sahiplenme
-aynı astronot kapsamında atomik/sıralı olmalıdır. DB çözümü Aybala'nın A3 uygulamasıdır.
+aynı astronot kapsamında atomik/sıralı olmalıdır. Gerçek A3 claim artık kısa
+transaction'a ait global bir sp_getapplock kilidi ve aktif SANS NOT EXISTS filtresi
+kullanır. Böylece iki claim arasındaki kontrol/sahiplenme yarışı kapanır. Kilit yalnız
+claim transaction'ı boyunca tutulur; provider bekleme süresinde tutulmaz. Çekişmede
+beklemeden boş claim döner; beklenmeyen kilit hatası rollback için dışarı verilir.
+DB public rolü kullanılır; yönetici veya yeni DDL yetkisi istenmez. Bağlantıda
+NOCOUNT açılmaz, sonraki UPDATE rowcount kontrolleri korunur.
+[SQL Server kilit sözleşmesi](https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-getapplock-transact-sql).
 
 save_input_snapshot aynı hash'te girdiyi ezmez ama retry SYNCING → ANALYZING geçişini
 yapar. finalize_job son yazımda süre/token/aktif state kontrolünü yeniden uygular.
-Ö2'de belgelenen orijinal istek saklama (request_json) şema konusu hâlâ A3'e aittir;
-bu çalışmada kolon veya migration eklenmedi.
+Ö2'de belgelenen request_json, A3 migration 0004 içinde mevcuttur ve kullanılır;
+uyumluluk düzeltmesinde kolon veya migration eklenmedi.
 
 ## Doğrulama ve sınır
 
@@ -114,7 +126,10 @@ Python lock kullanan fake, gerçek SQL yarış/izin kabulünün yerine geçmez.
 `tests/integration/test_worker_db.py` A3 + RUN_DB_TESTS=1 ile gerçek claim,
 snapshot, yeniden kuyruğa alma, lease süresi ve kurtarma kontrollerini içerir.
 
-Bu ortamda gerçek DB testleri atlanıyor: A3/pipeline teslimleri henüz yok; önceki
-pyodbc/SQL ortam engelleri sürüyor. Üretim worker'ının çalıştığı iddia edilmez.
+Bu ortamda gerçek DB testleri atlanıyor: önceki pyodbc/SQL ortam engelleri sürüyor.
+A3 kodu mevcut; pipeline adaptörleri henüz bağlı değil. Bu nedenle üretim worker'ı
+kapalıdır. SQL guard/imza testleri gerçek repository metotlarını ODBC'siz kontrol
+eder; canlı SQL kilit/yetki kabulünün yerine geçmez. Ek SQL kabul testleri iki ayrı
+connection'da claim kilidi ve aynı astronot SANS sıralamasını doğrulamaya hazırdır.
 Ö4 geçmiş/eşik hesabı, Ö5 sağlayıcı ve Ö6 klinik sonuç/alarm işlemleri bu çekirdeğin
 üstüne bağlanacaktır; bunların yerine sahte klinik sonuç oluşturulmadı.

@@ -10,6 +10,8 @@ Commit yapılmaz (sözleşme §7).
 from __future__ import annotations
 
 import json
+import math
+import re
 import uuid
 from typing import Any
 
@@ -23,6 +25,7 @@ from app.repositories.errors import (
     InvalidStateTransition,
     LeaseLost,
     NotFound,
+    RepositoryError,
     SnapshotConflict,
     ValidationFailed,
 )
@@ -50,6 +53,12 @@ NOW = text("SYSUTCDATETIME()")
 def _hex64(value: str, field: str) -> str:
     if len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
         raise ValidationFailed(f"{field} 64 karakterlik küçük harf SHA-256 hex olmalı")
+    return value
+
+
+def _attempt_limit(value: int) -> int:
+    if type(value) is not int or value not in (1, 2):
+        raise ValidationFailed("Toplam deneme sınırı 1 veya 2 olmalı")
     return value
 
 
@@ -95,7 +104,15 @@ class SqlAlchemyJobRepository:
             s = get_settings()
             self._retries = s.anomaly_auto_retries if self._retries is None else self._retries
             self._delay = s.anomaly_retry_delay_seconds if self._delay is None else self._delay
-        return self._retries, int(self._delay * 1000)
+        if type(self._retries) is not int or self._retries not in (0, 1):
+            raise ValidationFailed("Otomatik tekrar 0 veya 1 olmalı")
+        return self._retries, self._delay_ms(self._delay)
+
+    @staticmethod
+    def _delay_ms(seconds: float) -> int:
+        if not math.isfinite(seconds) or not 0 <= seconds <= 2147483.647:
+            raise ValidationFailed("Tekrar gecikmesi geçersiz")
+        return int(seconds * 1000)
 
     def _load(self, job_id: uuid.UUID) -> AnalysisJob | None:
         return self.session.scalars(
@@ -108,7 +125,14 @@ class SqlAlchemyJobRepository:
             AnalysisJob.job_id == job_id,
             AnalysisJob.lease_token == lease_token,
             AnalysisJob.state.in_(ACTIVE),
+            AnalysisJob.lease_until > NOW,
         )
+
+    def _load_owned(self, job_id: uuid.UUID, lease_token: uuid.UUID) -> AnalysisJob | None:
+        return self.session.scalars(
+            select(AnalysisJob).where(*self._owned(job_id, lease_token))
+            .execution_options(populate_existing=True)
+        ).one_or_none()
 
     # --- JobRepository -------------------------------------------------------------
 
@@ -149,14 +173,38 @@ class SqlAlchemyJobRepository:
         return _job(row) if row else None
 
     def claim_next_job(self, lease_seconds: int) -> ClaimedJob | None:
+        if type(lease_seconds) is not int or lease_seconds <= 0:
+            raise ValidationFailed("Lease süresi pozitif tam sayı olmalı")
+        # Serialize only short claim transactions. This closes the race where
+        # two claimers each see no active SANS job for the same astronaut.
+        # Transaction ownership releases the lock on commit/rollback; never
+        # hold this transaction while waiting for a provider.
+        lock_status = self.session.execute(text("""
+            DECLARE @claim_lock int;
+            EXEC @claim_lock = sys.sp_getapplock
+                @Resource=N'astra-health:analysis-job-claim',
+                @LockMode=N'Exclusive', @LockOwner=N'Transaction',
+                @DbPrincipal=N'public', @LockTimeout=0;
+            SELECT @claim_lock;
+        """)).scalar_one()
+        if lock_status == -1:
+            return None  # another short claim transaction owns the lock
+        if lock_status < 0:
+            raise RepositoryError("İş sahiplenme kilidi alınamadı")
         token = uuid.uuid4()
         claimed = self.session.execute(
             text(
                 """
                 WITH next_job AS (
-                    SELECT TOP (1) * FROM ops.AnalysisJobs WITH (UPDLOCK, READPAST, ROWLOCK)
-                    WHERE state = 'QUEUED' AND next_attempt_at <= SYSUTCDATETIME()
-                    ORDER BY next_attempt_at, created_at
+                    SELECT TOP (1) queued.* FROM ops.AnalysisJobs AS queued WITH (UPDLOCK, READPAST, ROWLOCK)
+                    WHERE queued.state = 'QUEUED' AND queued.next_attempt_at <= SYSUTCDATETIME()
+                      AND (queued.module <> 'sans' OR NOT EXISTS (
+                          SELECT 1 FROM ops.AnalysisJobs AS active_sans
+                          WHERE active_sans.astronaut_id = queued.astronaut_id
+                            AND active_sans.module = 'sans'
+                            AND active_sans.state IN ('SYNCING', 'ANALYZING')
+                      ))
+                    ORDER BY queued.next_attempt_at, queued.created_at, queued.job_id
                 )
                 UPDATE next_job
                 SET state = 'SYNCING', lease_token = :token,
@@ -182,38 +230,66 @@ class SqlAlchemyJobRepository:
                         lease_seconds: int) -> bool:
         result = self.session.execute(
             update(AnalysisJob)
-            .where(*self._owned(job_id, lease_token), AnalysisJob.lease_until > NOW)
+            .where(*self._owned(job_id, lease_token))
             .values(lease_until=text(f"DATEADD(second, {int(lease_seconds)}, SYSUTCDATETIME())"),
                     updated_at=NOW)
             .execution_options(synchronize_session=False)
         )
         return result.rowcount == 1
 
-    def recover_expired_jobs(self) -> list[RecoveredJob]:
+    def recover_expired_jobs(self, max_attempts: int = 2) -> list[RecoveredJob]:
+        _attempt_limit(max_attempts)
         retries, delay_ms = self._retry_policy()
+        limit = min(max_attempts, retries + 1)
         rows = self.session.execute(
             text(
                 """
                 UPDATE ops.AnalysisJobs
-                SET state = CASE WHEN module = 'anomaly' AND attempts <= :retries
+                SET state = CASE WHEN module = 'anomaly' AND attempts < :limit
                                  THEN 'QUEUED' ELSE 'FAILED' END,
-                    next_attempt_at = CASE WHEN module = 'anomaly' AND attempts <= :retries
+                    next_attempt_at = CASE WHEN module = 'anomaly' AND attempts < :limit
                                  THEN DATEADD(millisecond, :delay, SYSUTCDATETIME())
                                  ELSE next_attempt_at END,
-                    error_code = CASE WHEN module = 'anomaly' AND attempts <= :retries
-                                 THEN error_code ELSE 'LEASE_EXPIRED' END,
+                    error_code = CASE WHEN module = 'sans' THEN 'SANS_RECONCILIATION_REQUIRED'
+                                 WHEN attempts < :limit THEN error_code ELSE 'LEASE_EXPIRED' END,
                     lease_token = NULL, lease_until = NULL, updated_at = SYSUTCDATETIME()
                 OUTPUT inserted.job_id, deleted.state, inserted.state
-                WHERE state IN ('SYNCING', 'ANALYZING') AND lease_until < SYSUTCDATETIME();
+                WHERE state IN ('SYNCING', 'ANALYZING') AND lease_until <= SYSUTCDATETIME();
                 """
             ),
-            {"retries": retries, "delay": delay_ms},
+            {"limit": limit, "delay": delay_ms},
         ).all()
         # SANS POST'u otomatik tekrarlanmaz: süresi dolan SANS işi doğrudan FAILED olur.
         return [
             RecoveredJob(job_id=uuid.UUID(str(r[0])), previous_state=JobState(r[1]), new_state=JobState(r[2]))
             for r in rows
         ]
+
+    def reschedule_job(self, job_id: uuid.UUID, lease_token: uuid.UUID,
+                       delay_seconds: float, error_code: str, max_attempts: int = 2) -> JobRecord:
+        _attempt_limit(max_attempts)
+        delay_ms = self._delay_ms(delay_seconds)
+        if re.fullmatch(r"[A-Z][A-Z0-9_]{0,39}", error_code) is None:
+            raise ValidationFailed("Teknik hata kodu geçersiz")
+        retries, _ = self._retry_policy()
+        limit = min(max_attempts, retries + 1)
+        changed = self.session.execute(
+            update(AnalysisJob)
+            .where(*self._owned(job_id, lease_token),
+                   AnalysisJob.module == AnalysisModule.ANOMALY.value,
+                   AnalysisJob.attempts < limit)
+            .values(state=JobState.QUEUED.value,
+                    next_attempt_at=text("DATEADD(millisecond, :delay_ms, SYSUTCDATETIME())"),
+                    lease_token=None, lease_until=None, error_code=error_code,
+                    evaluation_status=None, outcome_json=None,
+                    anomaly_result_id=None, sans_analysis_id=None, updated_at=NOW)
+            .execution_options(synchronize_session=False), {"delay_ms": delay_ms},
+        ).rowcount
+        if changed == 1:
+            return _job(self._load(job_id))
+        if self._load_owned(job_id, lease_token) is None:
+            raise LeaseLost(str(job_id))
+        raise InvalidStateTransition("İş otomatik tekrara uygun değil")
 
     def save_input_snapshot(self, job_id: uuid.UUID, lease_token: uuid.UUID,
                             snapshot: dict[str, Any], input_hash: str) -> None:
@@ -227,22 +303,24 @@ class SqlAlchemyJobRepository:
         ).rowcount
         if first == 1:
             return
-        row = self._load(job_id)
-        if row is None or row.lease_token != lease_token or row.state not in ACTIVE:
+        row = self._load_owned(job_id, lease_token)
+        if row is None:
             raise LeaseLost(str(job_id))
         if row.input_hash != input_hash:
             raise SnapshotConflict(str(job_id))  # dondurulmuş girdi ezilmez
         # Aynı snapshot (retry): yalnız aşama ilerler.
-        self.session.execute(
+        changed = self.session.execute(
             update(AnalysisJob).where(*self._owned(job_id, lease_token))
             .values(state=JobState.ANALYZING.value, updated_at=NOW)
             .execution_options(synchronize_session=False)
-        )
+        ).rowcount
+        if changed != 1:
+            raise LeaseLost(str(job_id))
 
     def finalize_job(self, job_id: uuid.UUID, lease_token: uuid.UUID,
                      outcome: JobOutcome) -> JobRecord:
-        row = self._load(job_id)
-        if row is None or row.lease_token != lease_token or row.state not in ACTIVE:
+        row = self._load_owned(job_id, lease_token)
+        if row is None:
             raise LeaseLost(str(job_id))
         self._check_outcome(row.module, outcome)
         values: dict[str, Any] = {

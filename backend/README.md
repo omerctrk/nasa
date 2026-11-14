@@ -106,8 +106,8 @@ SQLAlchemy repository'sine bağlıdır. API başlangıcında güçlü `JWT_SECRE
 `DB_USER=astra_app` kontrol edilir. A6 seed/A7 ve gerçek DB kabulü hâlâ ayrı teslimdir.
 
 Ö2 analiz işi API'si: `contracts/analysis-jobs.md`. Başlatma/durum/retry router'ları
-hazırdır. A3 job repository'si teslim edilene kadar üretim çağrıları 503 döndürür;
-başarılı kalıcı kayıt varmış gibi bellekten job üretilmez.
+hazırdır ve A3 gerçek job repository'sine bağlıdır. Eksik repository kurulumunda
+503 koruması vardır; kalıcı kayıt varmış gibi bellekten job üretilmez.
 
 Ö3 işçi çekirdeği: `contracts/analysis-worker.md`. Lease/heartbeat, tek otomatik
 anomali retry ve restart kurtarma orkestrasyonu hazırdır. FastAPI lifespan worker'ı

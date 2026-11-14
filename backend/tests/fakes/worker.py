@@ -21,6 +21,7 @@ class WorkerJobStore(FakeJobStore):
         self.results = {}
         self.renewals = 0
         self.transaction_depth = 0
+        self.recovery_delay_seconds = 2
 
     def advance(self, seconds):
         with self.lock:
@@ -109,13 +110,13 @@ class WorkerJobRepository(FakeJobRepository):
                 continue
             stored = self.store.jobs[job_id]
             previous = stored.record.state
-            unknown_sans = stored.record.module == AnalysisModule.SANS and previous == JobState.ANALYZING
+            unknown_sans = stored.record.module == AnalysisModule.SANS
             state = (JobState.QUEUED if not unknown_sans and stored.record.attempts < max_attempts
                      else JobState.FAILED)
             code = "SANS_RECONCILIATION_REQUIRED" if unknown_sans else "WORKER_LEASE_EXPIRED"
             stored.record = stored.record.model_copy(update={"state": state, "error_code": code})
             self.store.leases.pop(job_id)
-            self.store.scheduled[job_id] = self.store.clock
+            self.store.scheduled[job_id] = self.store.clock + timedelta(seconds=self.store.recovery_delay_seconds)
             recovered.append(RecoveredJob(job_id=job_id, previous_state=previous, new_state=state))
         return recovered
 

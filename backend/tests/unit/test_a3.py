@@ -55,6 +55,6 @@ def test_hash_format():
 
 
 def test_ops_permissions():
-    perms = dict(re.findall(r'"(\w+\.\w+)": "([A-Z, ]+)"', MIGRATION.read_text()))
+    perms = dict(re.findall(r'"(\w+\.\w+)": "([A-Z, ]+)"', MIGRATION.read_text(encoding="utf-8")))
     assert perms["ops.EventReceipts"] == "SELECT, INSERT"  # alındı değişmez
     assert all("DELETE" not in p for p in perms.values())
