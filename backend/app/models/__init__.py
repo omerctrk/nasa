@@ -18,8 +18,11 @@ from app.models.sans import Analiz, Durum, Ortam, Oturum, Semptom, TestKaydi  # 
 from app.models.measurements import MeasurementDefinition, MeasurementRecord  # noqa: E402  (A2)
 from app.models.analysis import AnalysisJob, AnomalyResult  # noqa: E402  (A2 + A3)
 from app.models.notifications import Alert, EventReceipt, NotificationEvent  # noqa: E402  (A3)
+from app.models.behavioral import Checkin, CognitiveTest, WeeklyAssessment  # noqa: E402  (A4)
+from app.models.evaluation import GercekDurum  # noqa: E402  (A4)
 
 __all__ = [
-    "Alert", "AnalysisJob", "Analiz", "AnomalyResult", "EventReceipt", "NotificationEvent", "Astronaut", "Durum", "MeasurementDefinition",
+    "Alert", "AnalysisJob", "Analiz", "AnomalyResult", "Checkin", "CognitiveTest", "EventReceipt",
+    "GercekDurum", "NotificationEvent", "WeeklyAssessment", "Astronaut", "Durum", "MeasurementDefinition",
     "MeasurementRecord", "Mission", "Ortam", "Oturum", "Semptom", "TestKaydi", "User",
 ]

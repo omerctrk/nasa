@@ -85,3 +85,16 @@ def test_every_table_is_granted_to_app_role_without_delete(offline_sql):
     operational = {t.fullname for t in Base.metadata.sorted_tables if t.schema != "evaluation"}
     assert operational <= set(granted), operational - set(granted)
     assert all("DELETE" not in p for p in granted.values())
+
+
+def test_evaluation_is_isolated(offline_sql):
+    """Eval tablosu yalnız eval rolüne verilir; app rolüne hiçbir evaluation izni verilmez."""
+    assert re.search(r"GRANT [A-Z, ]+ ON \[evaluation\]\.\[gercek_durum\] TO \[astra_eval_role\]",
+                     offline_sql)
+    assert not re.search(r"GRANT [A-Z, ]+ ON \[evaluation\]\.\[\w+\] TO \[astra_app_role\]",
+                         offline_sql)
+    assert "DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[evaluation] TO [astra_app_role]" in offline_sql
+    # eval rolü operasyonel tablolara izin almaz
+    assert not re.search(r"ON \[(core|sans|anomaly|ops|behavioral)\]\.\[\w+\] TO \[astra_eval_role\]",
+                         offline_sql)
+    assert "DELETE ON [evaluation]" not in offline_sql
