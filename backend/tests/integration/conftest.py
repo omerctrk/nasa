@@ -43,3 +43,21 @@ def astronaut(db) -> str:
     db.add_all([mission, astro])
     db.flush()
     return astro.astronaut_id
+
+
+@pytest.fixture
+def users(db, astronaut) -> dict:
+    """Astronot hesabı + iki kule hesabı (rollback ile silinir)."""
+    from app.models import User
+
+    rows = {
+        "astro": User(email=f"{astronaut.lower()}@test.local", password_hash="x",
+                      role="ASTRONAUT", astronaut_id=astronaut),
+        "ground1": User(email=f"g1-{astronaut.lower()}@test.local", password_hash="x",
+                        role="GROUND_CONTROL"),
+        "ground2": User(email=f"g2-{astronaut.lower()}@test.local", password_hash="x",
+                        role="GROUND_CONTROL"),
+    }
+    db.add_all(rows.values())
+    db.flush()
+    return {k: v.user_id for k, v in rows.items()}
