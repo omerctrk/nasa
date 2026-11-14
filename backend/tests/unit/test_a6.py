@@ -14,12 +14,13 @@ VIEW = (ROOT / "migrations/versions/0006_views.py").read_text().split("V_MEASURE
 def view_codes() -> set[str]:
     checkin = set(re.findall(r"\('(\w+)',\s+CAST\(c\.", VIEW))
     cognitive = set(re.findall(r"\('(?:pvt|rotation|dsst)',\s+'(\w+)'", VIEW))
-    return checkin | cognitive | {"near_acuity", "contrast", "amsler"}
+    # VIEW'ın göz kolu duruyor ama SANS kapatıldı: tablolar boş, kodları sözlükte yok.
+    return checkin | cognitive
 
 
 def test_every_view_code_is_in_seed_dictionary():
     codes = view_codes()
-    assert len(codes) == 19
+    assert len(codes) == 16
     assert codes == {d[0] for d in seed.DEFINITIONS}
 
 

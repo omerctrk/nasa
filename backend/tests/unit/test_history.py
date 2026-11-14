@@ -105,10 +105,12 @@ def test_unknown_definitions_and_invalid_data_are_excluded_without_zeros():
 
 
 def eye_policy(minimum="0.8"):
+    # SANS/göz kapatıldı: gerçek history-policy.json'da göz satırı yok. İşleyicinin
+    # (kapalı ama silinmemiş) göz yolu yalnız bu test ayarıyla sınanır.
     data = history_policy().model_dump(mode="json")
-    for feature in data["features"]:
-        if feature["module"] == "sans":
-            feature["minimum_quality_score"] = minimum
+    data["features"].append({"module": "sans", "measurement": "near_acuity", "unit": "logMAR",
+                             "protocol_version": EYE_PROTOCOL_VERSION, "definition_confirmed": True,
+                             "minimum_quality_score": minimum})
     return HistoryPolicy.model_validate(data)
 
 
@@ -119,25 +121,14 @@ def eye(number=1, **changes):
 
 
 def test_quality_policy_must_be_configured_and_low_quality_is_not_sent():
-    result = build([eye()])
+    assert build([eye()])["exclusion_counts"] == {"definition_not_configured": 1}  # SANS kapalı
+    result = build([eye()], history=eye_policy(minimum=None))
     assert result["exclusion_counts"] == {"quality_policy_not_configured": 1}
     rows = [eye(1, quality_score="0.7"), eye(2, quality_score=None), eye(3, quality_score="0.8")]
     result = build(rows, history=eye_policy())
     assert len(result["history_records"]) == 1
     assert result["history_records"][0]["record_id"] == rows[2].record_id
     assert result["exclusion_counts"] == {"low_quality": 1, "quality_score_missing": 1}
-
-
-def test_a6_seed_eye_definitions_match_history_policy():
-    from scripts.seed import DEFINITIONS, PROTOCOL_VERSION
-
-    seeded = {(module, code, unit, PROTOCOL_VERSION)
-              for code, module, unit, *_ in DEFINITIONS if module == "sans"}
-    configured = {feature.key() for feature in history_policy().features
-                  if feature.module.value == "sans"}
-    assert configured == seeded
-    result = build([eye(protocol_version=PROTOCOL_VERSION)])
-    assert result["exclusion_counts"] == {"quality_policy_not_configured": 1}
 
 
 def test_eyes_units_and_protocols_are_separate_groups():

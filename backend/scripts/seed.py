@@ -1,7 +1,7 @@
 """A6: tekrar çalıştırılabilir seed (şema v5.0 §1, iş bölümü A6).
 
 Ne ekler:
-- anomaly.MeasurementDefinitions: VIEW'ın kullandığı göz + davranış kodları
+- anomaly.MeasurementDefinitions: VIEW'ın kullandığı davranış kodları (göz/SANS kapatıldı)
 - core.Missions: M01 (gün 0 = 2027-01-05)
 - core.Astronauts: A007 (aktif) + bir gösterim profili (is_display_only=1)
 - core.Users: bir ASTRONAUT (A007) ve bir GROUND_CONTROL hesabı (Argon2 hash)
@@ -40,13 +40,10 @@ MISSION_DAY0 = date(2027, 1, 5)
 ACTIVE_ASTRONAUT_ID = "A007"
 
 # (kod, modül, kanonik birim, değer türü, kötüleşme yönü)
-# Göz: şema §8 katalog tanımı (SANS modülü kapatıldı; kodlar Ömer'in history-policy.json'u
-# ile birlikte kaldırılacak, boş tabloda zararsız). Davranış: birimler şema aralıklarından; puan yönleri
+# Göz kodları (near_acuity/contrast/amsler) SANS modülüyle birlikte kaldırıldı (takım kararı).
+# Davranış: birimler şema aralıklarından; puan yönleri
 # teyit edilmediği için "unconfirmed" (şema: teyitsiz yön varsayılmaz).
 DEFINITIONS: tuple[tuple[str, str, str, str, str], ...] = (
-    ("near_acuity", "sans", "logMAR", "numeric", "higher"),
-    ("contrast", "sans", "logCS", "numeric", "lower"),
-    ("amsler", "sans", "cells", "integer", "higher"),
     ("mood", "behavioral", "score_0_10", "integer", "unconfirmed"),
     ("energy", "behavioral", "score_0_10", "integer", "unconfirmed"),
     ("stress", "behavioral", "score_0_10", "integer", "unconfirmed"),
