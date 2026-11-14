@@ -1,0 +1,45 @@
+{
+ "items": [
+  {
+   "id": 4,
+   "taken_at": "2026-11-07T08:00:00Z",
+   "mission_day": 67,
+   "who5_score": 48,
+   "phq2_score": 2,
+   "gad2_score": 3,
+   "share_with_crew_medical": false,
+   "source": "synthetic"
+  },
+  {
+   "id": 3,
+   "taken_at": "2026-10-31T08:00:00Z",
+   "mission_day": 60,
+   "who5_score": 56,
+   "phq2_score": 2,
+   "gad2_score": 2,
+   "share_with_crew_medical": false,
+   "source": "synthetic"
+  },
+  {
+   "id": 2,
+   "taken_at": "2026-10-24T08:00:00Z",
+   "mission_day": 53,
+   "who5_score": 60,
+   "phq2_score": 1,
+   "gad2_score": 2,
+   "share_with_crew_medical": true,
+   "source": "synthetic"
+  },
+  {
+   "id": 1,
+   "taken_at": "2026-10-17T08:00:00Z",
+   "mission_day": 46,
+   "who5_score": 64,
+   "phq2_score": 1,
+   "gad2_score": 1,
+   "share_with_crew_medical": false,
+   "source": "synthetic"
+  }
+ ],
+ "next_cursor": null
+}
