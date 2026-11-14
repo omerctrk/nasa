@@ -51,6 +51,22 @@ services:
     volumes: ["./backend:/app"]   # autogenerate ile üretilen migration dosyası senin klasörüne yazılır
     command: ["alembic", "upgrade", "head"]
 
+  # Seed (A6): migrate'ten sonra, sınırlı astra_app hesabıyla; tekrar çalıştırılabilir
+  seed:
+    build: ./backend
+    profiles: ["tools"]
+    depends_on:
+      bootstrap: { condition: service_completed_successfully }
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-AstraHealth}
+      DB_USER: astra_app
+      DB_PASSWORD: ${ASTRA_APP_DB_PASSWORD}
+      SEED_ASTRONAUT_PASSWORD: ${SEED_ASTRONAUT_PASSWORD:-}
+      SEED_GROUND_PASSWORD: ${SEED_GROUND_PASSWORD:-}
+    volumes: ["./backend:/app"]
+    command: ["python", "-m", "scripts.seed"]
+
   # API + işçi: yalnız astra_app ve SANS API ayarlarını alır (sa şifresi yok)
   api:
     build: ./backend

@@ -16,6 +16,12 @@ anyio==4.16.0
     #   httpx2
     #   starlette
     #   watchfiles
+argon2-cffi==25.1.0
+    # via astra-health-backend (pyproject.toml)
+argon2-cffi-bindings==26.2.0
+    # via argon2-cffi
+cffi==2.1.1
+    # via argon2-cffi-bindings
 click==8.5.1
     # via uvicorn
 fastapi==0.162.7
@@ -46,6 +52,8 @@ packaging==26.3
     # via pytest
 pluggy==1.7.0
     # via pytest
+pycparser==3.12
+    # via cffi
 pydantic==2.14.3
     # via
     #   fastapi

@@ -7,6 +7,7 @@ FastAPI + SQLAlchemy 2.0 + Alembic + MS SQL Server 2022. Kaynaklar: `BACKEND_TAB
 ```bash
 cp backend/.env.example .env       # değerleri doldur; .env git'e girmez
 docker compose run --rm migrate    # db → bootstrap → migration (sa)
+docker compose run --rm seed       # sözlük, M01, A007 + gösterim profili, 2 giriş hesabı (astra_app)
 docker compose up api              # API, astra_app hesabıyla açılır
 ```
 
@@ -108,4 +109,5 @@ pip install -r requirements.lock.txt && pytest
 - [x] A3 ops: AnalysisJobs (+request_json önerisi), Alerts, NotificationEvents, EventReceipts; migration 0004; iş ve alarm repository'leri (Ömer'e teslim)
 - [x] A4 behavioral (3) + evaluation.gercek_durum; migration 0005; eval yalnız astra_eval_role'e açık
 - [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
-- [ ] A6 seed · [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
+- [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
+- [ ] [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
