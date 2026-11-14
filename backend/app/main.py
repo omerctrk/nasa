@@ -6,6 +6,9 @@ router ve worker kayıtlarını bildirir. Migration burada ÇALIŞMAZ (ayrı mig
 from fastapi import FastAPI
 
 from app.core.errors import install_error_handling
+from app.core.auth_runtime import configure_auth
+from app.core.analysis_runtime import configure_analysis
+from app.core.config import get_settings
 from app.routers import health
 from app.schemas.common import API_PREFIX
 
@@ -13,6 +16,8 @@ app = FastAPI(title="ASTRA HEALTH Backend", version="0.1.0")
 install_error_handling(app)
 
 app.include_router(health.router, prefix=API_PREFIX)
+configure_auth(app, get_settings())
+configure_analysis(app)
 
 # Sonraki PR'larda (HTTP öneki /api/v1):
 #   Aybala: astronauts, behavioral, sans, measurements

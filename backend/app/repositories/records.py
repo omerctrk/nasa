@@ -43,7 +43,7 @@ class Record(BaseModel):
 class UserRecord(Record):
     user_id: uuid.UUID
     email: str
-    password_hash: str  # yalnız auth servisi kullanır; API yanıtına konmaz
+    password_hash: str = Field(repr=False, exclude=True)  # yalnız auth servisi; serialize edilmez
     role: Role
     is_active: bool
     astronaut_id: str | None
