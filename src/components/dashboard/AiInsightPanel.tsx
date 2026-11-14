@@ -16,11 +16,16 @@ import { vitalLabel } from '../../utils/status';
 import { AnalysisStatus } from './AnalysisStatus';
 
 /** Olasılık arttıkça yeşilden sarıya, oradan kırmızıya geçen renk */
+/**
+ * Olası neden rengi: bu değerler zaten normalin dışında olduğu için yeşille bitmez.
+ * Olasılık arttıkça turuncudan kırmızıya (%15 ve altı turuncu, %70 ve üstü tam kırmızı).
+ */
 const likelihoodColor = (p: number) => {
-  // %15 ve altı tam yeşil, %70 ve üstü tam kırmızı
   const q = Math.min(1, Math.max(0, (p - 0.15) / 0.55));
-  return `hsl(${Math.round(125 * (1 - q))} 82% 48%)`;
+  return `hsl(${Math.round(32 * (1 - q))} 88% 50%)`;
 };
+/** Çubuk: başta küçük bir yeşil, sonra turuncudan olasılık rengine */
+const likelihoodBar = (col: string) => `linear-gradient(90deg, hsl(130 65% 45%) 0%, hsl(32 88% 50%) 22%, ${col} 100%)`;
 
 /** Bir sonraki 30 dakikalık UTC ölçüm anına kalan süre */
 const useNextReading = () => {
@@ -281,7 +286,7 @@ export const AiInsightPanel: React.FC = () => {
                         className="h-full rounded-full transition-all duration-700"
                         style={{
                           width: `${c.likelihood * 100}%`,
-                          background: `linear-gradient(90deg, ${likelihoodColor(0)}, ${col})`,
+                          background: likelihoodBar(col),
                           boxShadow: `0 0 8px ${col}`,
                         }}
                       />
