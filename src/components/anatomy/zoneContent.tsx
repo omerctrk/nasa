@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, Heart, Activity, Bone, Zap, LineChart } from 'lucide-react';
+import { Brain, Heart, Activity, Bone, Eye, Zap, LineChart } from 'lucide-react';
 import { AnatomyZoneId, MetricStatus, VitalMetric } from '../../types/telemetry';
 import type { NavigationTab } from '../../context/TelemetryContext';
 
@@ -60,6 +60,7 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
         links: [
           { label: t('Refleks testi', 'Reflex test'), tab: 'cognitive-test', icon: <Zap className="w-4 h-4" /> },
           { label: t('Davranış modülü', 'Behavior module'), tab: 'behavior', icon: <Activity className="w-4 h-4" /> },
+          { label: t('Göz taraması', 'Eye screening'), tab: 'vision-test', icon: <Eye className="w-4 h-4" /> },
         ],
       };
     case 'chest':

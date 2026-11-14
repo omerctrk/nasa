@@ -1,11 +1,12 @@
 import React from 'react';
-import { Brain, ArrowRight, Clock, CalendarCheck, Info } from 'lucide-react';
+import { Eye, Brain, ArrowRight, Clock, CalendarCheck, Info } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { DisplayOnlyNotice } from '../common/DisplayOnlyNotice';
 import { usePrefs } from '../../context/PreferencesContext';
 import { playUiBeep } from '../../utils/audio';
 import { useBehaviorData } from '../../features/behavior/useBehaviorData';
 import { formatDayMonth } from '../../features/behavior/date';
+import { readLastEyeScreening } from './EyeTestPage';
 
 export const TestsHubPage: React.FC = () => {
   const { setCurrentTab, astronaut } = useTelemetry();
@@ -18,7 +19,31 @@ export const TestsHubPage: React.FC = () => {
     .filter((x) => x.test_type === 'pvt' && x.valid && x.mean_rt_ms !== null)
     .sort((a, b) => b.taken_at.localeCompare(a.taken_at))[0];
 
+  // Göz taraması yalnız bu cihazda tutulur (backend'e gönderilmez)
+  const lastEye = readLastEyeScreening();
+
   const cards = [
+    {
+      tab: 'vision-test' as const,
+      icon: <Eye className="w-7 h-7" />,
+      gradient: 'from-sky-500 to-blue-700',
+      button: 'bg-blue-600 hover:bg-blue-700',
+      tag: t('Göz sağlığı', 'Eye health'),
+      tagCls: 'bg-sky-100 text-sky-800 border-sky-200',
+      title: t('Göz Taraması (SANS)', 'Eye Screening (SANS)'),
+      why: t(
+        'Uzayda vücut sıvısı başa doğru kayar ve gözü etkileyebilir (SANS). Görmedeki küçük değişiklikleri erken fark etmek için düzenli tarama önemlidir.',
+        'In space, body fluid shifts toward the head and can affect the eyes (SANS). Regular screening catches small changes in vision early.'
+      ),
+      how: t(
+        'Her göz için: yakın görme (dönen E), kontrast duyarlılığı ve Amsler ızgarası. Sonuçlar yalnız bu cihazda kalır.',
+        'For each eye: near vision (tumbling E), contrast sensitivity and the Amsler grid. Results stay on this device.'
+      ),
+      minutes: 3,
+      freq: t('Haftada 1', 'Weekly'),
+      last: lastEye ? `${lastEye.od.acuity ?? '—'} / ${lastEye.os.acuity ?? '—'} • ${t('Gün', 'Day')} ${lastEye.day}` : null,
+      cta: t('Göz taramasına başla', 'Start eye screening'),
+    },
     {
       tab: 'cognitive-test' as const,
       icon: <Brain className="w-7 h-7" />,
@@ -56,7 +81,7 @@ export const TestsHubPage: React.FC = () => {
 
       {readOnly && <DisplayOnlyNotice compact />}
 
-      <div className="grid grid-cols-1 gap-5 max-w-2xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {cards.map((c) => (
           <article key={c.tab} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all flex flex-col">
             <div className="flex items-center justify-between">

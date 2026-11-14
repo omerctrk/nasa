@@ -8,6 +8,7 @@ import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { AnatomyPage } from './components/anatomy/AnatomyPage';
 import { TestsHubPage } from './components/tests/TestsHubPage';
 import { CognitiveTestPage } from './components/tests/CognitiveTestPage';
+import { EyeTestPage } from './components/tests/EyeTestPage';
 import { ReportsPage } from './components/reports/ReportsPage';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { BehaviorPage } from './features/behavior/BehaviorPage';
@@ -26,8 +27,8 @@ const AppContent: React.FC = () => {
         return <AnatomyPage />;
       case 'tests':
         return <TestsHubPage />;
-      case 'vision-test': // göz testi kapsamdan çıkarıldı (takım kararı); eski bağlantılar test listesine düşer
-        return <TestsHubPage />;
+      case 'vision-test': // SANS göz taraması: yalnız arayüzde, backend'e gönderilmez
+        return <EyeTestPage />;
       case 'cognitive-test':
         return <CognitiveTestPage />;
       case 'behavior':
