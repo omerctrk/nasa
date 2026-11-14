@@ -218,6 +218,13 @@ class AnomalyResultData(Record):
     data_cutoff_at: datetime
 
 
+class AnomalyResultRecord(AnomalyResultData):
+    """Okuma: kayıtlı anomali sonucu (GET /anomaly-results/{id})."""
+
+    id: uuid.UUID
+    created_at: datetime
+
+
 class SansAnalysisData(Record):
     astronaut_id: str
     session_id: str | None

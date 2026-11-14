@@ -251,13 +251,37 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
 
 **SANS POST'u için otomatik tekrar kapalıdır** ve ayar olarak sunulmaz (tekrar güvenliği teyit edilmedi).
 
-## 10. WebSocket (`/ws/v1/notifications`, uygulayan: Ömer)
+## 10. WebSocket (`/ws/v1/notifications`, uygulayan: Aybala — Ömer'in kısmı devralındı)
 
 - İlk istemci mesajı `{type:"authenticate", access_token}`; 5 sn içinde gelmezse bağlantı kapanır.
 - Olay: `{event_id, type, created_at, payload}` — örnek `ws_analysis_completed_sans.json`.
 - İstemci teslim yanıtı: `{type:"receipt", event_id}` → `record_receipt`.
 - Olay önce DB'ye yazılır, sonra gönderilir; frontend `event_id` ile tekrarları ayıklar.
 - `retest_due_day` modelden gelir; backend süre üretmez. Token süresi dolunca bağlantı kapanır.
+- Uygulama (`app/realtime/notifications.py`): başarılı girişte `{type:"authenticated"}`; geçersiz
+  giriş / süre dolumu → kapanış kodu **4401**. Yeni olaylar `ws_poll_seconds` (2 sn) aralığıyla
+  DB'den okunur. Alındı yalnız o bağlantıda o kullanıcıya gönderilmiş olay için kabul edilir;
+  alınmayan olay yeniden bağlanınca tekrar gelir.
+
+## 10a. Analiz pipeline'ı, sonuç ve alarm uçları (Ö5/Ö6, uygulayan: Aybala)
+
+- **Ö5 karar kuralları** (`app/services/anomaly.py`, sayı uydurmaz):
+  güncel ölçüm yok → `insufficient_data`; hiçbir ölçüm için eşik tanımlı değil →
+  `insufficient_data` (bilinmeyen normal değildir); ihlal yok → `normal`; ihlal var → en az
+  `watch`; Yusuf'un kart önericisi doktora yükseltme derse → `review`.
+  `baseline_status=provisional` (yeterlilik politikası yok).
+- **Model**: `LLM_BASE_URL` doluysa Yusuf'un `kart_onerici.oner()` Ollama ile çağrılır (özet,
+  açıklama, öneri). Boşsa kart seçimi/yükseltme yine kodla yapılır, özet kodla yazılır.
+  Kart metrik adları: `pvt_mean_rt→pvt_mean_rt_ms`, `rotation_mean_rt→rotation_mean_rt_ms`,
+  `body_temperature→body_temp`, `crew→crew_relation`.
+- **Ö6 yazım** (aynı Session): `anomaly_results` → (watch/review ise) `ops.Alerts` →
+  astronota `analysis.completed`, kuleye `risk.alert.created` olayı.
+- **Teyit bekleyen**: alarm şiddeti eşlemesi `watch→WARNING`, `review→CRITICAL`.
+- Uçlar: `GET /me/anomaly-results?start&end`, `GET /me/anomaly-results/{id}`,
+  `GET /me/alerts?status=`; kule: `GET /ground/astronauts/{id}/anomaly-results?start&end`,
+  `GET /ground/anomaly-results/{id}`, `GET /ground/alerts?status=&astronaut_id=`,
+  `POST /ground/alerts/{id}/acknowledge`, `POST /ground/alerts/{id}/resolve
+  {resolution_note}` (yalnız ACKNOWLEDGED alarm; aksi 409).
 
 ## 11. Açık konular
 

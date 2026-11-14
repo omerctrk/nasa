@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     history_policy_path: Path = Path(__file__).resolve().parents[2] / "config/history-policy.json"
     threshold_policy_path: Path = Path(__file__).resolve().parents[2] / "config/thresholds.json"
     anomaly_reference_date: date | None = None  # explicit demo date; never inferred from host time
+    # Ö5 model adaptörü (Yusuf'un kart önericisi + Ollama). Boşsa model çağrılmaz; karar
+    # yalnız eşik kurallarıyla verilir, açıklama metni kodla üretilir (algorithm="threshold_rules").
+    llm_base_url: str | None = None  # örn. http://host.docker.internal:11434
+    llm_model: str = "qwen3:14b"
+    knowledge_cards_path: Path = Path(__file__).resolve().parents[2] / "config/knowledge_cards.json"
+    ws_poll_seconds: float = 2  # WebSocket: bekleyen olaylar bu aralıkla DB'den okunur
 
     @field_validator("anomaly_reference_date", mode="before")
     @classmethod

@@ -64,6 +64,12 @@ class SqlAlchemyIdentityRepository:
         row = self.session.get(User, user_id)
         return _user(row) if row else None
 
+    def get_user_for_astronaut(self, astronaut_id: str) -> uuid.UUID | None:
+        """Astronotun etkin hesabı (Users.astronaut_id filtreli UNIQUE: en fazla bir)."""
+        return self.session.scalar(
+            select(User.user_id).where(User.astronaut_id == astronaut_id, User.is_active == True)  # noqa: E712 (SQL Server: "= 1"; "IS 1" geçersiz)
+        )
+
     def get_astronaut(self, astronaut_id: str) -> AstronautRecord | None:
         row = self.session.scalars(
             select(Astronaut)

@@ -25,6 +25,7 @@ from app.repositories.records import (
     AlertCreate,
     AlertRecord,
     AnomalyResultData,
+    AnomalyResultRecord,
     AstronautRecord,
     ClaimedJob,
     CreateJobResult,
@@ -134,6 +135,8 @@ class JobRepository(JobApiRepository, Protocol):
 @runtime_checkable
 class ResultRepository(Protocol):
     def save_anomaly_result(self, result: AnomalyResultData) -> uuid.UUID: ...
+
+    def get_anomaly_result(self, result_id: uuid.UUID) -> AnomalyResultRecord | None: ...
 
     def save_sans_analysis(self, result: SansAnalysisData) -> int: ...
 

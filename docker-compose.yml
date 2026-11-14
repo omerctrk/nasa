@@ -85,6 +85,8 @@ services:
       JWT_AUDIENCE: ${JWT_AUDIENCE:-astra-health-api}
       ACCESS_TOKEN_SECONDS: ${ACCESS_TOKEN_SECONDS:-3600}
       ANOMALY_REFERENCE_DATE: ${ANOMALY_REFERENCE_DATE:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:14b}
     ports: ["127.0.0.1:8000:8000"]
     volumes: ["./backend:/app"]   # geliştirme: kod değişince yeniden yüklenir
     # Tek API worker

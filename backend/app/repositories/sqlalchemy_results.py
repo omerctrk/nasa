@@ -17,7 +17,12 @@ from sqlalchemy.orm import Session
 
 from app.models.analysis import AnomalyResult
 from app.models.sans import Analiz, Durum
-from app.repositories.records import AnomalyResultData, SansAnalysisData, SansStateData
+from app.repositories.records import (
+    AnomalyResultData,
+    AnomalyResultRecord,
+    SansAnalysisData,
+    SansStateData,
+)
 
 
 def _default(o: Any) -> Any:
@@ -69,6 +74,22 @@ class SqlAlchemyResultRepository:
         self.session.add(row)
         self.session.flush()
         return row.id
+
+    def get_anomaly_result(self, result_id: uuid.UUID) -> AnomalyResultRecord | None:
+        row = self.session.get(AnomalyResult, result_id)
+        if row is None:
+            return None
+        return AnomalyResultRecord(
+            id=row.id, created_at=row.created_at.replace(tzinfo=UTC),
+            astronaut_id=row.astronaut_id, mission_day=row.mission_day,
+            module_scope=row.module_scope, measurement=row.measurement, eye=row.eye,
+            algorithm=row.algorithm, model_version=row.model_version,
+            anomaly_score=row.anomaly_score, is_anomaly=row.is_anomaly, level=row.level,
+            summary=row.summary, drivers=json.loads(row.drivers_json),
+            baseline_status=row.baseline_status, data_quality_status=row.data_quality_status,
+            recommendation=row.recommendation,
+            data_cutoff_at=row.data_cutoff_at.replace(tzinfo=UTC),
+        )
 
     def save_sans_analysis(self, result: SansAnalysisData) -> int:
         row = Analiz(
