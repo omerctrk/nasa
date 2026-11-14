@@ -1,16 +1,18 @@
-"""Bilgi kartı seçimi + Qwen çağrısı + çıktı doğrulaması (sürüm 3).
+"""Bilgi kartı seçimi + Qwen çağrısı + çıktı doğrulaması (sürüm 4).
+
+İş bölümü:
+  KOD   : kart seçimi, acil durum eşleşmesi, ÖNERİLER (kartın onaylı Türkçe cümlesi
+          `action_tr`), öncelik, ölçüm satırı, hekime yükseltme.
+  MODEL : yalnız durum özeti ve risk/belirti kartlarının Türkçe açıklaması.
+Model öneri yazmaz ve seçmez; `action_tr` alanı olmayan önlem kartı öneri olarak gösterilmez.
 
 Akış:
   1. kartlari_yukle()  -> knowledge_cards.json bir kez okunur
   2. kart_sec()        -> sapan metriklere göre kartlar; acil durum kartları ayrı döner
-  3. eslesmeyenler() / aksiyonsuzlar() -> kartı ya da önlem kartı olmayan metrikler
-  4. modele_sor()      -> Ollama, isteğe özel JSON şeması (kart kimlikleri sabitlenmiş)
-  5. dogrula()         -> kimlik, tür, metrik kapsamı, dil ve tekrar kontrolleri
+  3. oneriler_kur()    -> önlem kartlarından öneri listesi (kod)
+  4. modele_sor()      -> özet + açıklamalar (Ollama, JSON şemalı)
+  5. dogrula()         -> açıklamaların denetimi, yükseltme kararı, çıktının birleştirilmesi
   oner() hepsini sırayla çalıştırır.
-
-Kod ile modelin iş bölümü:
-  - Acil durum kartı eşleşmesi, doktora yükseltme, hangi metriğin kartı olmadığı: KOD karar verir.
-  - Kartların Türkçe açıklaması ve önlem kartlarından öneri yazımı: MODEL yapar, kod denetler.
 
 Sapma girdisi iki biçimde verilebilir:
   {"sleep_hours": "down", "pvt_lapses": "up"}
@@ -32,6 +34,9 @@ KAPSAMA_AGIRLIGI = 3
 # Bu metrikler saptığında, öneri çıksa bile uçuş hekimine yükseltilir: {metrik: yön}.
 # Yön "any" ise her iki yönde de yükseltilir.
 HER_ZAMAN_YUKSELT = {"spo2": "down"}
+# Kartın "context" alanı bu listede yoksa kart seçilmez (alanı olmayan kart "general" sayılır).
+# Örnek: iniş günü için ("general", "landing"). Acil durum kartları bağlama bakılmadan değerlendirilir.
+AKTIF_BAGLAM = ("general",)
 
 
 # ---------------------------------------------------------------- 1. yükleme
@@ -53,6 +58,12 @@ def _eslesen_metrikler(kart, sapmalar):
     ]
 
 
+def _baglam_uygun(kart, baglam):
+    if kart["type"] == "emergency":      # acil durum kaçırılmasın diye süzülmez
+        return True
+    return kart.get("context", "general") in (baglam or AKTIF_BAGLAM)
+
+
 def _puan(kart, eslesen):
     n = len(eslesen)
     if n == 0:
@@ -62,27 +73,37 @@ def _puan(kart, eslesen):
     return n + oran + yon_bonusu
 
 
-def kart_sec(sapmalar, kartlar, k=5, en_cok_onlem=3):
+def kart_sec(sapmalar, kartlar, k=5, en_cok_onlem=3, baglam=None):
     """(secilen, acil) döndürür; ikisi de [(kart, eşleşen_metrikler, puan), ...].
 
     acil    : eşiği geçen acil durum kartları. Modele gönderilmez, backend gösterir.
+              Acil kart varsa secilen yalnız o kartın bağlamındaki kartlardan oluşur (ya da boştur).
     secilen : modele gidecek en çok k kart. Önce her sapan metriği bir önlem kartıyla
               kapsamaya çalışır, kalan yerleri risk/belirti kartlarıyla doldurur.
     """
-    acil, onlemler, digerleri = [], [], []
+    adaylar, acil = [], []
     for kart in kartlar:
         e = _eslesen_metrikler(kart, sapmalar)
         if not e:
             continue
         aday = (kart, e, _puan(kart, e))
-        if kart["type"] == "emergency":
-            if len(e) >= ACIL_ESIK:
-                acil.append(aday)
-        elif kart["type"] == "countermeasure":
-            onlemler.append(aday)
-        else:
-            digerleri.append(aday)
+        if kart["type"] != "emergency":
+            adaylar.append(aday)
+        elif len(e) >= ACIL_ESIK:
+            acil.append(aday)
     acil.sort(key=lambda a: (-a[2], a[0]["id"]))
+
+    if acil:
+        # Acil durumda rutin öneri verilmez: yalnız acil kartla aynı bağlamdaki kartlar kalır.
+        # Bunların arasında önlem kartı yoksa modele hiç kart gitmez.
+        acil_baglam = {kart.get("context", "general") for kart, _, _ in acil} - {"general"}
+        adaylar = [a for a in adaylar if a[0].get("context", "general") in acil_baglam]
+        if not any(a[0]["type"] == "countermeasure" for a in adaylar):
+            return [], acil
+    else:
+        adaylar = [a for a in adaylar if _baglam_uygun(a[0], baglam)]
+    onlemler = [a for a in adaylar if a[0]["type"] == "countermeasure"]
+    digerleri = [a for a in adaylar if a[0]["type"] != "countermeasure"]
 
     def ac_gozlu(havuz, adet, kapsanan):
         """Puan + yeni kapsanan metrik sayısına göre sırayla seç."""
@@ -105,30 +126,92 @@ def kart_sec(sapmalar, kartlar, k=5, en_cok_onlem=3):
 
 
 # ---------------------------------------------------------------- 3. kapsam
-def eslesmeyenler(sapmalar, kartlar):
-    """Destede (acil kartlar hariç) hiçbir kartla eşleşmeyen sapan metrikler."""
+def eslesmeyenler(sapmalar, kartlar, baglam=None):
+    """Geçerli bağlamda (acil kartlar hariç) hiçbir kartla eşleşmeyen sapan metrikler."""
     return [
         m for m in sapmalar
         if not any(
             _eslesen_metrikler(kart, {m: sapmalar[m]})
-            for kart in kartlar if kart["type"] != "emergency"
+            for kart in kartlar
+            if kart["type"] != "emergency" and _baglam_uygun(kart, baglam)
         )
     ]
 
 
+def _onerilebilir(kart):
+    return kart["type"] == "countermeasure" and bool(kart.get("action_tr"))
+
+
 def aksiyonsuzlar(sapmalar, secilen):
-    """Seçilen kartlar arasında önlem kartı bulunmayan sapan metrikler."""
-    kapsanan = {m for kart, e, _ in secilen if kart["type"] == "countermeasure" for m in e}
+    """Seçilen kartlar arasında gösterilebilir önlem kartı bulunmayan sapan metrikler."""
+    kapsanan = {m for kart, e, _ in secilen if _onerilebilir(kart) for m in e}
     return [m for m in sapmalar if m not in kapsanan]
 
 
-# ---------------------------------------------------------------- 4. model
-def sema_kur(sapmalar, secilen):
+# ---------------------------------------------------------------- 4. öneriler (kod)
+METRIK_AD = {
+    "heart_rate": "Kalp atış hızı", "spo2": "SpO2", "body_temp": "Vücut sıcaklığı",
+    "systolic_bp": "Sistolik tansiyon", "diastolic_bp": "Diyastolik tansiyon",
+    "respiratory_rate": "Solunum hızı", "sleep_hours": "Uyku süresi",
+    "sleep_quality": "Uyku kalitesi", "stress": "Stres", "fatigue": "Yorgunluk",
+    "headache": "Baş ağrısı", "dizziness": "Baş dönmesi", "nausea": "Bulantı",
+    "cough": "Öksürük", "sore_throat": "Boğaz ağrısı", "shortness_of_breath": "Nefes darlığı",
+    "back_pain": "Sırt ağrısı", "skin_lesion": "Cilt lezyonu", "blurred_vision": "Bulanık görme",
+    "visual_acuity": "Görme keskinliği", "eye_pressure": "Göz içi basıncı",
+    "mood_index": "Ruh hali", "loneliness": "Yalnızlık", "crew_relation": "Ekip ilişkisi",
+    "digestive_issue": "Sindirim sorunu", "pvt_lapses": "Dikkat kaçırma sayısı (PVT)",
+    "pvt_mean_rt_ms": "Tepki süresi (PVT)", "pvt_false_starts": "Erken tepki sayısı (PVT)",
+    "rotation_mean_rt_ms": "Zihinsel döndürme süresi", "rotation_accuracy": "Zihinsel döndürme doğruluğu",
+}
+YON_AD = {"up": "arttı", "down": "azaldı"}
+ONCELIK_SIRASI = {"high": 0, "medium": 1, "low": 2}
+
+
+def olcum_satiri(metrik, deger):
+    """'SpO2 azaldı: 91 % (taban 97)' biçiminde, modelsiz gerekçe satırı."""
+    metin = f"{METRIK_AD.get(metrik, metrik)} {YON_AD.get(_yon(deger), _yon(deger))}"
+    if isinstance(deger, dict) and "value" in deger:
+        metin += f": {deger['value']}" + (f" {deger['unit']}" if deger.get("unit") else "")
+        if "baseline" in deger:
+            metin += f" (taban {deger['baseline']})"
+    return metin
+
+
+def oncelik(metrikler, sapmalar, acil):
+    """Önerinin önceliğini kod belirler; aynı girdi her zaman aynı sonucu verir."""
+    if acil or any(HER_ZAMAN_YUKSELT.get(m) in ("any", _yon(sapmalar[m])) for m in metrikler):
+        return "high"
+    return "medium" if len(metrikler) >= 2 else "low"
+
+
+def oneriler_kur(sapmalar, secilen, acil):
+    """Seçilen önlem kartlarından öneri listesi. Metin kartın onaylı cümlesidir."""
+    oneriler, atlanan = [], []
+    for kart, eslesen, _ in secilen:
+        if kart["type"] != "countermeasure":
+            continue
+        if not kart.get("action_tr"):
+            atlanan.append(kart["id"])          # onaylı Türkçe cümlesi yok: gösterilmez
+            continue
+        oneriler.append({
+            "action": kart["action_tr"],
+            "action_source": "card",
+            "rationale": "; ".join(olcum_satiri(m, sapmalar[m]) for m in eslesen),
+            "metrics": list(eslesen),
+            "card_ids": [kart["id"]],
+            "priority": oncelik(eslesen, sapmalar, acil),
+            "sources": _kaynaklar([kart["id"]], {kart["id"]: kart}),
+        })
+    oneriler.sort(key=lambda o: ONCELIK_SIRASI[o["priority"]])   # kararlı: eşitlerde puan sırası
+    return oneriler, atlanan
+
+
+# ---------------------------------------------------------------- 5. model (özet + açıklama)
+def sema_kur(sapmalar, aciklama_kartlari):
     """İsteğe özel şema: kart kimlikleri ve metrik adları yalnız gönderilenlerden seçilebilir."""
-    tum_kimlikler = [kart["id"] for kart, _, _ in secilen]
-    onlem_kimlikleri = [kart["id"] for kart, _, _ in secilen if kart["type"] == "countermeasure"]
+    kimlikler = [kart["id"] for kart, _, _ in aciklama_kartlari]
     metrikler = list(sapmalar)
-    sema = {
+    return {
         "type": "object",
         "properties": {
             "summary": {"type": "string", "maxLength": 300},
@@ -138,34 +221,13 @@ def sema_kur(sapmalar, secilen):
                 "items": {
                     "type": "object",
                     "properties": {
-                        "text": {"type": "string", "maxLength": 300},
+                        "text": {"type": "string", "maxLength": 350},
                         "card_ids": {
-                            "type": "array", "minItems": 1, "maxItems": 2,
-                            "items": {"type": "string", "enum": tum_kimlikler},
+                            "type": "array", "minItems": 1, "maxItems": 1,
+                            "items": {"type": "string", "enum": kimlikler},
                         },
                     },
                     "required": ["text", "card_ids"],
-                },
-            },
-            "recommendations": {
-                "type": "array",
-                "maxItems": 4,
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "action": {"type": "string", "maxLength": 220},
-                        "rationale": {"type": "string", "maxLength": 300},
-                        "metrics": {
-                            "type": "array", "minItems": 1, "maxItems": 3,
-                            "items": {"type": "string", "enum": metrikler},
-                        },
-                        "card_ids": {
-                            "type": "array", "minItems": 1, "maxItems": 2,
-                            "items": {"type": "string", "enum": onlem_kimlikleri},
-                        },
-                        "priority": {"type": "string", "enum": ["low", "medium", "high"]},
-                    },
-                    "required": ["action", "rationale", "metrics", "card_ids", "priority"],
                 },
             },
             "unmatched_findings": {
@@ -173,12 +235,8 @@ def sema_kur(sapmalar, secilen):
                 "items": {"type": "string", "enum": metrikler},
             },
         },
-        "required": ["summary", "explanations", "recommendations", "unmatched_findings"],
+        "required": ["summary", "explanations", "unmatched_findings"],
     }
-    if not onlem_kimlikleri:  # önerilecek kart yok: alanı modele hiç sorma
-        del sema["properties"]["recommendations"]
-        sema["required"].remove("recommendations")
-    return sema
 
 
 def _sade_sema(sema):
@@ -192,38 +250,31 @@ def _sade_sema(sema):
 
 
 SISTEM = """You are a decision-support assistant for a spaceflight crew health monitor. \
-You do not diagnose. You explain findings and suggest follow-up actions using ONLY the \
-knowledge cards provided in the user message.
+You do not diagnose and you do not recommend actions: recommended actions are selected by \
+the system from approved sources and shown separately. Your job is to explain the findings \
+using ONLY the knowledge cards provided in the user message.
 
 Each card line looks like: [id] (TYPE; metrics: ...) card text.
 The id, TYPE and metrics list are routing metadata. Only the card text after the parenthesis \
 is evidence. Never present the metrics list as something the card states, and never mention \
-card ids, the words RISK/SIGN/COUNTERMEASURE or "the card" in summary, text, action or rationale.
+card ids, the words RISK/SIGN or "the card" in your text.
 
 Output fields:
-- summary: two sentences at most, describing what deviated. No diagnosis.
-- explanations: restate, in plain Turkish, the fact given in the text of a RISK or SIGN card. \
-Keep the card's own conditions (who, when, in which situation); do not generalise it and do \
-not add causes or symptoms that the text does not name. One or two sentences each.
-- recommendations: concrete things the crew can DO. Each one restates an action from ONE \
-COUNTERMEASURE card. In "metrics" list which deviating metric(s) that card's action addresses. \
-In "card_ids" list only the COUNTERMEASURE card(s) the action comes from.
+- summary: two sentences at most, stating which measurements deviated and in which \
+direction, using the given values when present. No diagnosis, no advice.
+- explanations: for the most relevant cards (at most 3), restate in plain Turkish the fact \
+given in that card's text. One card per explanation, one or two complete sentences. Keep the \
+card's own conditions (who, when, which mission or study); do not generalise and do not add \
+causes, symptoms or numbers that the text does not contain.
 - unmatched_findings: deviating metrics that none of the provided cards mentions at all.
 
 Rules:
-1. Stay strictly within what the card says. Do not use outside medical knowledge. Do not \
-invent actions, equipment, treatments, numbers, thresholds, doses or drug names.
-2. If the user message lists metrics under NO COUNTERMEASURE CARD, do not recommend anything \
-for those metrics. They are handled by the flight surgeon.
-3. Only recommend a card's action if it plausibly applies to the deviating metrics. If a card \
-is about a different situation (for example lunar dust or landing day), skip it.
-4. Never turn an observation or statistic into an instruction.
-5. When a card gives a number, keep what the number refers to (for example work hours versus \
-sleep hours).
-6. Each recommendation must be a different action. Each action is one sentence; each \
-rationale is one or two sentences.
-7. Language: write summary, text, action and rationale in Turkish, using only the Latin \
-Turkish alphabet. Translate the card's meaning; do not copy English sentences.
+1. Do not use outside medical knowledge. Do not invent numbers, thresholds, doses, drug \
+names, equipment or treatments.
+2. Do not give instructions or advice of any kind. Never turn a fact into a recommendation.
+3. Translate meaning accurately. "Untreated" is "tedavi edilmeyen", "nausea" is "bulantı", \
+"dizziness" is "baş dönmesi", "lapses" is "dikkat kaçırma", "hypoxia" is "hipoksi".
+4. Language: Turkish, Latin Turkish alphabet only. Do not copy English sentences.
 Return only the JSON object."""
 
 
@@ -234,16 +285,14 @@ def _sapma_satiri(metrik, deger):
     return f"- {metrik}: {deger}"
 
 
-def mesajlari_kur(sapmalar, secilen, aksiyonsuz=()):
+def mesajlari_kur(sapmalar, aciklama_kartlari):
     bulgular = "\n".join(_sapma_satiri(m, d) for m, d in sapmalar.items())
     kartlar = "\n".join(
         f"[{kart['id']}] ({kart['type'].upper()}; metrics: {', '.join(e)}) {kart['text']}"
-        for kart, e, _ in secilen
+        for kart, e, _ in aciklama_kartlari
     )
-    kullanici = f"DEVIATING METRICS (metric: direction)\n{bulgular}\n\nKNOWLEDGE CARDS\n{kartlar}"
-    if aksiyonsuz:
-        kullanici += "\n\nNO COUNTERMEASURE CARD FOR: " + ", ".join(aksiyonsuz)
-    kullanici += "\n\nYanıtı Türkçe yaz."
+    kullanici = (f"DEVIATING METRICS (metric: direction)\n{bulgular}\n\nKNOWLEDGE CARDS\n{kartlar}"
+                 "\n\nYanıtı Türkçe yaz.")
     return [{"role": "system", "content": SISTEM}, {"role": "user", "content": kullanici}]
 
 
@@ -269,7 +318,7 @@ def modele_sor(mesajlar, sema, deneme=0):
     return json.loads(yanit["message"]["content"])
 
 
-# ---------------------------------------------------------------- 5. doğrulama
+# ---------------------------------------------------------------- 6. doğrulama
 _YABANCI_YAZI = re.compile(r"[Ͱ-ϿЀ-ԯ֐-ۿऀ-෿぀-ヿ一-鿿가-힯]")
 _INGILIZCE = re.compile(r"\b(the|and|should|with|during|to help|crew should|maintain|increase)\b", re.I)
 _TURKCE_HARF = re.compile(r"[çğıöşüÇĞİÖŞÜ]")
@@ -295,65 +344,39 @@ def _normal(metin):
     return re.sub(r"\W+", " ", metin.lower()).strip()
 
 
-def dogrula(model_cikti, sapmalar, secilen, acil, backend_eslesmeyen, aksiyonsuz):
-    gonderilen = {kart["id"]: kart for kart, _, _ in secilen}
-    eslesen = {kart["id"]: set(e) for kart, e, _ in secilen}
-    oneriler, aciklamalar, atilan = [], [], []
-    gorulen = set()
-
-    def at(madde, neden):
-        atilan.append({**madde, "reason": neden})
+def dogrula(model_cikti, sapmalar, secilen, acil, backend_eslesmeyen, oneriler, atlanan):
+    """Modelin açıklamalarını denetler, kodun önerileriyle birleştirir, yükseltmeye karar verir."""
+    gonderilen = {kart["id"]: kart for kart, _, _ in secilen if kart["type"] != "countermeasure"}
+    kartli = {m for _, e, _ in secilen for m in e}
+    aciklamalar, atilan, gorulen = [], [], set()
 
     for a in model_cikti.get("explanations", []):
-        kimlikler = [k for k in a.get("card_ids") or [] if k in gonderilen]
-        hata = dil_hatasi(a.get("text", "")) or (None if kimlikler else "geçerli kart kimliği yok")
-        if not hata and _normal(a["text"]) in gorulen:
-            hata = "tekrar"
+        kimlikler = list(dict.fromkeys(k for k in a.get("card_ids") or [] if k in gonderilen))
+        metin = a.get("text", "")
+        hata = dil_hatasi(metin) or (None if kimlikler else "geçerli kart kimliği yok")
+        if not hata and (_normal(metin) in gorulen or not metin.strip()):
+            hata = "tekrar ya da boş"
         if hata:
-            at(a, hata)
+            atilan.append({**a, "reason": hata})
             continue
-        gorulen.add(_normal(a["text"]))
-        aciklamalar.append({**a, "card_ids": kimlikler, "sources": _kaynaklar(kimlikler, gonderilen)})
+        gorulen.add(_normal(metin))
+        aciklamalar.append({"text": metin, "card_ids": kimlikler,
+                            "sources": _kaynaklar(kimlikler, gonderilen)})
 
-    for o in model_cikti.get("recommendations", []):
-        hata = dil_hatasi(o.get("action", "") + " " + o.get("rationale", ""))
-        # yalnız önlem kartları dayanak sayılır
-        kimlikler = [
-            k for k in o.get("card_ids") or []
-            if k in gonderilen and gonderilen[k]["type"] == "countermeasure"
-        ]
-        if not hata and not kimlikler:
-            hata = "önlem kartına dayanmıyor"
-        # önerinin hedeflediği metrikler, gösterilen kartların kapsadığı metrikler olmalı
-        kapsanan = set().union(*(eslesen[k] for k in kimlikler)) if kimlikler else set()
-        metrikler = [m for m in o.get("metrics") or [] if m in sapmalar and m in kapsanan]
-        if not hata and not metrikler:
-            hata = "gösterilen kart bu metriği kapsamıyor"
-        if not hata and _normal(o["action"]) in gorulen:
-            hata = "tekrar"
-        if hata:
-            at(o, hata)
-            continue
-        gorulen.add(_normal(o["action"]))
-        oneriler.append({**o, "card_ids": kimlikler, "metrics": metrikler,
-                         "sources": _kaynaklar(kimlikler, gonderilen)})
-
-    # Doktora yükseltme: kod karar verir
     # Modelin "eşleşmedi" dediği metrik ancak seçilen hiçbir kart onu kapsamıyorsa kabul edilir.
-    kartli = set().union(*eslesen.values()) if eslesen else set()
     eslesmeyen = list(backend_eslesmeyen)
     for m in model_cikti.get("unmatched_findings", []):
         if m in sapmalar and m not in kartli and m not in eslesmeyen:
             eslesmeyen.append(m)
-    onerisiz = [m for m in sapmalar
-                if m not in eslesmeyen and not any(m in o["metrics"] for o in oneriler)]
+    onerili = {m for o in oneriler for m in o["metrics"]}
+    onerisiz = [m for m in sapmalar if m not in eslesmeyen and m not in onerili]
 
     nedenler = []
     if acil:
         nedenler.append("acil durum kartı eşleşti")
     if eslesmeyen:
         nedenler.append("bilinen bir riskle eşleşmeyen bulgu var")
-    if any(m in aksiyonsuz for m in onerisiz):
+    if onerisiz:
         nedenler.append("önlem kartı olmayan bulgu var")
     kritik = [m for m in sapmalar
               if HER_ZAMAN_YUKSELT.get(m) in ("any", _yon(sapmalar[m]))]
@@ -374,43 +397,48 @@ def dogrula(model_cikti, sapmalar, secilen, acil, backend_eslesmeyen, aksiyonsuz
         "escalate_to_physician": bool(nedenler),
         "escalation_reasons": nedenler,
         "dropped": atilan,
+        "cards_without_action_tr": atlanan,
         "disclaimer": UYARI,
     }
 
 
 # ---------------------------------------------------------------- hepsi
-def oner(sapmalar, kartlar, k=5, sor=None, en_cok_deneme=2):
+def oner(sapmalar, kartlar, k=5, sor=None, en_cok_deneme=2, baglam=None):
     sor = sor or modele_sor
-    eslesmeyen = eslesmeyenler(sapmalar, kartlar)
-    secilen, acil = kart_sec(sapmalar, kartlar, k=k)
-    aksiyonsuz = aksiyonsuzlar(sapmalar, secilen)
-    bos = {"summary": "", "explanations": [], "recommendations": [], "unmatched_findings": []}
+    eslesmeyen = eslesmeyenler(sapmalar, kartlar, baglam)
+    secilen, acil = kart_sec(sapmalar, kartlar, k=k, baglam=baglam)
+    oneriler, atlanan = oneriler_kur(sapmalar, secilen, acil)       # model beklenmez
+    aciklama_kartlari = [a for a in secilen if a[0]["type"] != "countermeasure"]
+    bos = {"summary": "", "explanations": [], "unmatched_findings": []}
 
-    if not secilen:  # hiçbir kart yok: modele hiç sorma
-        return dogrula(bos, sapmalar, [], acil, eslesmeyen, aksiyonsuz)
+    def bitir(cikti):
+        return dogrula(cikti, sapmalar, secilen, acil, eslesmeyen, oneriler, atlanan)
 
-    mesajlar = mesajlari_kur(sapmalar, secilen, aksiyonsuz)
-    sema = sema_kur(sapmalar, secilen)
+    if not aciklama_kartlari:      # açıklanacak kart yok: modele hiç sorma
+        sonuc = bitir(bos)
+        sonuc["attempts"] = 0
+        return sonuc
+
+    mesajlar = mesajlari_kur(sapmalar, aciklama_kartlari)
+    sema = sema_kur(sapmalar, aciklama_kartlari)
     en_iyi, hatalar = None, []
-
     for deneme in range(en_cok_deneme):
         try:
             cikti = sor(mesajlar, sema, deneme)
         except (json.JSONDecodeError, KeyError) as hata:
             hatalar.append(f"deneme {deneme + 1}: model çıktısı okunamadı ({hata})")
             continue
-        sonuc = dogrula(cikti, sapmalar, secilen, acil, eslesmeyen, aksiyonsuz)
+        sonuc = bitir(cikti)
         sonuc["attempts"] = deneme + 1
         if en_iyi is None or len(sonuc["dropped"]) < len(en_iyi["dropped"]):
             en_iyi = sonuc
         if not sonuc["dropped"]:
             break
 
-    if en_iyi is None:  # iki deneme de bozuk JSON
-        en_iyi = dogrula(bos, sapmalar, secilen, acil, eslesmeyen, aksiyonsuz)
+    if en_iyi is None:  # model hiç geçerli çıktı vermedi: öneriler ve yükseltme yine gösterilir
+        en_iyi = bitir(bos)
+        en_iyi["attempts"] = en_cok_deneme
         en_iyi["error"] = "; ".join(hatalar)
-        en_iyi["escalate_to_physician"] = True
-        en_iyi["escalation_reasons"].append("model çıktısı üretilemedi")
     en_iyi["attempt_errors"] = hatalar
     return en_iyi
 

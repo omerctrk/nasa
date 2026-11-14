@@ -7,7 +7,8 @@ Kullanım:
 
 Tam çıktılar senaryo_ciktilari.json dosyasına yazılır.
 "beklenen" alanları kodun karar verdiği kısımları denetler: acil kart, doktora yükseltme,
-öneri çıkmaması gereken metrikler. Modelin yazdığı metnin doğruluğunu bir insanın okuması gerekir.
+öneri listesi. Öneri metinleri kartlardaki onaylı cümlelerdir (action_tr); model yalnız özet ve
+açıklama yazar ve bunların doğruluğunu bir insanın okuması gerekir.
 """
 import json
 import sys
@@ -33,7 +34,8 @@ SENARYOLAR = {
             "eye_pressure": "up",
             "headache": "up",
         },
-        "beklenen": {"acil": None, "yukselt": False},
+        # göz içi basıncı için önlem kartı yok (vision-06 bir deney bulgusu) -> hekime
+        "beklenen": {"acil": None, "yukselt": True, "onerisiz": ["eye_pressure"]},
     },
     "psikososyal": {
         "aciklama": "Ruh hali düşüşü, yalnızlık, ekip ilişkisi",
@@ -41,7 +43,8 @@ SENARYOLAR = {
         "beklenen": {"acil": None, "yukselt": False},
     },
     "kardiyo": {
-        "aciklama": "Düşük tansiyon, baş dönmesi, hızlı nabız",
+        "aciklama": "İniş sonrası: düşük tansiyon, baş dönmesi, hızlı nabız",
+        "baglam": ("general", "landing"),
         "sapmalar": {
             "systolic_bp": {"direction": "down", "value": 96, "baseline": 118, "unit": "mmHg"},
             "dizziness": "up",
@@ -50,13 +53,14 @@ SENARYOLAR = {
         "beklenen": {"acil": None, "yukselt": False},
     },
     "enfeksiyon": {
-        "aciklama": "Ateş, boğaz ağrısı, öksürük",
+        "aciklama": "Ateş, boğaz ağrısı, öksürük: akut önlem kartı yok -> hekime",
         "sapmalar": {
             "body_temp": {"direction": "up", "value": 38.2, "baseline": 36.7, "unit": "C"},
             "sore_throat": "up",
             "cough": "up",
         },
-        "beklenen": {"acil": None, "yukselt": False},
+        "beklenen": {"acil": None, "yukselt": True,
+                     "onerisiz": ["body_temp", "sore_throat", "cough"]},
     },
     "sirt": {
         "aciklama": "Tek bulgu: sırt ağrısı",
@@ -80,6 +84,7 @@ SENARYOLAR = {
     },
     "acil_radyasyon": {
         "aciklama": "Bulantı + yorgunluk + cilt lezyonu -> radyasyon acil kartı",
+        "baglam": ("general", "spe"),
         "sapmalar": {"nausea": "up", "fatigue": "up", "skin_lesion": "up"},
         "beklenen": {"acil": "rad-01", "yukselt": True},
     },
@@ -103,12 +108,13 @@ SENARYOLAR = {
 
 def calistir(ad, senaryo, kartlar, kuru):
     sapmalar, beklenen = senaryo["sapmalar"], senaryo["beklenen"]
-    secilen, acil_kartlar = k.kart_sec(sapmalar, kartlar)
-    eslesmeyen = k.eslesmeyenler(sapmalar, kartlar)
+    baglam = senaryo.get("baglam")      # None -> kart_onerici.AKTIF_BAGLAM
+    secilen, acil_kartlar = k.kart_sec(sapmalar, kartlar, baglam=baglam)
+    eslesmeyen = k.eslesmeyenler(sapmalar, kartlar, baglam)
     aksiyonsuz = k.aksiyonsuzlar(sapmalar, secilen)
     acil = [kart["id"] for kart, _, _ in acil_kartlar]
 
-    print(f"\n=== {ad}: {senaryo['aciklama']}")
+    print(f"\n=== {ad}: {senaryo['aciklama']}" + (f"  [bağlam: {', '.join(baglam)}]" if baglam else ""))
     for kart, e, p in acil_kartlar:
         print(f"    ACİL  {kart['id']:10} {e}")
     for kart, e, p in secilen:
@@ -127,7 +133,7 @@ def calistir(ad, senaryo, kartlar, kuru):
     sonuc = None
     if not kuru:
         t = time.time()
-        sonuc = k.oner(sapmalar, kartlar)
+        sonuc = k.oner(sapmalar, kartlar, baglam=baglam)
         sure = time.time() - t
         print(f"    model: {sure:.1f} sn, {sonuc.get('attempts', 0)} deneme | "
               f"açıklama={len(sonuc['explanations'])} öneri={len(sonuc['recommendations'])} "
@@ -136,7 +142,8 @@ def calistir(ad, senaryo, kartlar, kuru):
         for a in sonuc["explanations"]:
             print(f"      (açıklama) {a['text']}  <- {a['card_ids']}")
         for o in sonuc["recommendations"]:
-            print(f"      [{o['priority']}] {o['action']}  <- {o['card_ids']} {o['metrics']}")
+            print(f"      [{o['priority']}] {o['action']}  <- {o['card_ids']}")
+            print(f"          ölçüm: {o['rationale']}")
         if sonuc["dropped"]:
             print("    atılanlar:")
             for a in sonuc["dropped"]:
@@ -147,9 +154,14 @@ def calistir(ad, senaryo, kartlar, kuru):
         if sonuc["escalate_to_physician"] != beklenen["yukselt"]:
             sorunlar.append(f"yükseltme beklenen={beklenen['yukselt']} "
                             f"gerçek={sonuc['escalate_to_physician']}")
-        onlem_var = any(kart["type"] == "countermeasure" for kart, _, _ in secilen)
-        if onlem_var and not sonuc["recommendations"]:
-            sorunlar.append("önlem kartı gönderildi ama geçerli öneri kalmadı")
+        beklenen_oneri = [kart["id"] for kart, _, _ in secilen if k._onerilebilir(kart)]
+        gosterilen = [o["card_ids"][0] for o in sonuc["recommendations"]]
+        if sorted(beklenen_oneri) != sorted(gosterilen):
+            sorunlar.append(f"öneri listesi beklenenden farklı: {gosterilen} / {beklenen_oneri}")
+        if sonuc["cards_without_action_tr"]:
+            print(f"    action_tr alanı olmadığı için gösterilmeyen önlem kartları: {sonuc['cards_without_action_tr']}")
+        if not sonuc["summary"] and sonuc.get("attempts"):
+            sorunlar.append("model özeti boş")
         for m in beklenen.get("onerisiz", []):
             if any(m in o["metrics"] for o in sonuc["recommendations"]):
                 sorunlar.append(f"önlem kartı olmayan metrik için öneri çıktı: {m}")
