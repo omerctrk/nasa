@@ -131,6 +131,7 @@ Servisler tek nesne alır: `repo = SqlAlchemyRepository(session)`.
 | `claim_next_job(lease_seconds)` | `ClaimedJob \| None` (atomik) |
 | `renew_job_lease(job_id, lease_token, lease_seconds)` | `bool` |
 | `recover_expired_jobs()` | `list[RecoveredJob]` (DB saatine göre) |
+| `reschedule_job(job_id, lease_token, delay_seconds, error_code, max_attempts=2)` | Ö3: geçerli lease ile yalnız anomaliyi gecikmeli QUEUED yapar; snapshot korunur |
 | `save_input_snapshot(job_id, lease_token, snapshot, input_hash)` | ilk kayıt; aynı hash no-op; farklı → `SnapshotConflict` |
 | `save_anomaly_result(result)` | `UUID` |
 | `save_sans_analysis(result)` | `int` |
@@ -160,6 +161,14 @@ Ek açıklamadaki endpoint'ler ve akışlar bunlar olmadan yazılamıyor; Ömer 
 - Dışarı ORM nesnesi verilmez; `records.py` modelleri (frozen) döner.
 - Tekillik ve eşzamanlılık DB UNIQUE/koşullu UPDATE ile sağlanır; "önce bak sonra ekle" yetmez.
 - Hatalar: `IdempotencyConflict`, `InvalidStateTransition`, `LeaseLost`, `SnapshotConflict`, `NotFound`.
+
+Ö3 ayrıntısı: `recover_expired_jobs(max_attempts=2)` opsiyonel limit alır; normal
+çağrıdaki iki deneme davranışı korunur. Claim attempts+1 yapar. Lease yenileme ve
+finalizasyon süre/token/aktif durum kontrolünü DB saatiyle yapar; süresi dolan lease
+canlandırılmaz. Snapshot aynı hash'teyse içerik korunur ama retry'de ANALYZING
+geçişi yapılır. SANS ANALYZING lease kurtarması kör POST yerine
+FAILED/SANS_RECONCILIATION_REQUIRED üretir. Aynı astronotun SANS claim'leri atomik
+olarak sıralanır. Tam teslim ve pipeline arayüzü: `contracts/analysis-worker.md`.
 
 ## 7. Session ve transaction düzeni
 
