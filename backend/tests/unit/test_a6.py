@@ -43,7 +43,7 @@ def test_known_constants():
 
 
 def test_passwords_are_not_in_repo():
-    src = (ROOT / "scripts/seed.py").read_text()
+    src = (ROOT / "scripts/seed.py").read_text(encoding="utf-8")
     assert "SEED_ASTRONAUT_PASSWORD" in src
     assert not re.search(r"password\s*=\s*['\"]\w", src, re.I)
 

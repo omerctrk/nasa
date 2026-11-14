@@ -12,7 +12,7 @@ from app.repositories.interfaces import MeasurementRepository, Repository
 from app.repositories.sqlalchemy_measurements import MissingDefinition, _rows_to_dtos
 from app.repositories.sqlalchemy_repository import SqlAlchemyRepository
 
-VIEWS = (Path(__file__).parents[2] / "migrations/versions/0006_views.py").read_text()
+VIEWS = (Path(__file__).parents[2] / "migrations/versions/0006_views.py").read_text(encoding="utf-8")
 V = VIEWS.split("V_MEASUREMENTS = ")[1]
 
 

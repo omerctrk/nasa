@@ -151,6 +151,7 @@ Servisler tek nesne alır: `repo = SqlAlchemyRepository(session)`.
 | `claim_next_job(lease_seconds)` | `ClaimedJob \| None` (atomik) |
 | `renew_job_lease(job_id, lease_token, lease_seconds)` | `bool` |
 | `recover_expired_jobs()` | `list[RecoveredJob]` (DB saatine göre) |
+| `reschedule_job(job_id, lease_token, delay_seconds, error_code, max_attempts=2)` | Ö3: geçerli lease ile yalnız anomaliyi gecikmeli QUEUED yapar; snapshot korunur |
 | `save_input_snapshot(job_id, lease_token, snapshot, input_hash)` | ilk kayıt; aynı hash no-op; farklı → `SnapshotConflict` |
 | `save_anomaly_result(result)` | `UUID` |
 | `save_sans_analysis(result)` | `int` |
@@ -181,8 +182,17 @@ Ek açıklamadaki endpoint'ler ve akışlar bunlar olmadan yazılamıyor; Ömer 
 - Tekillik ve eşzamanlılık DB UNIQUE/koşullu UPDATE ile sağlanır; "önce bak sonra ekle" yetmez.
 - Hatalar: `IdempotencyConflict`, `InvalidStateTransition`, `LeaseLost`, `SnapshotConflict`,
   `NotFound`, `ValidationFailed` (→ 422).
-- Süresi dolan lease: anomaly işi `attempts <= anomaly_auto_retries` ise QUEUED (gecikmeli),
-  değilse FAILED (`LEASE_EXPIRED`). SANS işi hiçbir zaman otomatik tekrar edilmez → FAILED.
+- Süresi dolan lease: anomaly işi `attempts < min(max_attempts, anomaly_auto_retries+1)`
+  ise QUEUED (gecikmeli), değilse FAILED (`LEASE_EXPIRED`). SANS işi otomatik tekrar
+  edilmez → FAILED (`SANS_RECONCILIATION_REQUIRED`).
+
+Ö3 ayrıntısı: `recover_expired_jobs(max_attempts=2)` opsiyonel limit alır; normal
+çağrıdaki iki deneme davranışı korunur. Claim attempts+1 yapar. Lease yenileme ve
+finalizasyon süre/token/aktif durum kontrolünü DB saatiyle yapar; süresi dolan lease
+canlandırılmaz. Snapshot aynı hash'teyse içerik korunur ama retry'de ANALYZING
+geçişi yapılır. SANS SYNCING/ANALYZING lease kurtarması kör POST yerine
+FAILED/SANS_RECONCILIATION_REQUIRED üretir. Aynı astronotun SANS claim'leri atomik
+olarak sıralanır. Tam teslim ve pipeline arayüzü: `contracts/analysis-worker.md`.
 
 ## 7. Session ve transaction düzeni
 
@@ -234,11 +244,11 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
 
 ## 11. Açık konular
 
-1. **`ops.AnalysisJobs.request_json` (A3'te eklendi, Ömer'in onayı bekleniyor).** Şemada
+1. **`ops.AnalysisJobs.request_json` (A3'te eklendi, Ö2/Ö3 entegrasyonunda kullanılıyor).** Şemada
    `module_scope` / `session_id` için sütun yoktu; `input_snapshot_json` hazırlık bitene kadar
    NULL olduğundan işçi işi sahiplendiğinde neyi analiz edeceğini bilemiyordu. Sütun
-   `NVARCHAR(MAX) NOT NULL` + ISJSON; içeriği normalize `JobRequestData`. Onaylanmazsa yeni bir
-   migration ile kaldırılır. Ayrıca `IX_AnalysisJobs_state_next_attempt_at` performans indeksi
+   `NVARCHAR(MAX) NOT NULL` + ISJSON; içeriği normalize `JobRequestData`. Mevcut migration
+   değiştirilmedi. Ayrıca `IX_AnalysisJobs_state_next_attempt_at` performans indeksi
    eklendi (veri kuralı değil).
 2. `metadata_json` için izin verilen anahtar listesi henüz yok (şimdilik `original_source`).
 3. `anomaly.v_measurements` (A5) yalnız göz TESTLERİNİ `module=sans` olarak verir (eye her zaman

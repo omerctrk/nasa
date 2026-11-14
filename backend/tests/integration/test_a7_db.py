@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.db.session import get_db
 from app.main import app
 from app.models import Astronaut, MeasurementDefinition
-from app.routers.deps import current_user
+from app.routers.deps import require_active_astronaut
 from app.schemas.common import CurrentUser
 
 CHECKIN = dict(mood=6, energy=5, stress=4, loneliness=1, crew=3, mood_index=60,
@@ -23,7 +23,7 @@ def eye_tests(near=-0.05):
 @pytest.fixture
 def api(db, astronaut):
     app.dependency_overrides[get_db] = lambda: db
-    app.dependency_overrides[current_user] = lambda: CurrentUser(
+    app.dependency_overrides[require_active_astronaut] = lambda: CurrentUser(
         user_id=uuid.uuid4(), role="ASTRONAUT", astronaut_id=astronaut)
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
@@ -119,7 +119,7 @@ def test_display_profile_cannot_write(api, db, astronaut):
                       mission_id=db.get(Astronaut, astronaut).mission_id, is_display_only=True)
     db.add(other)
     db.flush()
-    app.dependency_overrides[current_user] = lambda: CurrentUser(
+    app.dependency_overrides[require_active_astronaut] = lambda: CurrentUser(
         user_id=uuid.uuid4(), role="ASTRONAUT", astronaut_id=other.astronaut_id)
     r = api.post("/api/v1/me/symptoms/headache", json={"flight_day": 74, "headache": True})
     assert r.status_code == 403 and code(r) == "FORBIDDEN"

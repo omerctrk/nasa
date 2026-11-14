@@ -6,8 +6,11 @@ Her servis yalnız KENDİ veritabanı bağlantısını alır (iş bölümü §9)
 Bu eşleme docker-compose.yml'de yapılır; kod hangi hesapla çalıştığını bilmez.
 """
 from functools import lru_cache
+from pathlib import Path
+from datetime import date
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
 from sqlalchemy.engine import URL
 
 
@@ -18,11 +21,11 @@ class Settings(BaseSettings):
     db_port: int = 1433
     db_name: str = "AstraHealth"
     db_user: str = "astra_app"
-    db_password: str
+    db_password: str = Field(repr=False)
     odbc_driver: str = "ODBC Driver 18 for SQL Server"
 
     # --- Kimlik (Ömer, sözleşme §5) ---
-    jwt_secret: str | None = None  # JWT_SECRET; auth açılırken zorunlu tutulur, repoya yazılmaz
+    jwt_secret: str | None = Field(default=None, repr=False)  # auth açılırken zorunlu
     jwt_issuer: str = "astra-health"
     jwt_audience: str = "astra-health-api"
 
@@ -37,6 +40,14 @@ class Settings(BaseSettings):
     anomaly_retry_delay_seconds: float = 2
     ws_auth_timeout_seconds: float = 5
     worker_poll_seconds: float = 1
+    history_policy_path: Path = Path(__file__).resolve().parents[2] / "config/history-policy.json"
+    threshold_policy_path: Path = Path(__file__).resolve().parents[2] / "config/thresholds.json"
+    anomaly_reference_date: date | None = None  # explicit demo date; never inferred from host time
+
+    @field_validator("anomaly_reference_date", mode="before")
+    @classmethod
+    def optional_reference_date(cls, value):
+        return None if value == "" else value
     # SANS POST'u için otomatik tekrar bilerek ayar değildir: tekrar güvenliği teyit
     # edilene kadar KAPALI (sözleşme §9).
 

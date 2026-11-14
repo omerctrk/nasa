@@ -184,7 +184,7 @@ def test_repository_contract_function_names():
         "create_alert", "create_notification_event", "acknowledge_alert", "resolve_alert",
         "record_receipt",
     }
-    extras = {"request_retry", "list_alerts", "list_pending_events", "mark_event_sent"}
+    extras = {"request_retry", "reschedule_job", "list_alerts", "list_pending_events", "mark_event_sent"}
     assert set(_public_methods(Repository)) == expected | extras
 
 

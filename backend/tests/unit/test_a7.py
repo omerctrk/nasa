@@ -8,14 +8,13 @@ from pydantic import ValidationError
 
 from app.db.session import get_db
 from app.main import app
-from app.routers.deps import current_user
+from app.routers.deps import require_active_astronaut
 from app.schemas.behavioral import CheckinIn, CognitiveIn, sleep_hours_between
 from app.schemas.common import CurrentUser
 from app.schemas.sans import EyeSessionIn
 from app.services.data_entry import etag_of, session_id_for
 
 ASTRO = CurrentUser(user_id=uuid.uuid4(), role="ASTRONAUT", astronaut_id="A007")
-GROUND = CurrentUser(user_id=uuid.uuid4(), role="GROUND_CONTROL", astronaut_id=None)
 
 CHECKIN = dict(mood=6, energy=5, stress=4, loneliness=1, crew=3, mood_index=60,
                bed_time="23:30:00", wake_time="07:00:00", sleep_quality=4)
@@ -82,14 +81,18 @@ def test_without_login_is_401(client):
     assert r.status_code == 401 and r.json()["detail"]["code"] == "UNAUTHORIZED"
 
 
-def test_ground_control_cannot_enter_astronaut_data(client):
-    app.dependency_overrides[current_user] = lambda: GROUND
-    r = client.post("/api/v1/me/symptoms/headache", json={"flight_day": 74, "headache": True})
-    assert r.status_code == 403 and r.json()["detail"]["code"] == "FORBIDDEN"
+def test_every_entry_route_requires_active_astronaut():
+    """Rol/aktiflik/gösterim kontrolü Ö1'in require_active_astronaut'unda (Ömer'in testleri);
+    burada her veri giriş ucunun bu dependency'ye bağlı olduğunu doğruluyoruz."""
+    from app.routers import entries
+
+    for route in entries.router.routes:
+        deps = {d.call for d in route.dependant.dependencies}
+        assert require_active_astronaut in deps, route.path
 
 
 def test_validation_uses_shared_envelope(client):
-    app.dependency_overrides[current_user] = lambda: ASTRO
+    app.dependency_overrides[require_active_astronaut] = lambda: ASTRO
     r = client.put("/api/v1/me/checkins/2027-03-20", json=CHECKIN | {"mood": 11, "astronaut_id": "X"})
     d = r.json()["detail"]
     assert r.status_code == 422 and d["code"] == "VALIDATION_ERROR"

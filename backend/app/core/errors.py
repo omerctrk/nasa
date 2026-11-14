@@ -22,15 +22,19 @@ log = logging.getLogger("astra.errors")
 TRACE_HEADER = "X-Trace-Id"
 
 _STATUS_CODES = {
+    503: ErrorCode.SERVICE_UNAVAILABLE,
+    400: ErrorCode.VALIDATION_ERROR,
     401: ErrorCode.UNAUTHORIZED,
     403: ErrorCode.FORBIDDEN,
     404: ErrorCode.NOT_FOUND,
+    405: ErrorCode.VALIDATION_ERROR,
     409: ErrorCode.INVALID_STATE_TRANSITION,
     412: ErrorCode.PRECONDITION_FAILED,
     422: ErrorCode.VALIDATION_ERROR,
 }
 
 _DEFAULT_MESSAGES = {
+    ErrorCode.SERVICE_UNAVAILABLE: "Servis henüz hazır değil.",
     ErrorCode.UNAUTHORIZED: "Oturum geçersiz veya süresi dolmuş.",
     ErrorCode.FORBIDDEN: "Bu işlem için yetkiniz yok.",
     ErrorCode.NOT_FOUND: "Kayıt bulunamadı.",
@@ -49,11 +53,13 @@ class ApiError(Exception):
         code: ErrorCode,
         message: str | None = None,
         fields: list[ErrorField] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         self.status_code = status_code
         self.code = code
         self.message = message or _DEFAULT_MESSAGES[code]
         self.fields = fields or []
+        self.headers = headers or {}
 
 
 _REPO_ERRORS: dict[type[repo_errors.RepositoryError], tuple[int, ErrorCode]] = {
@@ -74,7 +80,8 @@ def trace_id_of(request: Request) -> uuid.UUID:
 
 
 def _response(request: Request, status: int, code: ErrorCode, message: str | None = None,
-              fields: list[ErrorField] | None = None) -> JSONResponse:
+              fields: list[ErrorField] | None = None,
+              headers: dict[str, str] | None = None) -> JSONResponse:
     body = ErrorResponse(
         detail=ErrorBody(
             code=code,
@@ -86,7 +93,7 @@ def _response(request: Request, status: int, code: ErrorCode, message: str | Non
     return JSONResponse(
         status_code=status,
         content=body.model_dump(mode="json"),
-        headers={TRACE_HEADER: str(body.detail.trace_id)},
+        headers={**(headers or {}), TRACE_HEADER: str(body.detail.trace_id), "Cache-Control": "no-store"},
     )
 
 
@@ -100,7 +107,7 @@ _PYDANTIC_CODES = {"missing": "REQUIRED", "extra_forbidden": "UNKNOWN_FIELD"}
 
 
 async def _on_api_error(request: Request, exc: ApiError) -> JSONResponse:
-    return _response(request, exc.status_code, exc.code, exc.message, exc.fields)
+    return _response(request, exc.status_code, exc.code, exc.message, exc.fields, exc.headers)
 
 
 async def _on_validation(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -108,7 +115,7 @@ async def _on_validation(request: Request, exc: RequestValidationError) -> JSONR
         ErrorField(
             field=_field_path(tuple(e.get("loc", ()))),
             code=_PYDANTIC_CODES.get(e.get("type", ""), "INVALID_VALUE"),
-            message=str(e.get("msg", "Geçersiz değer.")),
+            message="Alan değeri geçersiz.",
         )
         for e in exc.errors()
     ]
@@ -129,7 +136,7 @@ async def _on_repository(request: Request, exc: repo_errors.RepositoryError) -> 
 
 
 async def _on_unexpected(request: Request, exc: Exception) -> JSONResponse:
-    log.exception("Beklenmeyen hata trace_id=%s", trace_id_of(request), exc_info=exc)
+    log.error("code=INTERNAL_ERROR trace_id=%s", trace_id_of(request))
     return _response(request, 500, ErrorCode.INTERNAL_ERROR)
 
 

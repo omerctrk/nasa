@@ -29,6 +29,13 @@ def SessionLocal() -> Session:  # noqa: N802 — eski adıyla çağrılabilsin
     return _factory()()
 
 
+def __getattr__(name: str):
+    """Geriye uyumluluk: `from app.db.session import engine` hâlâ çalışır (ilk erişimde oluşur)."""
+    if name == "engine":
+        return get_engine()
+    raise AttributeError(name)
+
+
 def get_db() -> Iterator[Session]:
     """FastAPI dependency: her istek kendi Session'ını alır, sonunda kapanır."""
     db = SessionLocal()
