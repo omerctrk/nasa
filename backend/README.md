@@ -129,4 +129,5 @@ seed ile aynı `astra-v1` protokolünü kullanır.
 - [x] A4 behavioral (3) + evaluation.gercek_durum; migration 0005; eval yalnız astra_eval_role'e açık
 - [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
 - [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
+- [x] 0007: `dbo.knowledge_cards` ek tablosu. `astra_app_role` için SELECT/INSERT/UPDATE/DELETE; `astra_collaborator` üyelikten devralır. Diğer tablolarda DELETE izni yoktur.
 - [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import

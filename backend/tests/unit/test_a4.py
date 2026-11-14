@@ -1,4 +1,4 @@
-"""A4 kabul (DB'siz): 20 fiziksel tablo, davranış kuralları, eval izolasyonu."""
+"""A4 kabul (DB'siz): özgün 20 tablo, davranış kuralları, eval izolasyonu."""
 from app.db.base import Base
 
 
@@ -7,8 +7,9 @@ def checks(table: str) -> str:
                       if hasattr(c, "sqltext"))
 
 
-def test_twenty_physical_tables():
-    assert len(Base.metadata.tables) == 20  # şema v5.0: 20 tablo + 3 VIEW (A5)
+def test_twenty_original_tables_plus_knowledge_extension():
+    assert "dbo.knowledge_cards" in Base.metadata.tables
+    assert len(set(Base.metadata.tables) - {"dbo.knowledge_cards"}) == 20
 
 
 def test_checkin_unique_per_person_and_day():
