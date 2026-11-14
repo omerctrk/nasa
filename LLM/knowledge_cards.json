@@ -1,0 +1,1068 @@
+[
+  {
+    "id": "sleep-01",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "sleep_hours",
+      "pvt_mean_rt_ms",
+      "stress"
+    ],
+    "direction": "any",
+    "text": "During six-month International Space Station missions, astronauts commonly slept approximately 6.5 hours per night. Sleep durations of 6 hours or less were associated with slower psychomotor response speed and higher reported stress.",
+    "source": "Sleep deficiency in spaceflight is associated with degraded neurobehavioral functions and elevated stress in astronauts on six-month missions aboard the International Space Station",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8919197/",
+    "locator": "Abstract; Results – Sleep Duration and Neurobehavioral Function"
+  },
+  {
+    "id": "sleep-02",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "sleep_hours",
+      "pvt_lapses",
+      "pvt_mean_rt_ms"
+    ],
+    "direction": "any",
+    "text": "After seven days of six hours of sleep, performance is equal to that of a person who has not slept for 24 to 36 consecutive hours. Lack of sleep slows mental processes and compromises reasoning ability and memory.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-041 Rev B: Sleep Accommodations",
+    "url": "https://www.nasa.gov/sites/default/files/atoms/files/sleep_accomodations_technical_brief_ochmo.pdf",
+    "locator": "Page 3 - Background: Performance"
+  },
+  {
+    "id": "sleep-03",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "sleep_hours",
+      "sleep_quality",
+      "mood_index",
+      "stress",
+      "crew_relation"
+    ],
+    "direction": "any",
+    "text": "Sleep loss can be a behavioral stressor and lead to depressive symptoms and anxiety. Sleep deprivation also compromises team interactions through increased outward hostility, a greater tendency to blame others, and reduced willingness to accept blame.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-041 Rev B: Sleep Accommodations",
+    "url": "https://www.nasa.gov/sites/default/files/atoms/files/sleep_accomodations_technical_brief_ochmo.pdf",
+    "locator": "Page 7 - Reference Data"
+  },
+  {
+    "id": "sleep-04",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "fatigue",
+      "pvt_lapses"
+    ],
+    "direction": "up",
+    "text": "Sleep inertia, the grogginess and disorientation felt on waking, is generally felt for 20-30 minutes. The related impairment in alertness and performance dissipates until approximately two to four hours after waking.",
+    "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+    "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+    "locator": "Section III (p. 8); Section IV.B.2 (p. 30)"
+  },
+  {
+    "id": "sleep-05",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "pvt_mean_rt_ms",
+      "pvt_lapses",
+      "pvt_false_starts",
+      "sleep_hours"
+    ],
+    "direction": "any",
+    "text": "Sleep deprivation results in an overall slowing of responses and an increase in lapses and errors of commission on the psychomotor vigilance task.",
+    "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+    "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+    "locator": "Section IV.B.1.a (p. 25)"
+  },
+  {
+    "id": "sleep-06",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "mood_index",
+      "fatigue",
+      "pvt_mean_rt_ms",
+      "pvt_lapses"
+    ],
+    "direction": "any",
+    "text": "Under sleep restriction, performance steadily degrades while the subjective feeling of sleepiness increases only modestly and then reaches a plateau.",
+    "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+    "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+    "locator": "Section III (p. 7)"
+  },
+  {
+    "id": "sleep-07",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "sleep_quality",
+      "sleep_hours"
+    ],
+    "direction": "any",
+    "text": "Before sleep, a dynamic lighting schedule uses blue-minimized white light. Blue-enriched white light is the part of the schedule used to promote alertness, not for the pre-sleep period. Sleep hygiene training and pre-sleep activities without supplemental light exposure are recommended.",
+    "action_tr": "Uykudan önce mavi ışığı azaltılmış beyaz ışık kullanın ve uyku öncesi etkinlikleri ek ışık olmadan yapın; uyku hijyeni eğitimi önerilir.",
+    "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+    "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+    "locator": "Section IV.A.7.b (pp. 23-24); Section IV.B.3 (p. 33)"
+  },
+  {
+    "id": "sleep-08",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "sleep_hours",
+      "pvt_lapses"
+    ],
+    "direction": "any",
+    "text": "NASA fitness-for-duty standards nominally limit crewmembers' scheduled work to 6.5 hours per day and recommend a 48-hour work week; these limits apply to work time, not to sleep. Naps can be used as a countermeasure for sleep loss, but a single 10-hour sleep opportunity cannot repay accumulated sleep loss.",
+    "action_tr": "Planlı çalışma süresini günde 6,5 saat ve haftada 48 saat sınırında tutun; uyku kaybı için kısa uykular (şekerleme) kullanılabilir.",
+    "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+    "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+    "locator": "Section III (p. 8); Section IV.A.7 (p. 23); Section IV.B.1.b (p. 27)"
+  },
+  {
+    "id": "behav-01",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "stress",
+      "mood_index",
+      "loneliness",
+      "pvt_mean_rt_ms"
+    ],
+    "direction": "any",
+    "text": "Stress, workload, family and social separation, and sleep deficiency contribute to the risk of adverse cognitive and behavioral conditions, especially on long-duration missions without real-time communication. Potential impacts include cognitive function, team decision making and reaction time, and mood, morale, and well-being.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-014 Rev B: Behavioral Health Mishaps",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-014-behavioral-health-mishaps.pdf",
+    "locator": "Page 4 - Depression and Anxiety"
+  },
+  {
+    "id": "behav-02",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "crew_relation",
+      "stress",
+      "loneliness"
+    ],
+    "direction": "any",
+    "text": "Isolation, confinement, and communication delays of up to 22 minutes during long-duration missions increase crew tension, subgrouping, and interpersonal conflict.",
+    "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
+    "url": "https://ntrs.nasa.gov/citations/20220007465",
+    "locator": "Section IV (p. 6); Section V.C.4.a-b (pp. 71-72)"
+  },
+  {
+    "id": "behav-03",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "sleep_hours",
+      "mood_index"
+    ],
+    "direction": "any",
+    "text": "Work overload, defined as 10-hour work days for more than 3 days per week or more than 60 hours per week, contributes to acute and chronic sleep loss and reduced morale.",
+    "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
+    "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
+    "locator": "Section III (pp. 7-9); Section IV.A.4 (p. 16)"
+  },
+  {
+    "id": "behav-04",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "stress"
+    ],
+    "direction": "up",
+    "text": "Astronauts' reported stress increased across the quarters of six-month ISS missions, with stress ratings higher during the fourth mission quarter than during the first and second quarters. Stress ratings were also lower on weekends than on weekdays.",
+    "source": "Sleep deficiency in spaceflight is associated with degraded neurobehavioral functions and elevated stress in astronauts on six-month missions aboard the International Space Station",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8919197/",
+    "locator": "Results – Stress Ratings Across Mission Phases"
+  },
+  {
+    "id": "behav-05",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "crew_relation",
+      "loneliness",
+      "mood_index"
+    ],
+    "direction": "any",
+    "text": "Psychological closing, marked by reduced quantity and richness of communication, and displacing negative emotions onto Mission Control are warning signs of team strain.",
+    "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
+    "url": "https://ntrs.nasa.gov/citations/20220007465",
+    "locator": "Section V.B.2.c (p. 25)"
+  },
+  {
+    "id": "behav-06",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "crew_relation",
+      "stress"
+    ],
+    "direction": "any",
+    "text": "Properly conducted debriefs improve individual and team performance by approximately 20-25%. Crew-led team debriefs help maintain shared mental models and resolve conflicts.",
+    "action_tr": "Mürettebat liderliğinde ekip değerlendirme toplantıları (debrief) yapın.",
+    "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
+    "url": "https://ntrs.nasa.gov/citations/20220007465",
+    "locator": "Section V.A.2 (p. 13)"
+  },
+  {
+    "id": "behav-07",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "crew_relation",
+      "stress",
+      "loneliness",
+      "mood_index"
+    ],
+    "direction": "any",
+    "text": "Foster social cohesion and buffer stress through shared team meals, group leisure activities, regular exercise, and structured communication protocols during delayed crew-to-ground interactions.",
+    "action_tr": "Ortak yemekler ve grup boş zaman etkinlikleri düzenleyin, düzenli egzersizi sürdürün; yer ile gecikmeli iletişimde yapılandırılmış iletişim protokollerini kullanın.",
+    "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
+    "url": "https://ntrs.nasa.gov/citations/20220007465",
+    "locator": "Section V.C.2.c (pp. 49-50); Section VI.B.1 (p. 83)"
+  },
+  {
+    "id": "behav-08",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "stress",
+      "crew_relation"
+    ],
+    "direction": "any",
+    "text": "Schedule workloads with regular breaks to prevent conflict-distress spirals and allow adequate sleep. Provide crew autonomy in self-scheduling daily tasks.",
+    "action_tr": "İş yükünü düzenli molalarla planlayın ve mürettebata günlük görevlerini kendi planlama özerkliği tanıyın.",
+    "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
+    "url": "https://ntrs.nasa.gov/citations/20220007465",
+    "locator": "Section V.C.2.b (p. 45); Section V.C.4.a (p. 68)"
+  },
+  {
+    "id": "cog-01",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "pvt_mean_rt_ms"
+    ],
+    "direction": "up",
+    "text": "During the 3-day Inspiration4 mission, astronauts were significantly slower on the psychomotor vigilance test, which assesses sustained attention. The cognitive changes were modest, and performance generally did not differ from pre-flight levels after return to Earth.",
+    "source": "Molecular and physiological changes in the SpaceX Inspiration4 civilian crew",
+    "url": "https://www.nature.com/articles/s41586-024-07648-x",
+    "locator": "The Inspiration4 crew's neurobehavioural functions"
+  },
+  {
+    "id": "cog-02",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "pvt_mean_rt_ms",
+      "rotation_mean_rt_ms"
+    ],
+    "direction": "up",
+    "text": "During the first 30 days of head-down-tilt bed rest, participants showed modest but statistically significant slowing across several cognitive domains. The effect was most prominent in sensorimotor speed and appeared early during bed rest.",
+    "source": "Effects of head-down tilt bed rest plus elevated CO2 on cognitive performance",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8262780/",
+    "locator": "Abstract; Results – Cognitive Performance"
+  },
+  {
+    "id": "cog-03",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "nausea",
+      "dizziness",
+      "headache",
+      "digestive_issue"
+    ],
+    "direction": "up",
+    "text": "Space motion sickness affects about 73% of crewmembers during the first 2-3 days of an initial flight. Common symptoms include nausea, vomiting, dizziness, headache, disorientation, decreased appetite, and stomach awareness.",
+    "source": "NASA-STD-3001 Medical Technical Brief OCHMO-MTB-004: Space Adaptation Sickness and Space Readaptation Syndrome",
+    "url": "https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-mtb-004-space-adaptation-sickness-sas.pdf",
+    "locator": "Page 1 – Executive Summary; Page 6 – Common SMS Symptoms"
+  },
+  {
+    "id": "cog-04",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "nausea",
+      "dizziness"
+    ],
+    "direction": "up",
+    "text": "Non-pharmacological approaches for Space Adaptation Sickness include training to minimize provocative head movements, restricting head motion and activity, maintaining hydration, and increasing air circulation. EVAs are not scheduled within 72 hours of launch to allow symptoms to resolve.",
+    "action_tr": "Uzay uyum hastalığı belirtilerinde baş hareketlerini ve etkinliği sınırlayın, sıvı alımını sürdürün ve hava dolaşımını artırın.",
+    "source": "NASA-STD-3001 Medical Technical Brief OCHMO-MTB-004: Space Adaptation Sickness and Space Readaptation Syndrome",
+    "url": "https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-mtb-004-space-adaptation-sickness-sas.pdf",
+    "locator": "Page 6 – Attenuating Factors; Page 8 – Non-Pharmacological Countermeasures"
+  },
+  {
+    "id": "cog-05",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "nausea",
+      "dizziness"
+    ],
+    "direction": "up",
+    "text": "Space motion sickness symptoms can reappear when crewmembers return to Earth's gravity. This condition, called Terrestrial Readaptation Motion Sickness, may affect landing and spacecraft egress operations.",
+    "source": "NASA-STD-3001 Medical Technical Brief OCHMO-MTB-004: Space Adaptation Sickness and Space Readaptation Syndrome",
+    "url": "https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-mtb-004-space-adaptation-sickness-sas.pdf",
+    "locator": "Executive Summary",
+    "context": "landing"
+  },
+  {
+    "id": "cog-06",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "rotation_accuracy",
+      "rotation_mean_rt_ms"
+    ],
+    "direction": "any",
+    "text": "In a study of 15 astronauts completing approximately six-month ISS missions, card-rotation completion time and accuracy showed no statistically significant preflight-to-postflight changes.",
+    "source": "The Effects of Long Duration Spaceflight on Sensorimotor Control and Cognition",
+    "url": "https://www.frontiersin.org/journals/neural-circuits/articles/10.3389/fncir.2021.723504/full",
+    "locator": "Results – Effects of the Microgravity Environment; Table 3"
+  },
+  {
+    "id": "cog-07",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "pvt_mean_rt_ms",
+      "rotation_mean_rt_ms",
+      "rotation_accuracy"
+    ],
+    "direction": "any",
+    "text": "After long-duration flight, high-fidelity, just-in-time refresher training is recommended for landing and post-flight manual-control tasks, along with cognitive and sensorimotor self-assessments before challenging manual-control activities. Dual-task limitations should be considered when assigning duties during critical operations.",
+    "action_tr": "Zorlu elle kontrol görevlerinden önce bilişsel ve duyu-motor öz değerlendirme yapın; iniş ve uçuş sonrası elle kontrol görevleri için tazeleme eğitimi önerilir.",
+    "source": "Long-duration spaceflight adversely affects post-landing operator proficiency",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6389907/",
+    "locator": "Discussion – Countermeasure Recommendations",
+    "context": "landing"
+  },
+  {
+    "id": "cog-08",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "pvt_mean_rt_ms",
+      "pvt_false_starts",
+      "rotation_mean_rt_ms",
+      "rotation_accuracy"
+    ],
+    "direction": "any",
+    "text": "Monthly cognitive testing with the WinSCAT tool compares each astronaut's in-flight results with an individual preflight baseline. Additional testing and assessment are indicated following an injury or illness in orbit.",
+    "action_tr": "Yörüngede bir yaralanma ya da hastalık sonrasında ek bilişsel test ve değerlendirme yapın; sonuçları kişisel uçuş öncesi taban değerinizle karşılaştırın.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-016: Behavioral Health and Performance",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/03/behavioral-health-technical-brief-ochmo.pdf",
+    "locator": "Page 6 – In-Flight Psychological and Neurobehavioral Monitoring"
+  },
+  {
+    "id": "cardio-01",
+    "type": "risk",
+    "system": "cardiovascular",
+    "metrics": [
+      "systolic_bp",
+      "dizziness",
+      "heart_rate"
+    ],
+    "direction": "any",
+    "text": "Orthostatic intolerance is reported in approximately 20–30% of crew members after short-duration missions and 83% of astronauts after long-duration missions. Severe cases may involve presyncope or syncope and can impair a crew member's ability to exit the spacecraft after landing.",
+    "source": "Risk of Orthostatic Intolerance During Re-exposure to Gravity (NASA HRP Evidence Report)",
+    "url": "https://ntrs.nasa.gov/citations/20150007319",
+    "locator": "III. Introduction, pp. 5–6",
+    "context": "landing"
+  },
+  {
+    "id": "cardio-02",
+    "type": "sign",
+    "system": "cardiovascular",
+    "metrics": [
+      "systolic_bp",
+      "dizziness",
+      "heart_rate"
+    ],
+    "direction": "any",
+    "text": "After spaceflight, orthostatic intolerance during standing or tilt testing may involve increased heart rate, decreased systolic blood pressure, and reduced stroke volume. These responses can impair the maintenance of arterial pressure and cerebral blood flow when the crew member returns to an upright posture.",
+    "source": "Risk of Orthostatic Intolerance During Re-exposure to Gravity (NASA HRP Evidence Report)",
+    "url": "https://ntrs.nasa.gov/citations/20150007319",
+    "locator": "IV. Evidence – A. Orthostatic Intolerance after Space Flight, pp. 8–17",
+    "context": "landing"
+  },
+  {
+    "id": "cardio-03",
+    "type": "countermeasure",
+    "system": "cardiovascular",
+    "metrics": [
+      "systolic_bp",
+      "dizziness",
+      "heart_rate"
+    ],
+    "direction": "any",
+    "text": "Combining fluid loading, re-entry compression garments, post-landing compression garments, and immediate access to medical care has helped control orthostatic intolerance risk after short-duration flights. No single countermeasure has completely eliminated this risk.",
+    "action_tr": "İniş için sıvı yüklemesi yapın, dönüş ve iniş sonrası kompresyon giysilerini kullanın ve tıbbi desteğe hemen erişimi sağlayın.",
+    "source": "Risk of Orthostatic Intolerance During Re-exposure to Gravity (NASA HRP Evidence Report)",
+    "url": "https://ntrs.nasa.gov/citations/20150007319",
+    "locator": "III. Introduction, p. 6",
+    "context": "landing"
+  },
+  {
+    "id": "cardio-04",
+    "type": "countermeasure",
+    "system": "cardiovascular",
+    "metrics": [
+      "systolic_bp",
+      "dizziness"
+    ],
+    "direction": "any",
+    "text": "In a study of 12 astronauts after six-month missions, no participant experienced orthostatic intolerance or hypotension during routine daily activities in the first 24 hours after landing, under countermeasures that included in-flight exercise and fluid-volume resuscitation after return.",
+    "source": "Impact of Prolonged Spaceflight on Orthostatic Tolerance During Ambulation and Blood Pressure Profiles in Astronauts",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/31319685/",
+    "locator": "Abstract – Results and Conclusions",
+    "context": "landing"
+  },
+  {
+    "id": "cardio-05",
+    "type": "sign",
+    "system": "cardiovascular",
+    "metrics": [
+      "systolic_bp",
+      "diastolic_bp"
+    ],
+    "direction": "down",
+    "text": "In a study of eight astronauts aboard the ISS, 24-hour ambulatory systolic, diastolic, and mean arterial blood pressure decreased during 85–192 days in space. The reductions were 8 ± 2 mmHg, 9 ± 2 mmHg, and 10 ± 3 mmHg, respectively.",
+    "source": "Fluid shifts, vasodilatation and ambulatory blood pressure reduction during long duration spaceflight",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4324706/",
+    "locator": "Results – Blood pressure; Conclusions"
+  },
+  {
+    "id": "cardio-06",
+    "type": "sign",
+    "system": "cardiovascular",
+    "metrics": [
+      "body_temp"
+    ],
+    "direction": "up",
+    "text": "Resting core body temperature increased by approximately 1.01°C during long-duration ISS missions. The increase developed gradually over about 2.5 months and reached a plateau after approximately 75 days of spaceflight.",
+    "source": "Increased core body temperature in astronauts during long-duration space missions",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5701078/",
+    "locator": "Results – Temperature Variables"
+  },
+  {
+    "id": "cardio-07",
+    "type": "risk",
+    "system": "cardiovascular",
+    "metrics": [
+      "body_temp",
+      "fatigue"
+    ],
+    "direction": "up",
+    "text": "Maximum core body temperature during exercise increased by an average of 1.39°C in space compared with preflight measurements and exceeded 40°C in some individuals. Even minor increases in core body temperature can impair physical and cognitive performance.",
+    "source": "Increased core body temperature in astronauts during long-duration space missions",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5701078/",
+    "locator": "Results – Temperature Variables; Discussion"
+  },
+  {
+    "id": "cardio-08",
+    "type": "sign",
+    "system": "cardiovascular",
+    "metrics": [
+      "heart_rate",
+      "spo2"
+    ],
+    "direction": "down",
+    "text": "During the 3-day Inspiration4 mission, one crew member showed decreased heart rate and lower blood oxygen saturation in flight relative to pre-flight. Cardiovascular responses differed between crew members.",
+    "source": "Molecular and physiological changes in the SpaceX Inspiration4 civilian crew",
+    "url": "https://www.nature.com/articles/s41586-024-07648-x",
+    "locator": "Cardiovascular responses to spaceflight"
+  },
+  {
+    "id": "cardio-09",
+    "type": "sign",
+    "system": "cardiovascular",
+    "metrics": [
+      "systolic_bp",
+      "diastolic_bp"
+    ],
+    "direction": "down",
+    "text": "The normal nighttime decrease in blood pressure was maintained during long-duration ISS missions, with a nightly dip of approximately 8 ± 3 mmHg.",
+    "source": "Fluid shifts, vasodilatation and ambulatory blood pressure reduction during long duration spaceflight",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4324706/",
+    "locator": "Results – Blood pressure; Discussion"
+  },
+  {
+    "id": "resp-01",
+    "type": "risk",
+    "system": "respiratory",
+    "metrics": [
+      "headache",
+      "shortness_of_breath",
+      "fatigue"
+    ],
+    "direction": "up",
+    "text": "When CO2 builds up in the body (hypercapnia), it can cause headache, shortness of breath, and fatigue. Most symptoms associated with CO2 toxicity have never been observed during spaceflight.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Carbon Dioxide (CO2), OCHMO-TB-004, Rev D",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-004-carbon-dioxide.pdf",
+    "locator": "Page 1, Executive Summary; Page 2, Background – Main Symptoms of CO2 Toxicity"
+  },
+  {
+    "id": "resp-02",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "headache",
+      "blurred_vision"
+    ],
+    "direction": "up",
+    "text": "Headaches and vision changes are among the most commonly experienced symptoms during spaceflight. They are commonly linked to fluid shifts and a potential increase in intracranial pressure in microgravity, so they should not automatically be attributed to elevated CO2.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Carbon Dioxide (CO2), OCHMO-TB-004, Rev D",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-004-carbon-dioxide.pdf",
+    "locator": "Page 2, Background – Main Symptoms of CO2 Toxicity"
+  },
+  {
+    "id": "resp-03",
+    "type": "risk",
+    "system": "respiratory",
+    "metrics": [
+      "headache",
+      "shortness_of_breath",
+      "fatigue"
+    ],
+    "direction": "up",
+    "text": "NASA requires the average one-hour CO2 partial pressure in the habitable volume to be no more than 3 mmHg. Atmospheric monitoring systems should continuously record CO2 partial pressure and alert the crew when atmospheric parameters are outside safe limits.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Carbon Dioxide (CO2), OCHMO-TB-004, Rev D",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-004-carbon-dioxide.pdf",
+    "locator": "Page 17, V2 6004; Page 18, V2 6020 and V2 6022"
+  },
+  {
+    "id": "resp-04",
+    "type": "countermeasure",
+    "system": "respiratory",
+    "metrics": [
+      "headache",
+      "shortness_of_breath",
+      "fatigue"
+    ],
+    "direction": "up",
+    "text": "If average CO2 partial pressure remains above the limit over several days for unknown reasons, the Flight Control Team should identify and repair degraded CO2 scrubbing equipment or activate supplemental CO2 scrubbing equipment as needed.",
+    "action_tr": "Ortalama CO2 kısmi basıncı günlerce sınırın üzerinde kalıyorsa uçuş kontrol ekibi bozulan CO2 temizleme donanımını bulup onarmalı ya da ek CO2 temizleme donanımını devreye almalıdır.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Carbon Dioxide (CO2), OCHMO-TB-004, Rev D",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-004-carbon-dioxide.pdf",
+    "locator": "Page 7, Reference Information – ISS CO2 Levels",
+    "context": "co2_high"
+  },
+  {
+    "id": "resp-05",
+    "type": "risk",
+    "system": "respiratory",
+    "metrics": [
+      "spo2",
+      "respiratory_rate"
+    ],
+    "direction": "any",
+    "text": "Future missions may use constant partial cabin depressurization to reduce nitrogen in the body before spacewalks. This altered cabin environment can increase the risk of mild hypoxia, which occurs when oxygen levels in body tissues become lower than normal.",
+    "source": "NASA – Risk of Hypoxia",
+    "url": "https://www.nasa.gov/reference/risk-of-hypoxia/",
+    "locator": "What are the top risks?",
+    "context": "eva"
+  },
+  {
+    "id": "resp-06",
+    "type": "sign",
+    "system": "respiratory",
+    "metrics": [
+      "spo2",
+      "headache",
+      "blurred_vision",
+      "sleep_quality",
+      "sleep_hours"
+    ],
+    "direction": "any",
+    "text": "Untreated mild hypoxia can cause confusion, headaches, vision impairment, and trouble sleeping.",
+    "source": "NASA – Risk of Hypoxia",
+    "url": "https://www.nasa.gov/reference/risk-of-hypoxia/",
+    "locator": "What are the top risks?"
+  },
+  {
+    "id": "resp-07",
+    "type": "risk",
+    "system": "respiratory",
+    "metrics": [
+      "headache",
+      "fatigue",
+      "shortness_of_breath"
+    ],
+    "direction": "up",
+    "text": "Crew and equipment release heat, moisture, and CO2, so insufficient cabin ventilation can allow localized CO2 and heat pockets to form. During nominal operations, ventilation should provide enough air circulation to prevent these pockets.",
+    "source": "NASA-STD-3001 Volume 2 – Natural and Induced Environments",
+    "url": "https://www.nasa.gov/reference/6-0-natural-and-induced-environments-vol-2/",
+    "locator": "Section 6.2.7.1; Requirement V2 6107"
+  },
+  {
+    "id": "resp-08",
+    "type": "sign",
+    "system": "respiratory",
+    "metrics": [
+      "skin_lesion",
+      "fatigue"
+    ],
+    "direction": "up",
+    "text": "Cabin humidity and temperature outside the specified crew health limits may cause dry, stuffy, or irritated mucous membranes, skin rashes, thermal discomfort, or decreased performance. High humidity can contribute to skin rashes due to microbial growth.",
+    "source": "NASA-STD-3001 Volume 2 – Natural and Induced Environments",
+    "url": "https://www.nasa.gov/reference/6-0-natural-and-induced-environments-vol-2/",
+    "locator": "Section 6.2.3.1; Requirement V2 6012"
+  },
+  {
+    "id": "resp-09",
+    "type": "sign",
+    "system": "respiratory",
+    "metrics": [
+      "cough",
+      "sore_throat"
+    ],
+    "direction": "up",
+    "text": "During the Apollo missions, acute health effects reported after lunar dust inhalation included sore throat, sneezing, and coughing. Longer-term dust exposure may pose respiratory disease risks.",
+    "source": "Lunar Dust: The Hazard and Astronaut Exposure Risks",
+    "url": "https://doi.org/10.1007/s11038-010-9365-0",
+    "locator": "Abstract",
+    "context": "lunar_surface"
+  },
+  {
+    "id": "resp-10",
+    "type": "countermeasure",
+    "system": "respiratory",
+    "metrics": [
+      "cough",
+      "sore_throat",
+      "shortness_of_breath"
+    ],
+    "direction": "up",
+    "text": "Suit cleaning before and after vehicle entry, dust collection and removal, and suitable air filtration are important lunar dust-control measures. Temporary dust masks and goggles may also help reduce superficial responses such as sneezing and eye irritation.",
+    "action_tr": "Araca giriş öncesi ve sonrasında giysiyi temizleyin, tozu toplayıp uzaklaştırın ve uygun hava filtrasyonu kullanın; geçici toz maskesi ve gözlük hapşırma ile göz tahrişini azaltabilir.",
+    "source": "NASA-STD-3001 Technical Brief: Lunar Dust (OCHMO-TB-011, Rev C)",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-011-lunar-dust-technical-brief.pdf",
+    "locator": "Reference Data, p. 5; Application – Design Testing and Mitigation, p. 6",
+    "context": "lunar_surface"
+  },
+  {
+    "id": "vision-01",
+    "type": "risk",
+    "system": "mental",
+    "metrics": [
+      "visual_acuity",
+      "eye_pressure"
+    ],
+    "direction": "any",
+    "text": "Fluid shifts during changes in gravity may increase fluid and pressure around the head and eyes, contributing to ocular structural changes. These changes can lead to reduced vision during or after long-duration spaceflight.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Spaceflight Associated Neuro-ocular Syndrome (SANS), OCHMO-MTB-001",
+    "url": "https://www.nasa.gov/wp-content/uploads/2024/02/ochmo-mtb-001-sans.pdf",
+    "locator": "Page 2, Physiology – Eye Anatomy"
+  },
+  {
+    "id": "vision-02",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "blurred_vision",
+      "visual_acuity"
+    ],
+    "direction": "any",
+    "text": "Hyperopic refractive shifts during spaceflight can reduce visual acuity. Affected crew members may experience eyestrain or blurred near vision when their focusing system cannot compensate for the refractive change.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Spaceflight Associated Neuro-ocular Syndrome (SANS), OCHMO-MTB-001",
+    "url": "https://www.nasa.gov/wp-content/uploads/2024/02/ochmo-mtb-001-sans.pdf",
+    "locator": "Page 5, Pathophysiology – Hyperopic Vision Shifts and Refractive Error"
+  },
+  {
+    "id": "vision-03",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "visual_acuity",
+      "blurred_vision"
+    ],
+    "direction": "any",
+    "text": "Periodic ocular monitoring before, during, and after spaceflight identifies changes in vision and eye structure. In-flight assessments include visual acuity testing, Amsler grid, optical coherence tomography, and retinal imaging.",
+    "action_tr": "Uçuş içi göz değerlendirmesi yapın: görme keskinliği testi, Amsler ızgarası, optik koherens tomografi ve retina görüntüleme.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Spaceflight Associated Neuro-ocular Syndrome (SANS), OCHMO-MTB-001",
+    "url": "https://www.nasa.gov/wp-content/uploads/2024/02/ochmo-mtb-001-sans.pdf",
+    "locator": "Pages 6–7, Monitoring & Diagnostics; Page 9, MED B Evaluation"
+  },
+  {
+    "id": "vision-04",
+    "type": "countermeasure",
+    "system": "mental",
+    "metrics": [
+      "visual_acuity",
+      "blurred_vision"
+    ],
+    "direction": "any",
+    "text": "Providing crew members with optical correction, such as glasses with increased lens power, can mitigate SANS-related changes in refractive error.",
+    "action_tr": "Kırma kusurundaki değişiklik için optik düzeltme kullanın (örneğin mercek gücü artırılmış gözlük).",
+    "source": "NASA-STD-3001 Medical Technical Brief: Spaceflight Associated Neuro-ocular Syndrome (SANS), OCHMO-MTB-001",
+    "url": "https://www.nasa.gov/wp-content/uploads/2024/02/ochmo-mtb-001-sans.pdf",
+    "locator": "Page 9, MED B Evaluation; Requirement V1 3004"
+  },
+  {
+    "id": "vision-05",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "eye_pressure"
+    ],
+    "direction": "up",
+    "text": "Previous spaceflight studies reported an intraocular pressure increase of approximately 5 mmHg during the first day of weightlessness, with values returning to the preflight seated range of 10–16 mmHg by the fourth day. In a study of 14 ISS crewmembers, in-flight intraocular pressure was approximately 1.3 mmHg higher than the preflight seated value.",
+    "source": "Intraocular pressure and choroidal thickness respond differently to lower body negative pressure during spaceflight",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8409923/",
+    "locator": "Introduction; Abstract – Results"
+  },
+  {
+    "id": "vision-06",
+    "type": "sign",
+    "system": "mental",
+    "metrics": [
+      "eye_pressure"
+    ],
+    "direction": "up",
+    "text": "During spaceflight, acute application of 25 mmHg lower body negative pressure reduced intraocular pressure to approximately 14.2 mmHg, equivalent to the preflight seated measurement. This does not establish that lower body negative pressure prevents or reverses SANS.",
+    "source": "Intraocular pressure and choroidal thickness respond differently to lower body negative pressure during spaceflight",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8409923/",
+    "locator": "Abstract; Results – Intraocular Pressure; Discussion"
+  },
+  {
+    "id": "musc-01",
+    "type": "risk",
+    "system": "skeletal",
+    "metrics": [
+      "back_pain"
+    ],
+    "direction": "up",
+    "text": "Astronauts face an increased risk of lower back pain after returning to Earth. Changes in spinal bone density and the muscles around the spine may contribute to this risk.",
+    "source": "Changes in Vertebral Bone Density and Paraspinal Muscle Morphology Following Spaceflight and 1 Year Readaptation on Earth",
+    "url": "https://onlinelibrary.wiley.com/doi/full/10.1002/jbm4.10810",
+    "locator": "Introduction; Discussion, concluding paragraphs"
+  },
+  {
+    "id": "musc-02",
+    "type": "risk",
+    "system": "skeletal",
+    "metrics": [
+      "back_pain"
+    ],
+    "direction": "up",
+    "text": "Weakened spine-stabilizing muscles and reduced hip-flexion strength were considered contributors to back pain after flight. This was an expert-panel assessment based on the available evidence.",
+    "source": "2018 NASA Spine Workshop (NASA/TM-20205004306)",
+    "url": "https://ntrs.nasa.gov/api/citations/20205004306/downloads/20205004306-TM-20205004306.pdf",
+    "locator": "Appendix 1: Panel Recommendations, recommendation 2",
+    "context": "landing"
+  },
+  {
+    "id": "musc-03",
+    "type": "countermeasure",
+    "system": "skeletal",
+    "metrics": [
+      "back_pain"
+    ],
+    "direction": "up",
+    "text": "Condition the deep muscles supporting the trunk with exercise before flight, and continue targeting these stabilizing muscles with exercise during flight.",
+    "action_tr": "Gövdeyi destekleyen derin kasları egzersizle güçlendirin ve bu egzersizleri uçuş sırasında sürdürün.",
+    "source": "2018 NASA Spine Workshop (NASA/TM-20205004306)",
+    "url": "https://ntrs.nasa.gov/api/citations/20205004306/downloads/20205004306-TM-20205004306.pdf",
+    "locator": "Appendix 1: Panel Recommendations, recommendations 6-7"
+  },
+  {
+    "id": "musc-04",
+    "type": "countermeasure",
+    "system": "skeletal",
+    "metrics": [
+      "back_pain"
+    ],
+    "direction": "up",
+    "text": "The knees-to-chest posture can alleviate spaceflight-associated back pain.",
+    "action_tr": "Sırt ağrısını hafifletmek için dizleri göğse çekme pozisyonunu deneyin.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-041 Rev B: Sleep Accommodations",
+    "url": "https://www.nasa.gov/sites/default/files/atoms/files/sleep_accomodations_technical_brief_ochmo.pdf",
+    "locator": "Page 9 - Application: Design Considerations"
+  },
+  {
+    "id": "immune-01",
+    "type": "risk",
+    "system": "immune",
+    "metrics": [
+      "sore_throat",
+      "cough",
+      "skin_lesion",
+      "body_temp"
+    ],
+    "direction": "up",
+    "text": "Reduced T-cell function persisted during long-duration spaceflight. This reduction was present throughout the 6-month spaceflights studied.",
+    "source": "Alterations in adaptive immunity persist during long-duration spaceflight",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5515498/",
+    "locator": "Abstract > Results"
+  },
+  {
+    "id": "immune-02",
+    "type": "sign",
+    "system": "immune",
+    "metrics": [
+      "sore_throat"
+    ],
+    "direction": "up",
+    "text": "Upper airway complaints reported during long-duration spaceflight included sore throat, a blocked nose, and sneezing. These were recorded as symptoms, not necessarily confirmed infections.",
+    "source": "Incidence of clinical symptoms during long-duration orbital spaceflight",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5098747/",
+    "locator": "Methods > Adverse event categorization > Table 1"
+  },
+  {
+    "id": "immune-03",
+    "type": "sign",
+    "system": "immune",
+    "metrics": [
+      "skin_lesion"
+    ],
+    "direction": "up",
+    "text": "A persistent skin rash during a long-duration mission was associated with reactivation of a latent virus in an astronaut. The virus was detected in both a skin lesion and saliva.",
+    "source": "Dermatitis during Spaceflight Associated with HSV-1 Reactivation",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9028032/",
+    "locator": "4. Discussion, opening paragraphs"
+  },
+  {
+    "id": "immune-04",
+    "type": "risk",
+    "system": "immune",
+    "metrics": [
+      "stress",
+      "skin_lesion"
+    ],
+    "direction": "up",
+    "text": "Stress, microgravity, radiation, and prolonged isolation may jointly contribute to latent virus reactivation during spaceflight. The case report described increased physiological stress markers during flight.",
+    "source": "Dermatitis during Spaceflight Associated with HSV-1 Reactivation",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9028032/",
+    "locator": "4. Discussion, paragraphs on immune suppression and stress"
+  },
+  {
+    "id": "immune-05",
+    "type": "risk",
+    "system": "immune",
+    "metrics": [
+      "sleep_quality"
+    ],
+    "direction": "down",
+    "text": "Poor sleep is one of the spaceflight stressors that can alter astronauts' immune systems, alongside microgravity and radiation.",
+    "source": "NASA: Risk of Altered Immune System Responses",
+    "url": "https://www.nasa.gov/reference/risk-of-altered-immune-system-responses/",
+    "locator": "What are the top risks?"
+  },
+  {
+    "id": "immune-06",
+    "type": "countermeasure",
+    "system": "immune",
+    "metrics": [
+      "sore_throat",
+      "cough",
+      "skin_lesion",
+      "body_temp"
+    ],
+    "direction": "up",
+    "text": "Aerobic and resistance exercise are components of a candidate immune countermeasure strategy intended to support crew immune health during future deep-space missions.",
+    "action_tr": "Bağışıklık sağlığını desteklemek için aerobik ve direnç egzersizini sürdürün (aday koruyucu strateji).",
+    "source": "NASA Evidence Report: Risk of Crew Adverse Health Event Due to Altered Immune Response",
+    "url": "https://humanresearchroadmap.nasa.gov/evidence/reports/IMMUNE%20EB%20Update%202021%20v02%20FINAL_6-15-22.pdf",
+    "locator": "XI. Countermeasure Development, printed page 35",
+    "context": "prevention"
+  },
+  {
+    "id": "nutr-01",
+    "type": "sign",
+    "system": "digestive",
+    "metrics": [
+      "nausea",
+      "digestive_issue"
+    ],
+    "direction": "up",
+    "text": "Motion sickness is a common cause of reduced eating in the first days of a mission. Its effects typically pass after several days, but reduced dietary intake can extend well beyond the first week.",
+    "source": "Evidence Report: Risk Factor of Inadequate Nutrition (NASA Human Research Program)",
+    "url": "https://ntrs.nasa.gov/citations/20150000512",
+    "locator": "Section V.A, 'Energy Intake', p. 15"
+  },
+  {
+    "id": "nutr-02",
+    "type": "risk",
+    "system": "digestive",
+    "metrics": [
+      "headache",
+      "dizziness"
+    ],
+    "direction": "up",
+    "text": "Weightlessness does not cause dehydration, but fluid intake in flight is typically less than preflight and often below recommendations, possibly due to reduced thirst. Low intake raises the risk of dehydration and kidney stone formation.",
+    "source": "Evidence Report: Risk Factor of Inadequate Nutrition (NASA Human Research Program)",
+    "url": "https://ntrs.nasa.gov/citations/20150000512",
+    "locator": "Section V.F, '2. Evidence' and '3. Risk', pp. 34-35"
+  },
+  {
+    "id": "nutr-03",
+    "type": "countermeasure",
+    "system": "digestive",
+    "metrics": [
+      "headache",
+      "dizziness"
+    ],
+    "direction": "up",
+    "text": "The spaceflight fluid requirement is 1-1.5 mL/kcal, with a minimum of 2000 mL/d. Water rationing should be avoided.",
+    "action_tr": "Günde en az 2000 mL sıvı alın (gereksinim 1-1,5 mL/kcal); su kısıtlaması yapmayın.",
+    "source": "Evidence Report: Risk Factor of Inadequate Nutrition (NASA Human Research Program)",
+    "url": "https://ntrs.nasa.gov/citations/20150000512",
+    "locator": "Section V.F, '3. Risk', p. 35"
+  },
+  {
+    "id": "nutr-04",
+    "type": "countermeasure",
+    "system": "digestive",
+    "metrics": [
+      "digestive_issue"
+    ],
+    "direction": "up",
+    "text": "Gut transit is slower in orbit, so adequate dietary fiber is essential to maintain gut function and reduce constipation. Low fiber combined with low fluid intake may lead to constipation. The spaceflight fiber requirement is 10-14 g/1000 kcal.",
+    "action_tr": "Bağırsak işlevi için yeterli lif alın (1000 kcal başına 10-14 g); düşük lif ile düşük sıvı alımı birlikte kabızlığa yol açabilir.",
+    "source": "Evidence Report: Risk Factor of Inadequate Nutrition (NASA Human Research Program)",
+    "url": "https://ntrs.nasa.gov/citations/20150000512",
+    "locator": "Section V.D Dietary Fiber, p. 28"
+  },
+  {
+    "id": "rad-01",
+    "type": "emergency",
+    "system": "immune",
+    "metrics": [
+      "nausea",
+      "fatigue",
+      "skin_lesion"
+    ],
+    "direction": "up",
+    "text": "A large solar particle event can cause acute radiation effects if crew are unshielded. Early signs include nausea, vomiting, loss of appetite, and fatigue, along with skin injury. Accurate event alerts, dosimetry, and shielding are essential to avoid these effects.",
+    "source": "Space Radiation and Risks to Human Health (NASA Space Radiation Program, Huff, 2014)",
+    "url": "https://ntrs.nasa.gov/citations/20140005866",
+    "locator": "Slide 3; Slide 11 (Acute Radiation Syndromes)",
+    "context": "spe"
+  },
+  {
+    "id": "rad-02",
+    "type": "risk",
+    "system": "immune",
+    "metrics": [
+      "pvt_mean_rt_ms",
+      "pvt_lapses",
+      "rotation_accuracy",
+      "rotation_mean_rt_ms",
+      "mood_index"
+    ],
+    "direction": "any",
+    "text": "Galactic cosmic rays may cause acute central nervous system effects during flight. These include altered cognitive function such as short-term memory, reduced motor function, and behavioral changes, which may affect performance and health.",
+    "source": "Space Radiation and Risks to Human Health (NASA Space Radiation Program, Huff, 2014)",
+    "url": "https://ntrs.nasa.gov/citations/20140005866",
+    "locator": "Slide 19; Slide 20"
+  },
+  {
+    "id": "rad-03",
+    "type": "countermeasure",
+    "system": "immune",
+    "metrics": [
+      "nausea",
+      "skin_lesion"
+    ],
+    "direction": "up",
+    "text": "During extreme solar particle events, crew should take cover in a radiation shelter ('storm shelter') that uses onboard water, food, and high-hydrogen materials to keep crew dose low.",
+    "action_tr": "Aşırı güneş parçacık olayı sırasında radyasyon sığınağına (fırtına sığınağı) geçin.",
+    "source": "NASA-STD-3001 Medical Technical Brief: Design for Ionizing Radiation Protection, OCHMO-TB-020, Rev C",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf",
+    "locator": "Page 8, V2 11001 & V2 11002",
+    "context": "spe"
+  },
+  {
+    "id": "emerg-01",
+    "type": "emergency",
+    "system": "cardiovascular",
+    "metrics": [
+      "skin_lesion",
+      "back_pain",
+      "dizziness"
+    ],
+    "direction": "up",
+    "text": "Type I decompression sickness typically involves itching, musculoskeletal pain, and mild rashes. Type II may involve neurological symptoms, including numbness, weakness, and cognitive issues, as well as inner-ear and cardiopulmonary problems.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-037: Decompression Sickness (DCS) Risk Mitigation",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf",
+    "locator": "Page 3 – Classification/Symptoms",
+    "context": "eva"
+  },
+  {
+    "id": "emerg-02",
+    "type": "emergency",
+    "system": "respiratory",
+    "metrics": [
+      "cough",
+      "shortness_of_breath",
+      "respiratory_rate"
+    ],
+    "direction": "up",
+    "text": "A high venous gas embolism bubble load can cause coughing and shortness of breath. Arterial gas embolism can cause severe effects, including stroke-like neurological symptoms, loss of consciousness, seizures, and cardiac ischemia.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-037: Decompression Sickness (DCS) Risk Mitigation",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf",
+    "locator": "Page 2 – Two Main Types of Intravascular Bubbles",
+    "context": "eva"
+  },
+  {
+    "id": "emerg-03",
+    "type": "countermeasure",
+    "system": "respiratory",
+    "metrics": [
+      "skin_lesion",
+      "back_pain",
+      "shortness_of_breath"
+    ],
+    "direction": "up",
+    "text": "Prebreathe protocols are an effective method for reducing decompression sickness risk before extravehicular activity. They help remove nitrogen from the body before the crewmember transitions to the lower pressure of an EVA suit.",
+    "action_tr": "Araç dışı etkinlikten önce ön solunum (prebreathe) protokolünü uygulayın.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-037: Decompression Sickness (DCS) Risk Mitigation",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf",
+    "locator": "Page 1 – Executive Summary; Page 4 – DCS Prevention",
+    "context": "prevention"
+  },
+  {
+    "id": "resp-11",
+    "type": "countermeasure",
+    "system": "respiratory",
+    "metrics": [
+      "spo2"
+    ],
+    "direction": "down",
+    "text": "Crew are trained to don oxygen masks any time symptoms of hypoxia are experienced. Once hypoxia is diagnosed, the main treatment is supplemental oxygen, and crew can be trained to use quick-don masks.",
+    "action_tr": "Hipoksi belirtileri hissettiğiniz anda oksijen maskesini takın.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-003 Rev A: Habitable Atmosphere",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-003-habitable-atmosphere.pdf",
+    "locator": "Page 3 – Total Pressure Limits; Page 6 – Hypoxia Treatment",
+    "context": "general",
+    "verified_by": "",
+    "verified_at": ""
+  },
+  {
+    "id": "resp-12",
+    "type": "sign",
+    "system": "respiratory",
+    "metrics": [
+      "respiratory_rate",
+      "spo2"
+    ],
+    "direction": "any",
+    "text": "Symptoms of hypoxia include hyperventilation, as well as fatigue, nausea, headache, dizziness, mood changes and reduced sleep quality.",
+    "source": "NASA-STD-3001 Technical Brief OCHMO-TB-003 Rev A: Habitable Atmosphere",
+    "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-003-habitable-atmosphere.pdf",
+    "locator": "Page 5 – Physiological Effects: Hypoxia",
+    "context": "general",
+    "verified_by": "",
+    "verified_at": ""
+  }
+]
