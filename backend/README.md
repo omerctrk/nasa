@@ -107,5 +107,5 @@ pip install -r requirements.lock.txt && pytest
 - [x] A2 sans (6) + anomaly (3) tablo, migration 0003 + izinler, sonuç repository'si (save_anomaly_result, save_sans_analysis, update_sans_state)
 - [x] A3 ops: AnalysisJobs (+request_json önerisi), Alerts, NotificationEvents, EventReceipts; migration 0004; iş ve alarm repository'leri (Ömer'e teslim)
 - [x] A4 behavioral (3) + evaluation.gercek_durum; migration 0005; eval yalnız astra_eval_role'e açık
-- [ ] A5 üç VIEW + get_measurements / get_sans_context
+- [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
 - [ ] A6 seed · [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
