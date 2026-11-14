@@ -9,7 +9,7 @@ export const FooterNav: React.FC = () => {
   const { t, pick, lang } = usePrefs();
 
   return (
-    <footer className="w-full bg-white/90 border-t border-slate-200 py-3 px-4 mt-auto backdrop-blur-md">
+    <footer className="mt-auto mx-4 sm:mx-6 mb-4 glass-bar rounded-2xl py-3 px-4">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 relative">

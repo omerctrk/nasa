@@ -119,6 +119,13 @@ export default {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
       },
+      // Daha yumuşak köşeler
+      borderRadius: {
+        lg: '0.75rem',
+        xl: '1rem',
+        '2xl': '1.375rem',
+        '3xl': '1.75rem',
+      },
       boxShadow: {
         soft: '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03)',
         card: '0 10px 30px -5px rgba(27, 85, 226, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04)',

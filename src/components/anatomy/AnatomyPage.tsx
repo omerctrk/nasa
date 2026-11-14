@@ -60,7 +60,7 @@ export const AnatomyPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        <div className="lg:col-span-7 h-[640px] lg:h-[720px] lg:sticky lg:top-20">
+        <div className="lg:col-span-7 h-[640px] lg:h-[720px] lg:sticky lg:top-6">
           <Anatomy3D fullPageView onSelectZone={(zone) => setSelectedAnatomyZone(zone)} />
         </div>
 

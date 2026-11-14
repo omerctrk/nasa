@@ -7,9 +7,6 @@ import {
   Thermometer,
   Eye,
   Moon,
-  Radio,
-  Wifi,
-  Cpu,
   Gauge,
   Info,
   FlaskConical,
@@ -18,10 +15,10 @@ import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
 import { MetricStatus } from '../../types/telemetry';
 import { AnalysisStatus } from './AnalysisStatus';
+import { TodayGoals } from './TodayGoals';
 import { playUiBeep } from '../../utils/audio';
-import { statusMeta, vitalLabel, unitLabel } from '../../utils/status';
+import { statusMeta, vitalLabel } from '../../utils/status';
 import { HAZARDS, METRIC_HAZARD } from '../../data/hazards';
-import { CAREER_LIMIT_MSV, cumulativeDose, formatDelay } from '../../data/missionProfiles';
 
 // Mini trend grafiği
 const Sparkline: React.FC<{ data: number[]; color: string }> = ({ data, color }) => {
@@ -59,37 +56,73 @@ const Sparkline: React.FC<{ data: number[]; color: string }> = ({ data, color })
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
         points={line}
+        style={{ filter: `drop-shadow(0 0 3px ${color})` }}
       />
       <circle cx={lx} cy={ly} r="2.5" fill={color} vectorEffect="non-scaling-stroke" />
     </svg>
   );
 };
 
-// Normal aralıktaki gösterge oranı (ortak "sağlık puanı" değildir; backend böyle bir puan üretmez)
+// Normal aralıktaki gösterge oranı (ortak "sağlık puanı" değildir; backend böyle bir puan üretmez).
+// Neon görünüm: parlayan halka, yavaş dönen yörünge, ışıldayan sayı.
 const ScoreRing: React.FC<{ normal: number; total: number; color: string }> = ({ normal, total, color }) => {
+  const gid = useId().replace(/:/g, '');
   const ratio = total ? normal / total : 0;
-  const radius = 52;
-  const stroke = 10;
+  const size = 148;
+  const c = size / 2;
+  const radius = 56;
+  const stroke = 9;
   const circ = 2 * Math.PI * radius;
   return (
-    <div className="relative w-[132px] h-[132px] shrink-0">
-      <svg width="132" height="132" className="-rotate-90" aria-hidden>
-        <circle cx="66" cy="66" r={radius} stroke="rgb(var(--c-bg-slate-100))" strokeWidth={stroke} fill="none" />
-        <circle
-          cx="66"
-          cy="66"
-          r={radius}
-          stroke={color}
-          strokeWidth={stroke}
-          strokeDasharray={circ}
-          strokeDashoffset={circ - ratio * circ}
-          strokeLinecap="round"
-          fill="none"
-          className="transition-all duration-700 ease-out"
-        />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      {/* Arka ışıma */}
+      <div
+        className="absolute inset-3 rounded-full neon-ring"
+        style={{ background: `radial-gradient(circle, ${color}33 0%, transparent 70%)` }}
+        aria-hidden
+      />
+      <svg width={size} height={size} className="relative" aria-hidden>
+        <defs>
+          <linearGradient id={`${gid}-g`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={color} />
+          </linearGradient>
+          <filter id={`${gid}-glow`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3.5" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {/* Yavaş dönen yörünge */}
+        <g className="orbit-spin">
+          <circle cx={c} cy={c} r={radius + 13} fill="none" stroke={color} strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 7" />
+          <circle cx={c} cy={c - radius - 13} r="2.5" fill={color} filter={`url(#${gid}-glow)`} />
+        </g>
+        {/* İz */}
+        <circle cx={c} cy={c} r={radius} stroke={color} strokeOpacity="0.14" strokeWidth={stroke} fill="none" />
+        {/* İlerleme */}
+        <g transform={`rotate(-90 ${c} ${c})`} className="neon-ring">
+          <circle
+            cx={c}
+            cy={c}
+            r={radius}
+            stroke={`url(#${gid}-g)`}
+            strokeWidth={stroke}
+            strokeDasharray={circ}
+            strokeDashoffset={circ - ratio * circ}
+            strokeLinecap="round"
+            fill="none"
+            filter={`url(#${gid}-glow)`}
+            className="transition-all duration-700 ease-out"
+          />
+        </g>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-black tracking-tight text-slate-900 leading-none font-mono">{normal}</span>
+        <span className="text-4xl font-black tracking-tight leading-none font-mono neon-text" style={{ color }}>
+          {normal}
+        </span>
         <span className="text-xs font-semibold text-slate-500 mt-1">/ {total}</span>
       </div>
     </div>
@@ -107,8 +140,8 @@ const METRIC_ICONS: Record<string, React.ReactNode> = {
 };
 
 export const LeftColumnVitals: React.FC = () => {
-  const { vitals, systemTelemetery, setSelectedAnatomyZone, triggerManualAlert, currentAlert, missionProfile, astronaut } = useTelemetry();
-  const { t, pick, lang } = usePrefs();
+  const { vitals, setSelectedAnatomyZone, triggerManualAlert, currentAlert } = useTelemetry();
+  const { t, pick } = usePrefs();
 
   const all = Object.values(vitals);
   const counts = {
@@ -168,92 +201,87 @@ export const LeftColumnVitals: React.FC = () => {
     { id: 'glucose', value: vitals.glucose.value, unit: vitals.glucose.unit, status: vitals.glucose.status, history: vitals.glucose.history },
     { id: 'temperature', value: vitals.temperature.value, unit: vitals.temperature.unit, status: vitals.temperature.status, history: vitals.temperature.history },
     { id: 'iop', value: vitals.iop.value, unit: vitals.iop.unit, status: vitals.iop.status, history: vitals.iop.history },
-    { id: 'sleep', value: vitals.sleep.value, unit: unitLabel(vitals.sleep.unit, t), status: vitals.sleep.status, history: vitals.sleep.history },
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* 1. Genel sağlık özeti */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">{t('Sağlık Özeti', 'Health Summary')}</h2>
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            {t('Canlı', 'Live')}
-          </span>
-        </div>
-
-        <div className="mt-4 flex items-center gap-4">
-          <ScoreRing normal={counts.normal} total={all.length} color={verdict.color} />
-          <div className="min-w-0">
-            <div className={`text-lg font-bold leading-snug ${verdict.cls}`}>{verdict.text}</div>
-            <ul className="mt-2 space-y-1 text-sm">
-              <li className="flex items-center gap-2 text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span className="font-mono font-bold">{counts.normal}</span> {t('normal', 'normal')}
-              </li>
-              <li className="flex items-center gap-2 text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                <span className="font-mono font-bold">{counts.warning}</span> {t('dikkat', 'caution')}
-              </li>
-              <li className="flex items-center gap-2 text-slate-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <span className="font-mono font-bold">{counts.critical}</span> {t('kritik', 'critical')}
-              </li>
-            </ul>
+    <div className="flex flex-col gap-5">
+      {/* Üst: sağlık özeti (tam genişlik, yatay) */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 text-base font-bold text-slate-900">
+              {t('Sağlık Özeti', 'Health Summary')}
+              <span
+                title={t(
+                  'Halka, normal aralıktaki gösterge sayısını; durum metni en yüksek uyarı seviyesini gösterir.',
+                  'The ring shows how many indicators are in range; the status reflects the highest alert level.'
+                )}
+              >
+                <Info className="w-3.5 h-3.5 text-slate-400" />
+              </span>
+            </h2>
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              {t('Canlı', 'Live')}
+            </span>
           </div>
-        </div>
 
-        <AnalysisStatus />
+          <div className="mt-3 flex flex-col md:flex-row md:items-center gap-5">
+            <div className="flex items-center gap-5 shrink-0">
+            <ScoreRing normal={counts.normal} total={all.length} color={verdict.color} />
+            <div className="min-w-0">
+              <div className={`text-lg font-bold leading-snug ${verdict.cls}`}>{verdict.text}</div>
+              <ul className="mt-2 space-y-1 text-sm text-slate-600">
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="font-mono font-bold text-slate-800">{counts.normal}</span> {t('normal', 'normal')}
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="font-mono font-bold text-slate-800">{counts.warning}</span> {t('dikkat', 'caution')}
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="font-mono font-bold text-slate-800">{counts.critical}</span> {t('kritik', 'critical')}
+                </li>
+              </ul>
+            </div>
+            </div>
 
-        <p className="mt-3 flex items-start gap-2 text-xs text-slate-500 leading-relaxed">
-          <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          {t(
-            'Halka, normal aralıktaki gösterge sayısını; durum metni en yüksek uyarı seviyesini gösterir. Bir karta tıklayarak ilgili vücut bölgesini açabilirsiniz.',
-            'The ring shows how many indicators are in their normal range; the status reflects the highest alert level. Click a card to open the related body area.'
-          )}
-        </p>
-      </section>
+            {/* Anomali analizi: geniş ekranda sağda */}
+            <div className="flex-1 min-w-0 md:pl-6 md:border-l md:border-slate-200/70 md:[&>div]:mt-0 md:[&>div]:pt-0 md:[&>div]:border-t-0">
+              <AnalysisStatus />
+            </div>
+          </div>
+        </section>
 
-      {/* 2. Yaşamsal bulgular */}
+      {/* Yaşamsal bulgular: sade kartlar */}
       <section aria-labelledby="vitals-heading">
-        <div className="flex items-center justify-between mb-2 px-1">
-          <h2 id="vitals-heading" className="text-sm font-bold text-slate-800">
-            {t('Yaşamsal Bulgular', 'Vital Signs')}
-          </h2>
-          <span className="text-xs text-slate-500">{t('Normal aralık altta', 'Normal range below')}</span>
-        </div>
+        <h2 id="vitals-heading" className="text-sm font-bold text-slate-800 mb-2.5 px-1">
+          {t('Yaşamsal Bulgular', 'Vital Signs')}
+        </h2>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          {cards.map((c, idx) => {
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+          {cards.map((c) => {
             const meta = statusMeta(c.status, t);
-            const isLast = idx === cards.length - 1 && cards.length % 2 === 1;
+            const hazard = METRIC_HAZARD[c.id];
             return (
               <button
                 type="button"
                 key={c.id}
                 onClick={() => handleCardClick(c.id)}
-                className={`text-left rounded-xl border p-3 transition-all shadow-sm hover:shadow-md ${meta.card} ${
-                  isLast ? 'col-span-2' : ''
-                }`}
+                title={hazard ? `${t('İlişkili tehlike', 'Related hazard')}: ${pick(HAZARDS[hazard].name)}` : undefined}
+                className={`text-left rounded-xl border p-3.5 transition-all hover:-translate-y-0.5 ${meta.card}`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <span className="flex items-center gap-1.5 min-w-0">
                     {METRIC_ICONS[c.id] ?? <Activity className="w-4 h-4 text-slate-500" />}
-                    <span className="text-xs font-semibold text-slate-700 truncate">{vitalLabel(c.id, t)}</span>
+                    <span className="text-xs font-semibold text-slate-600 truncate">{vitalLabel(c.id, t)}</span>
                   </span>
-                  {METRIC_HAZARD[c.id] && (
-                    <span
-                      className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-500 shrink-0 whitespace-nowrap"
-                      title={`${t('İlişkili tehlike', 'Related hazard')}: ${pick(HAZARDS[METRIC_HAZARD[c.id]].name)}`}
-                    >
-                      {pick(HAZARDS[METRIC_HAZARD[c.id]].short)}
-                    </span>
-                  )}
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} title={meta.label} />
                 </div>
 
-                <div className="mt-1.5 flex items-baseline gap-1 whitespace-nowrap">
-                  <span className={`text-xl font-bold font-mono tracking-tight ${meta.text}`}>{c.value}</span>
+                <div className="mt-2 flex items-baseline gap-1 whitespace-nowrap">
+                  <span className={`text-2xl font-bold font-mono tracking-tight ${meta.text}`}>{c.value}</span>
                   <span className="text-xs text-slate-500">{c.unit}</span>
                 </div>
 
@@ -261,17 +289,15 @@ export const LeftColumnVitals: React.FC = () => {
                   {c.history ? (
                     <Sparkline data={c.history} color={meta.hex === '#10B981' ? '#0EA5E9' : meta.hex} />
                   ) : (
-                    <div className="h-full flex items-center text-xs text-slate-400 italic">
-                      {t('Manuel ölçüm', 'Manual reading')}
-                    </div>
+                    <div className="h-full flex items-center text-xs text-slate-400">{t('Manuel ölçüm', 'Manual reading')}</div>
                   )}
                 </div>
 
-                <div className="mt-1 flex items-center justify-between gap-1 text-xs">
-                  <span className="text-slate-500 font-mono truncate">{ranges[c.id]}</span>
-                  <span className={`px-1.5 py-0.5 rounded-md border font-semibold shrink-0 ${meta.badge}`}>
-                    {meta.label}
-                  </span>
+                <div className="mt-1 flex items-center justify-between gap-1 text-[11px]">
+                  <span className="text-slate-400 font-mono truncate">{ranges[c.id]}</span>
+                  {c.status !== 'normal' && (
+                    <span className={`px-1.5 py-0.5 rounded-md border font-semibold shrink-0 ${meta.badge}`}>{meta.label}</span>
+                  )}
                 </div>
               </button>
             );
@@ -279,70 +305,27 @@ export const LeftColumnVitals: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Kabin ve bağlantı durumu */}
-      <section className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <Radio className="w-4 h-4 text-blue-600" />
-          <h2 className="text-sm font-bold text-slate-800">{t('Kabin & Bağlantı', 'Cabin & Link')}</h2>
-        </div>
+      {/* Bugünkü hedefler: yatay */}
+      <TodayGoals horizontal />
 
-        <dl className="grid grid-cols-2 gap-2 text-sm">
-          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-            <dt className="text-xs text-slate-500">{t('Dünya gecikmesi', 'Earth delay')}</dt>
-            <dd className="flex items-center gap-1 text-slate-800 font-bold font-mono mt-0.5">
-              <Wifi className="w-3.5 h-3.5 text-slate-400" />
-              {formatDelay(missionProfile.oneWayDelaySec, lang)}
-            </dd>
-          </div>
-          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-            <dt className="text-xs text-slate-500">{t('Sensörler', 'Sensors')}</dt>
-            <dd className="flex items-center gap-1 text-slate-800 font-bold font-mono mt-0.5">
-              <Cpu className="w-3.5 h-3.5 text-blue-500" />
-              {systemTelemetery.activeSensors}/{systemTelemetery.totalSensors}
-            </dd>
-          </div>
-          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-            <dt className="text-xs text-slate-500">{t('Kabin O₂ / CO₂', 'Cabin O₂ / CO₂')}</dt>
-            <dd className="text-slate-800 font-bold font-mono mt-0.5">
-              {systemTelemetery.cabinO2Percent}% / {systemTelemetery.co2Percent}%
-            </dd>
-          </div>
-          <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-            <dt className="text-xs text-slate-500">{t('Radyasyon (toplam)', 'Radiation (total)')}</dt>
-            <dd className="text-slate-800 font-bold font-mono mt-0.5">
-              {cumulativeDose(missionProfile, astronaut.solDay)} / {CAREER_LIMIT_MSV} mSv
-            </dd>
-          </div>
-        </dl>
-
-        {/* Demo senaryoları: jüri sunumunda uyarı akışını göstermek için */}
-        <div className="mt-3 pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mb-2">
-            <FlaskConical className="w-3.5 h-3.5" />
-            {t('Demo: uyarı tetikle', 'Demo: trigger an alert')}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              onClick={() => triggerManualAlert('iop')}
-              className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold rounded-lg text-xs transition-colors"
-            >
-              {t('Göz basıncı', 'Eye pressure')}
-            </button>
-            <button
-              onClick={() => triggerManualAlert('pulse')}
-              className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 font-semibold rounded-lg text-xs transition-colors"
-            >
-              {t('Nabız', 'Heart rate')}
-            </button>
-            <button
-              onClick={() => triggerManualAlert('oxygen')}
-              className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 font-semibold rounded-lg text-xs transition-colors"
-            >
-              {t('Oksijen', 'Oxygen')}
-            </button>
-          </div>
-        </div>
-      </section>
+      {/* Demo: sunumda uyarı akışını göstermek için (sade) */}
+      <div className="flex flex-wrap items-center gap-2 px-1 text-xs text-slate-400">
+        <FlaskConical className="w-3.5 h-3.5" />
+        <span>{t('Demo uyarısı:', 'Demo alert:')}</span>
+        {[
+          { k: 'iop', l: t('Göz basıncı', 'Eye pressure') },
+          { k: 'pulse', l: t('Nabız', 'Heart rate') },
+          { k: 'oxygen', l: t('Oksijen', 'Oxygen') },
+        ].map((d) => (
+          <button
+            key={d.k}
+            onClick={() => triggerManualAlert(d.k)}
+            className="px-2 py-0.5 rounded-md border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-400 transition-colors"
+          >
+            {d.l}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React from 'react';
 import { AlertTriangle, CheckCircle2, ChevronRight, MapPin } from 'lucide-react';
 import { LeftColumnVitals } from './LeftColumnVitals';
 import { Anatomy3D } from '../anatomy/Anatomy3D';
-import { RightColumnDecision } from './RightColumnDecision';
 import { HazardsPanel } from './HazardsPanel';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
@@ -42,7 +41,7 @@ const StatusBanner: React.FC = () => {
         <div
           role="alert"
           className={`xl:col-span-7 rounded-2xl border-2 px-4 py-3 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 ${
-            critical ? 'bg-red-50 border-red-300' : 'bg-amber-50 border-amber-300'
+            critical ? 'bg-red-50 border-red-300 neon-red' : 'bg-amber-50 border-amber-300 neon-amber'
           }`}
         >
           <div
@@ -82,7 +81,7 @@ const StatusBanner: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="xl:col-span-7 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-3">
+        <div className="xl:col-span-7 rounded-2xl border border-emerald-200 bg-emerald-50 neon-emerald px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center text-white shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>
@@ -110,19 +109,14 @@ export const DashboardLayout: React.FC = () => {
       <HazardsPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Sol: yaşamsal bulgular */}
-        <div className="lg:col-span-5 xl:col-span-4">
+        {/* Sol: sağlık özeti, hedefler, yaşamsal bulgular */}
+        <div className="lg:col-span-5 xl:col-span-7 order-2 lg:order-1">
           <LeftColumnVitals />
         </div>
 
-        {/* Orta: 3D anatomi */}
-        <div className="lg:col-span-7 xl:col-span-5 h-[620px] xl:h-[780px] lg:sticky lg:top-20">
+        {/* Sağ: 3D vücut haritası (boyutu aynı, yeri sağda). Testler yalnız "Testler" sayfasında. */}
+        <div className="lg:col-span-7 xl:col-span-5 h-[620px] xl:h-[780px] lg:sticky lg:top-6 order-1 lg:order-2">
           <Anatomy3D onSelectZone={(zone) => setSelectedAnatomyZone(zone)} />
-        </div>
-
-        {/* Sağ: testler ve öneriler */}
-        <div className="lg:col-span-12 xl:col-span-3">
-          <RightColumnDecision />
         </div>
       </div>
     </div>

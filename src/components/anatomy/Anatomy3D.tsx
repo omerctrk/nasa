@@ -535,7 +535,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
   return (
     <div
       ref={cardContainerRef}
-      className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden bg-gradient-to-b from-sky-50 via-white to-blue-50 rounded-2xl border border-slate-200 shadow-card p-4 select-none"
+      className="relative w-full h-full flex flex-col items-center justify-between overflow-hidden bg-gradient-to-b from-sky-50/60 via-white/40 to-blue-50/60 backdrop-blur-xl rounded-2xl border neon-frame shadow-card p-4 select-none"
     >
       {/* Top Header Bar */}
       <div className="w-full flex flex-wrap items-center justify-between border-b border-sky-200/70 pb-3 gap-2 z-30">

@@ -3,6 +3,7 @@ import { TelemetryProvider, useTelemetry } from './context/TelemetryContext';
 import { PreferencesProvider } from './context/PreferencesContext';
 import { Header } from './components/layout/Header';
 import { FooterNav } from './components/layout/FooterNav';
+import { AuroraBackground } from './components/layout/AuroraBackground';
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
 import { AnatomyPage } from './components/anatomy/AnatomyPage';
 import { TestsHubPage } from './components/tests/TestsHubPage';
@@ -41,12 +42,13 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-slate-800">
-      {/* Top Telemetry & Operations Header */}
+    <div className="min-h-screen flex flex-col text-slate-800 lg:pl-[17rem]">
+      <AuroraBackground />
+
+      {/* Sol menü (masaüstü) / üst çubuk (mobil) */}
       <Header />
 
-      {/* Main Dynamic Viewport Container */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-6 py-6">
         {renderCurrentView()}
       </main>
 
