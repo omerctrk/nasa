@@ -102,7 +102,8 @@ class SansStateRecord(Record):
 
 
 class SansContext(Record):
-    """get_sans_context çıktısı: data_cutoff_at sonrasına ait hiçbir kayıt içermez."""
+    """get_sans_context çıktısı: analiz edilen oturumun flight_day'inden sonraki hiçbir kayıt
+    içermez (görev takvimi simüle olduğu için kesim görev gününe göredir)."""
 
     profile: AstronautRecord
     session: SansSessionRecord  # analiz edilen oturum

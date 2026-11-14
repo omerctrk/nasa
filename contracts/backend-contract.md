@@ -231,5 +231,13 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
    değiştirilmedi. Ayrıca `IX_AnalysisJobs_state_next_attempt_at` performans indeksi
    eklendi (veri kuralı değil).
 2. `metadata_json` için izin verilen anahtar listesi henüz yok (şimdilik `original_source`).
-3. `MeasurementDTO.eye` kuralı: göz dışı modülde `null` zorunlu; `sans` modülünde göz dışı
-   kayıt (CO₂, baş ağrısı) DTO'ya girecekse `eye=null` olabilir — VIEW tasarımında (A5) netleşecek.
+3. `anomaly.v_measurements` (A5) yalnız göz TESTLERİNİ `module=sans` olarak verir (eye her zaman
+   OD/OS). CO₂ ve baş ağrısı DTO'ya girmez; `get_sans_context` içinde ayrı listelerdir.
+4. Ölçüm kodları (A6 seed sözlüğü bunları tanımlamalı): check-in `mood, energy, stress,
+   loneliness, crew, mood_index, sleep_hours, sleep_quality`; bilişsel `pvt_mean_rt,
+   pvt_median_rt, pvt_lapses, pvt_false_starts, rotation_mean_rt, rotation_accuracy,
+   dsst_accuracy, dsst_correct_count`; göz `near_acuity, contrast, amsler`. Sözlükte tanımsız
+   kod `MissingDefinition` hatası verir. PVT `speed`, yatış/uyanış saatleri ve `symptoms`
+   VIEW'a girmez.
+5. `get_sans_context` "geleceği" görev gününe göre keser (oturumun flight_day'i); demo takvimi
+   simüle olduğundan gerçek saat ile takvim tarihi karşılaştırılmaz.
