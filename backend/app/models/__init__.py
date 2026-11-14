@@ -16,9 +16,13 @@ Yeni bir model dosyası buraya import edilmezse tablo migration'a girmez.
 from app.models.identity import Astronaut, Mission, User  # noqa: E402  (A1)
 from app.models.sans import Analiz, Durum, Ortam, Oturum, Semptom, TestKaydi  # noqa: E402  (A2)
 from app.models.measurements import MeasurementDefinition, MeasurementRecord  # noqa: E402  (A2)
-from app.models.analysis import AnomalyResult  # noqa: E402  (A2)
+from app.models.analysis import AnalysisJob, AnomalyResult  # noqa: E402  (A2 + A3)
+from app.models.notifications import Alert, EventReceipt, NotificationEvent  # noqa: E402  (A3)
+from app.models.behavioral import Checkin, CognitiveTest, WeeklyAssessment  # noqa: E402  (A4)
+from app.models.evaluation import GercekDurum  # noqa: E402  (A4)
 
 __all__ = [
-    "Analiz", "AnomalyResult", "Astronaut", "Durum", "MeasurementDefinition",
+    "Alert", "AnalysisJob", "Analiz", "AnomalyResult", "Checkin", "CognitiveTest", "EventReceipt",
+    "GercekDurum", "NotificationEvent", "WeeklyAssessment", "Astronaut", "Durum", "MeasurementDefinition",
     "MeasurementRecord", "Mission", "Ortam", "Oturum", "Semptom", "TestKaydi", "User",
 ]

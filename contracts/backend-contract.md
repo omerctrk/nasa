@@ -160,7 +160,10 @@ Ek açıklamadaki endpoint'ler ve akışlar bunlar olmadan yazılamıyor; Ömer 
 - Listeler tarih/zaman + `record_id` ile kararlı sıralanır.
 - Dışarı ORM nesnesi verilmez; `records.py` modelleri (frozen) döner.
 - Tekillik ve eşzamanlılık DB UNIQUE/koşullu UPDATE ile sağlanır; "önce bak sonra ekle" yetmez.
-- Hatalar: `IdempotencyConflict`, `InvalidStateTransition`, `LeaseLost`, `SnapshotConflict`, `NotFound`.
+- Hatalar: `IdempotencyConflict`, `InvalidStateTransition`, `LeaseLost`, `SnapshotConflict`,
+  `NotFound`, `ValidationFailed` (→ 422).
+- Süresi dolan lease: anomaly işi `attempts <= anomaly_auto_retries` ise QUEUED (gecikmeli),
+  değilse FAILED (`LEASE_EXPIRED`). SANS işi hiçbir zaman otomatik tekrar edilmez → FAILED.
 
 Ö3 ayrıntısı: `recover_expired_jobs(max_attempts=2)` opsiyonel limit alır; normal
 çağrıdaki iki deneme davranışı korunur. Claim attempts+1 yapar. Lease yenileme ve
@@ -220,10 +223,12 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
 
 ## 11. Açık konular
 
-1. **İş isteği parametreleri tabloda saklanamıyor.** `ops.AnalysisJobs`'ta `module_scope` /
-   `session_id` için sütun yok; `input_snapshot_json` hazırlık bitene kadar NULL. İşçi, işi
-   sahiplendiğinde neyi analiz edeceğini bilemez. Öneri: A3'te `request_json NVARCHAR(MAX)`
-   (ISJSON CHECK) sütunu. **Şema değişikliği — ekip onayı gerekir.**
+1. **`ops.AnalysisJobs.request_json` (A3'te eklendi, Ömer'in onayı bekleniyor).** Şemada
+   `module_scope` / `session_id` için sütun yoktu; `input_snapshot_json` hazırlık bitene kadar
+   NULL olduğundan işçi işi sahiplendiğinde neyi analiz edeceğini bilemiyordu. Sütun
+   `NVARCHAR(MAX) NOT NULL` + ISJSON; içeriği normalize `JobRequestData`. Onaylanmazsa yeni bir
+   migration ile kaldırılır. Ayrıca `IX_AnalysisJobs_state_next_attempt_at` performans indeksi
+   eklendi (veri kuralı değil).
 2. `metadata_json` için izin verilen anahtar listesi henüz yok (şimdilik `original_source`).
 3. `MeasurementDTO.eye` kuralı: göz dışı modülde `null` zorunlu; `sans` modülünde göz dışı
    kayıt (CO₂, baş ağrısı) DTO'ya girecekse `eye=null` olabilir — VIEW tasarımında (A5) netleşecek.
