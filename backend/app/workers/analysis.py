@@ -5,8 +5,6 @@ operation enters its own transaction in the thread that executes that operation.
 """
 
 import asyncio
-import hashlib
-import json
 import logging
 import math
 from collections.abc import Callable, Mapping
@@ -16,6 +14,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from starlette.concurrency import run_in_threadpool
+from app.core.snapshots import InvalidSnapshot, snapshot_hash
 
 from app.repositories.errors import LeaseLost, SnapshotConflict
 from app.repositories.interfaces import JobRepository
@@ -36,10 +35,6 @@ class PermanentModelError(Exception):
 
 class InvalidModelOutput(Exception):
     """Provider output failed its schema/reference validation."""
-
-
-class InvalidSnapshot(Exception):
-    pass
 
 
 class SansReconciliationRequired(Exception):
@@ -84,17 +79,6 @@ class WorkerSettings:
     @property
     def max_attempts(self) -> int:
         return self.automatic_retries + 1
-
-
-def snapshot_hash(snapshot: dict) -> str:
-    if not isinstance(snapshot, dict):
-        raise InvalidSnapshot()
-    try:
-        payload = json.dumps(snapshot, sort_keys=True, separators=(",", ":"),
-                             ensure_ascii=False, allow_nan=False)
-    except (ValueError, TypeError) as exc:
-        raise InvalidSnapshot() from exc
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 class AnalysisWorker:

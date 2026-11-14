@@ -9,6 +9,7 @@ from app.core.errors import install_error_handling
 from app.core.auth_runtime import configure_auth
 from app.core.analysis_runtime import configure_analysis
 from app.core.worker_runtime import analysis_worker_lifespan
+from app.core.history_runtime import configure_history
 from app.core.config import get_settings
 from app.routers import health
 from app.schemas.common import API_PREFIX
@@ -19,6 +20,7 @@ install_error_handling(app)
 app.include_router(health.router, prefix=API_PREFIX)
 configure_auth(app, get_settings())
 configure_analysis(app)
+configure_history(app, get_settings())
 
 # Sonraki PR'larda (HTTP öneki /api/v1):
 #   Aybala: astronauts, behavioral, sans, measurements

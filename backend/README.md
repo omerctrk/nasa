@@ -113,6 +113,11 @@ hazırdır ve A3 gerçek job repository'sine bağlıdır. Eksik repository kurul
 anomali retry ve restart kurtarma orkestrasyonu hazırdır. FastAPI lifespan worker'ı
 yalnız A3 ve iki gerçek pipeline bağlandığında başlatır; şu an üretimde kapalıdır.
 
+Ö4 geçmiş/snapshot: `contracts/history-thresholds.md`. A5 ölçüm repository'siyle
+74 gün özet + 7 gün ayrıntı hazırlar. config/thresholds.json klinik sayılar gelene
+kadar boştur. Demo referans tarihi ANOMALY_REFERENCE_DATE ile açıkça seçilebilir;
+veri yeterliliği ve kalite sınırları kendiliğinden uydurulmaz.
+
 - [x] A0: klasör yapısı, tek Base, 6 şema, 2 rol (SANS rolü yok), evaluation DENY, bootstrap, ayrı migrate, sınırlı API hesabı, `/api/v1/health/live|ready`
 - [x] A1 core: Missions/Astronauts/Users, FK/UQ/CHECK, filtreli UQ, app izinleri (DELETE yok), flight_day eşlemesi, kimlik repository'si
 - [x] Ortak sözleşme: common.py, interfaces.py, records.py, hata zarfı, ayarlar, fixture'lar (contracts/backend-contract.md)
