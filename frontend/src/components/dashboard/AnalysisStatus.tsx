@@ -101,7 +101,7 @@ export const AnalysisStatus: React.FC<{ onFinished?: (job: AnalysisJob, result: 
   };
 
   let body: React.ReactNode = (
-    <span className="text-slate-500">{t('Son 7 gün ve 74 günlük geçmişle karşılaştırır.', 'Compares with the last 7 days and the 74-day history.')}</span>
+    <span className="text-slate-500">{t('Bugünün verisini önceki günlerinle karşılaştırır; sapmayı yapay zekâ yorumlar.', 'Compares today with your previous days; AI interprets deviations.')}</span>
   );
   if (busy && job) {
     body = (

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { BellRing, BrainCircuit, Database, Rocket, ShieldAlert, ShieldCheck, Stethoscope } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
-import { adviceOf, breachText, isBreach } from '../../lib/backend/resultView';
+import { adviceOf, baselineText, breachText, isBaseline, isBreach } from '../../lib/backend/resultView';
 import { usePrefs } from '../../context/PreferencesContext';
 import { AnalysisStatus } from './AnalysisStatus';
 
@@ -25,6 +25,7 @@ export const AiInsightPanel: React.FC = () => {
 
   const r = latestResult;
   const breaches = r ? r.drivers.filter(isBreach) : [];
+  const personal = r ? r.drivers.filter(isBaseline).sort((a, b) => Math.abs(Number(b.z)) - Math.abs(Number(a.z))) : [];
   const advice = adviceOf(r);
   const levelMeta = r && {
     normal: { label: t('Normal', 'Normal'), cls: 'bg-emerald-100 text-emerald-800 border-emerald-200', Icon: ShieldCheck },
@@ -32,15 +33,15 @@ export const AiInsightPanel: React.FC = () => {
     review: { label: t('İncele · hekime yükselt', 'Review · escalate'), cls: 'bg-red-100 text-red-800 border-red-300', Icon: Stethoscope },
   }[r.level];
   const source = r && (r.algorithm === 'threshold_rules_plus_llm'
-    ? t(`Eşik kuralları + bilgi kartları · açıklama: ${r.model_version ?? 'model'}`, `Threshold rules + knowledge cards · explanation: ${r.model_version ?? 'model'}`)
-    : t('Eşik kuralları + bilgi kartları (model açıklaması yok)', 'Threshold rules + knowledge cards (no model explanation)'));
+    ? t(`Karar: kişisel taban çizgisi + eşikler (kod) · yorum: ${r.model_version ?? 'model'}`, `Decision: personal baseline + limits (code) · interpretation: ${r.model_version ?? 'model'}`)
+    : t('Karar: kişisel taban çizgisi + eşikler (kod) · model yorumu yok, özet kodla yazıldı', 'Decision: personal baseline + limits (code) · no model interpretation, summary written by code'));
   const recs = advice?.recommendations.map((x) => x.action).filter(Boolean) ?? [];
 
   return <section className="bg-white rounded-2xl border border-slate-200 p-5 ai-panel overflow-hidden" aria-labelledby="ai-heading">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3"><span className="ai-orb"><BrainCircuit className="w-5 h-5 text-white" /></span>
         <div><h2 id="ai-heading" className="text-base font-bold text-slate-900">{t('Yapay Zekâ Sağlık Asistanı', 'AI Health Assistant')}</h2>
-          <p className="text-xs text-slate-500">{t('Anomali tespitinin son sonucu', 'Latest anomaly detection result')}</p></div>
+          <p className="text-xs text-slate-500">{t('Bugün, önceki günlerinle karşılaştırılır; sapmayı yapay zekâ yorumlar', 'Today is compared with your previous days; AI interprets deviations')}</p></div>
       </div>
       <span className="flex items-center gap-1.5 rounded-lg border border-cyan-300/60 bg-cyan-50/50 px-2 py-1 text-xs font-semibold font-mono text-cyan-700"><Database className="h-3.5 w-3.5" />SQL Server</span>
     </div>
@@ -52,8 +53,13 @@ export const AiInsightPanel: React.FC = () => {
       </div>
       <p className="text-sm leading-relaxed text-slate-800">{r.summary}</p>
 
+      {personal.length > 0 && <div>
+        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('Önceki günlere göre sapmalar', 'Deviations from previous days')}</div>
+        <ul className="mt-1 space-y-0.5 text-sm">{personal.map((d) => <li key={d.measurement} className={d.severity === 'review' ? 'font-semibold text-red-700' : 'text-amber-800'}>• {baselineText(d, lang)}</li>)}</ul>
+      </div>}
+
       {breaches.length > 0 && <div>
-        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('Aralık dışı ölçümler', 'Out-of-range measurements')}</div>
+        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('Güvenlik sınırı aşımları', 'Safety limit crossings')}</div>
         <ul className="mt-1 space-y-0.5 text-sm text-amber-800">{breaches.map((d) => <li key={d.record_id}>• {breachText(d, lang)}</li>)}</ul>
       </div>}
 

@@ -10,6 +10,7 @@ from app.core.config import Settings
 from app.providers.ollama import ollama_sor
 from app.schemas.common import AnalysisModule
 from app.services.anomaly import AnomalyPipeline, load_cards
+from app.services.baseline import load_baseline_policy
 
 
 def configure_pipelines(app, settings: Settings) -> None:
@@ -24,7 +25,8 @@ def configure_pipelines(app, settings: Settings) -> None:
     app.state.analysis_pipelines = {
         AnalysisModule.ANOMALY: AnomalyPipeline(preparer, load_cards(settings.knowledge_cards_path),
                                                 sor, settings.llm_model if sor else None,
-                                                model_budget_seconds(settings) if sor else None),
+                                                model_budget_seconds(settings) if sor else None,
+                                                load_baseline_policy(settings.baseline_policy_path)),
     }
 
 

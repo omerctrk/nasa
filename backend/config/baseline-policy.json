@@ -1,0 +1,7 @@
+{
+  "version": "baseline-v1",
+  "source_note": "Kisisel taban cizgisi: ayni astronotun referans gunden ONCEKI gunleri (gecmis penceresi history-policy summary_days). Gunluk ortalamalar uzerinden z = (bugunun ortalamasi - onceki gunlerin ortalamasi) / onceki gunlerin populasyon standart sapmasi. Karar sinirlari DEMO icindir, klinik degildir.",
+  "min_baseline_days": 14,
+  "z_watch": 2.0,
+  "z_review": 3.0
+}

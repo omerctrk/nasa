@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     worker_poll_seconds: float = 1
     history_policy_path: Path = Path(__file__).resolve().parents[2] / "config/history-policy.json"
     threshold_policy_path: Path = Path(__file__).resolve().parents[2] / "config/thresholds.json"
+    # Kişisel taban çizgisi (bugün ↔ önceki günler) karar sınırları; demo, klinik değil.
+    baseline_policy_path: Path = Path(__file__).resolve().parents[2] / "config/baseline-policy.json"
     anomaly_reference_date: date | None = None  # explicit demo date; never inferred from host time
     # Ö5 model adaptörü (Yusuf'un kart önericisi + Ollama). Boşsa model çağrılmaz; karar
     # yalnız eşik kurallarıyla verilir, açıklama metni kodla üretilir (algorithm="threshold_rules").

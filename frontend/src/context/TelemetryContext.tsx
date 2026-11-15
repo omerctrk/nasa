@@ -6,7 +6,7 @@ import type {
 import { getProfile, type MissionProfile, type MissionProfileId } from '../data/missionProfiles';
 import { api, ApiError, type Alert, type Measurement, type Profile, type Result, type ThresholdPolicy } from '../live/api';
 import { checkRange } from '../lib/backend/thresholdStatus';
-import { adviceOf, breachText, isBreach } from '../lib/backend/resultView';
+import { adviceOf, baselineText, breachText, isBaseline, isBreach } from '../lib/backend/resultView';
 
 export type NavigationTab = 'dashboard' | 'anatomy' | 'tests' | 'behavior' | 'reports' | 'settings' | 'vision-test' | 'cognitive-test';
 
@@ -91,6 +91,7 @@ const scenarioProfile = (scenario: string | null): MissionProfileId => {
 const asAlert = (alert: Alert, result: Result | null): AnomalyAlert => {
   const linked = result && result.id === alert.anomaly_result_id ? result : null;
   const breaches = linked ? linked.drivers.filter(isBreach) : [];
+  const personal = linked ? linked.drivers.filter(isBaseline) : [];
   const advice = adviceOf(linked);
   const steps = linked ? linked.recommendation.split('\n').map((s) => s.trim()).filter(Boolean) : [];
   const actions = advice?.recommendations.map((r) => r.action).filter(Boolean) ?? [];
@@ -99,13 +100,14 @@ const asAlert = (alert: Alert, result: Result | null): AnomalyAlert => {
     id: alert.alert_id, severity: alert.severity === 'CRITICAL' ? 'critical' : 'warning',
     title: linked
       ? (review ? { tr: 'İncele: uçuş hekimine yükseltildi', en: 'Review: escalated to flight surgeon' }
-        : { tr: 'İzle: eşik dışı ölçüm', en: 'Watch: out-of-range measurement' })
+        : { tr: 'İzle: önceki günlerden sapma', en: 'Watch: deviation from previous days' })
       : `${alert.severity} alarm`,
     description: linked ? linked.summary
       : { tr: 'Bu alarmın analiz sonucu okunamadı.', en: 'The analysis result for this alert could not be read.' },
     timestamp: `${alert.created_at.slice(0, 10)} ${alert.created_at.slice(11, 16)} UTC`,
-    parameter: breaches.length
-      ? { tr: breaches.map((d) => breachText(d, 'tr')).join('; '), en: breaches.map((d) => breachText(d, 'en')).join('; ') }
+    parameter: personal.length || breaches.length
+      ? { tr: [...personal.map((d) => baselineText(d, 'tr')), ...breaches.map((d) => breachText(d, 'tr'))].join('; '),
+          en: [...personal.map((d) => baselineText(d, 'en')), ...breaches.map((d) => breachText(d, 'en'))].join('; ') }
       : alert.astronaut_id,
     protocolCode: alert.alert_id.slice(0, 12),
     steps,

@@ -87,6 +87,7 @@ export type Job = {
 }
 /** Eşik dışı ölçüm sürücüsü (backend services/anomaly.py _breaches). Değerler ondalık metindir. */
 export type BreachDriver = {
+  kind?: 'threshold'
   record_id: string
   module: string
   measurement: string
@@ -99,6 +100,23 @@ export type BreachDriver = {
   upper: string | null
   value_minus_bound: string | null
   threshold_policy_version: string
+}
+/** Bugün ↔ önceki günler (backend services/baseline.py). Sayılar ondalık metindir. */
+export type BaselineDriver = {
+  kind: 'baseline'
+  module: string
+  measurement: string
+  unit: string
+  measured_date: string
+  record_ids: string[]
+  value: string
+  baseline_days: number
+  baseline_mean: string
+  baseline_sd: string
+  z: string
+  direction: 'up' | 'down'
+  severity: 'watch' | 'review'
+  status: 'deviation'
 }
 /** Kart önericinin çıktısı (Yusuf, kart_onerici v4): öneriyi ve yükseltmeyi KOD verir. */
 export type AdviceDriver = {
@@ -121,7 +139,7 @@ export type Result = {
   is_anomaly: boolean
   level: 'normal' | 'watch' | 'review'
   summary: string
-  drivers: (BreachDriver | AdviceDriver)[]
+  drivers: (BreachDriver | BaselineDriver | AdviceDriver)[]
   baseline_status: string
   data_quality_status: string
   recommendation: string

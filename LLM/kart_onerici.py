@@ -5,6 +5,9 @@
           `action_tr`), öncelik, ölçüm satırı, hekime yükseltme.
   MODEL : yalnız durum özeti ve risk/belirti kartlarının Türkçe açıklaması.
 Model öneri yazmaz ve seçmez; `action_tr` alanı olmayan önlem kartı öneri olarak gösterilmez.
+Sürüm 5 (backend): sapma varsa model HER ZAMAN çağrılır. Açıklanacak kart yoksa yalnız özet
+(yorum) ister; sapma satırları bugünün değerini, astronotun önceki günlerinin ortalamasını
+(baseline), z skorunu ve varsa güvenlik sınırını (limit) taşır.
 
 Akış:
   1. kartlari_yukle()  -> knowledge_cards.json bir kez okunur
@@ -214,7 +217,7 @@ def sema_kur(sapmalar, aciklama_kartlari):
     return {
         "type": "object",
         "properties": {
-            "summary": {"type": "string", "maxLength": 300},
+            "summary": {"type": "string", "maxLength": 700},
             "explanations": {
                 "type": "array",
                 "maxItems": 3,
@@ -233,6 +236,22 @@ def sema_kur(sapmalar, aciklama_kartlari):
             "unmatched_findings": {
                 "type": "array", "maxItems": len(metrikler),
                 "items": {"type": "string", "enum": metrikler},
+            },
+        },
+        "required": ["summary", "explanations", "unmatched_findings"],
+    }
+
+
+def ozet_semasi(sapmalar):
+    """Kart yokken: yalnız özet (yorum) + eşleşmeyen metrikler; açıklama listesi boş kalmalı."""
+    return {
+        "type": "object",
+        "properties": {
+            "summary": {"type": "string", "maxLength": 700},
+            "explanations": {"type": "array", "maxItems": 0, "items": {"type": "object"}},
+            "unmatched_findings": {
+                "type": "array", "maxItems": len(sapmalar),
+                "items": {"type": "string", "enum": list(sapmalar)},
             },
         },
         "required": ["summary", "explanations", "unmatched_findings"],
@@ -259,9 +278,16 @@ The id, TYPE and metrics list are routing metadata. Only the card text after the
 is evidence. Never present the metrics list as something the card states, and never mention \
 card ids, the words RISK/SIGN or "the card" in your text.
 
+Each deviating metric line may carry: value = today's value; baseline = this astronaut's \
+own mean over the previous days (baseline_days); z = how many standard deviations today's \
+value is from that personal baseline (sign = direction); limit = a fixed safety limit that was \
+crossed; unit = the unit to write after the numbers.
+
 Output fields:
-- summary: two sentences at most, stating which measurements deviated and in which \
-direction, using the given values when present. No diagnosis, no advice.
+- summary: at most three sentences in Turkish. Interpret the day for the astronaut: which \
+measurements differ from their own previous days, in which direction and how strongly (use the \
+given value, baseline and z; write the unit), and which crossed a safety limit. Mention when \
+several measurements move together. No diagnosis, no advice, no causes that are not given.
 - explanations: for the most relevant cards (at most 3), restate in plain Turkish the fact \
 given in that card's text. One card per explanation, one or two complete sentences. Keep the \
 card's own conditions (who, when, which mission or study); do not generalise and do not add \
@@ -280,7 +306,8 @@ Return only the JSON object."""
 
 def _sapma_satiri(metrik, deger):
     if isinstance(deger, dict):
-        ek = ", ".join(f"{ad}={deger[ad]}" for ad in ("value", "baseline", "unit") if ad in deger)
+        ek = ", ".join(f"{ad}={deger[ad]}" for ad in ("value", "baseline", "baseline_days", "z", "limit", "unit")
+                       if deger.get(ad) is not None)
         return f"- {metrik}: {deger['direction']}" + (f" ({ek})" if ek else "")
     return f"- {metrik}: {deger}"
 
@@ -291,6 +318,7 @@ def mesajlari_kur(sapmalar, aciklama_kartlari):
         f"[{kart['id']}] ({kart['type'].upper()}; metrics: {', '.join(e)}) {kart['text']}"
         for kart, e, _ in aciklama_kartlari
     )
+    kartlar = kartlar or "(none — no knowledge card covers these findings; write only the summary, explanations must be an empty list)"
     kullanici = (f"DEVIATING METRICS (metric: direction)\n{bulgular}\n\nKNOWLEDGE CARDS\n{kartlar}"
                  "\n\nYanıtı Türkçe yaz.")
     return [{"role": "system", "content": SISTEM}, {"role": "user", "content": kullanici}]
@@ -414,13 +442,14 @@ def oner(sapmalar, kartlar, k=5, sor=None, en_cok_deneme=2, baglam=None):
     def bitir(cikti):
         return dogrula(cikti, sapmalar, secilen, acil, eslesmeyen, oneriler, atlanan)
 
-    if not aciklama_kartlari:      # açıklanacak kart yok: modele hiç sorma
+    if not sapmalar:               # sapma yok: yorumlanacak bir şey yok
         sonuc = bitir(bos)
         sonuc["attempts"] = 0
         return sonuc
 
+    # Açıklanacak kart olmasa da model günü YORUMLAR (yalnız özet); kartsız açıklama üretemez.
     mesajlar = mesajlari_kur(sapmalar, aciklama_kartlari)
-    sema = sema_kur(sapmalar, aciklama_kartlari)
+    sema = sema_kur(sapmalar, aciklama_kartlari) if aciklama_kartlari else ozet_semasi(sapmalar)
     en_iyi, hatalar = None, []
     for deneme in range(en_cok_deneme):
         try:
