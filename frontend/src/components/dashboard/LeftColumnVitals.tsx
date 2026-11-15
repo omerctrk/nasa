@@ -2,7 +2,7 @@ import React, { useId } from 'react';
 import { Activity, Droplet, Eye, Gauge, Heart, Info, Thermometer, Wind } from 'lucide-react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
-import type { MetricStatus } from '../../types/telemetry';
+import type { MetricStatus, VitalMetric } from '../../types/telemetry';
 import { AiInsightPanel } from './AiInsightPanel';
 import { TodayGoals } from './TodayGoals';
 import { statusMeta } from '../../utils/status';
@@ -27,18 +27,44 @@ const ICONS: Record<string, React.ReactNode> = {
   iop: <Eye className="h-3.5 w-3.5 text-indigo-500" />, bp: <Gauge className="h-3.5 w-3.5 text-blue-500" />,
 };
 
+const rank: Record<MetricStatus, number> = { normal: 0, warning: 1, critical: 2 };
+
+/** Tansiyon tek kart: büyük/küçük tansiyon ayrı ölçülür ve ayrı eşikle karşılaştırılır */
+const bloodPressure = (sys: VitalMetric, dia: VitalMetric): VitalMetric & { display: string } => {
+  const both = [sys, dia].filter((m) => Number.isFinite(m.value));
+  const status = both.reduce<MetricStatus>((w, m) => (rank[m.status] > rank[w] ? m.status : w), 'normal');
+  return {
+    ...sys, id: 'bp', shortName: 'Tansiyon', unit: 'mmHg', status,
+    value: both.length ? sys.value : Number.NaN,
+    rangeKnown: both.length === 2 && both.every((m) => m.rangeKnown),
+    display: `${Number.isFinite(sys.value) ? sys.value : '—'}/${Number.isFinite(dia.value) ? dia.value : '—'}`,
+  };
+};
+
 export const LeftColumnVitals: React.FC = () => {
   const { vitals, setSelectedAnatomyZone, currentAlert } = useTelemetry();
   const { t } = usePrefs();
-  const cards = [
-    { id: 'pulse', metric: vitals.pulse }, { id: 'oxygen', metric: vitals.oxygen },
-    { id: 'glucose', metric: vitals.glucose }, { id: 'temperature', metric: vitals.temperature },
-    { id: 'iop', metric: vitals.iop },
+  const bp = bloodPressure(vitals.bp_systolic, vitals.bp_diastolic);
+  const cards: { id: string; metric: VitalMetric; display?: string }[] = [
+    { id: 'pulse', metric: vitals.pulse }, { id: 'bp', metric: bp, display: bp.display },
+    { id: 'oxygen', metric: vitals.oxygen }, { id: 'glucose', metric: vitals.glucose },
+    { id: 'temperature', metric: vitals.temperature }, { id: 'iop', metric: vitals.iop },
   ];
   const measured = cards.filter(({ metric }) => Number.isFinite(metric.value));
-  const counts = { normal: measured.filter(({ metric }) => metric.status === 'normal').length, warning: measured.filter(({ metric }) => metric.status === 'warning').length, critical: measured.filter(({ metric }) => metric.status === 'critical').length };
+  // Eşiği olmayan ölçüm "normal" sayılmaz: ayrı satırda gösterilir
+  const judged = measured.filter(({ metric }) => metric.rangeKnown);
+  const counts = { normal: judged.filter(({ metric }) => metric.status === 'normal').length, warning: judged.filter(({ metric }) => metric.status === 'warning').length, critical: judged.filter(({ metric }) => metric.status === 'critical').length, unknown: measured.length - judged.length };
   const worst: MetricStatus = counts.critical ? 'critical' : counts.warning ? 'warning' : 'normal';
-  const zoneFor = (id: string) => id === 'pulse' || id === 'oxygen' ? 'chest' : id === 'glucose' || id === 'temperature' ? 'abdomen' : 'head';
+  const zoneFor = (id: string) => id === 'pulse' || id === 'oxygen' || id === 'bp' ? 'chest' : id === 'glucose' || id === 'temperature' ? 'abdomen' : 'head';
+  const limitOf = (m: VitalMetric) => {
+    if (m.id === 'bp') {
+      const s = vitals.bp_systolic, d = vitals.bp_diastolic;
+      return s.rangeKnown && d.rangeKnown ? t(`Üst sınır ${s.upperLimit}/${d.upperLimit} mmHg`, `Upper limit ${s.upperLimit}/${d.upperLimit} mmHg`) : t('Eşik tanımlı değil', 'No threshold defined');
+    }
+    if (!m.rangeKnown) return t('Eşik tanımlı değil', 'No threshold defined');
+    const parts = [m.lowerLimit != null ? t(`alt ${m.lowerLimit}`, `min ${m.lowerLimit}`) : null, m.upperLimit != null ? t(`üst ${m.upperLimit}`, `max ${m.upperLimit}`) : null].filter(Boolean);
+    return `${t('Sınır', 'Limit')}: ${parts.join(' · ')} ${m.unit}`;
+  };
   return <div className="flex flex-col gap-5">
     <section className="bg-white rounded-2xl border border-slate-200 p-5">
       <div className="flex items-center justify-between"><h2 className="flex items-center gap-1.5 text-base font-bold text-slate-900">{t('Sağlık Özeti', 'Health Summary')}<Info className="h-3.5 w-3.5 text-slate-400" /></h2>
@@ -46,15 +72,18 @@ export const LeftColumnVitals: React.FC = () => {
       <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-center">
         <div className="flex flex-1 items-center gap-3 md:justify-center"><ScoreRing count={measured.length} total={cards.length} />
           <div className="text-sm text-slate-600"><div className="font-bold text-slate-900">{measured.length ? t('Kayıtlı ölçümler', 'Stored measurements') : t('Ölçüm kaydı yok', 'No measurement record')}</div>
-            <ul className="mt-2 space-y-1"><li><b>{counts.normal}</b> {t('normal durum', 'normal')}</li><li><b>{counts.warning}</b> {t('dikkat', 'caution')}</li><li><b>{counts.critical}</b> {t('kritik', 'critical')}</li></ul>
-            <p className="mt-2 text-xs text-slate-500">{t('Durum yalnız backend alarm/sonuçlarıyla güncellenir.', 'Status changes only from backend alerts/results.')}</p></div>
+            <ul className="mt-2 space-y-1"><li><b>{counts.normal}</b> {t('aralık içinde', 'within range')}</li><li className={counts.warning ? 'font-semibold text-amber-700' : ''}><b>{counts.warning}</b> {t('aralık dışı (dikkat)', 'out of range (caution)')}</li><li><b>{counts.critical}</b> {t('kritik', 'critical')}</li>{counts.unknown > 0 && <li><b>{counts.unknown}</b> {t('eşik tanımsız', 'no threshold')}</li>}</ul>
+            <p className="mt-2 text-xs text-slate-500">{t('Durum, analizin kullandığı eşiklerden (demo eşikleri, klinik değil).', 'Status from the thresholds the analysis uses (demo limits, not clinical).')}</p></div>
         </div>
         <div className="min-w-0 md:border-l md:border-slate-200 md:pl-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('Yaşamsal bulgular', 'Vital signs')}</div>
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">{cards.map(({ id, metric }) => {
-            const available = Number.isFinite(metric.value); const meta = statusMeta(available ? metric.status : 'normal', t);
-            return <button type="button" key={id} onClick={() => setSelectedAnatomyZone(zoneFor(id))} className={`rounded-lg border px-2.5 py-1.5 text-left transition-all hover:-translate-y-0.5 ${available ? meta.card : 'border-slate-200 bg-slate-50'}`}>
-              <div className="flex items-center gap-1">{ICONS[id] ?? <Activity className="h-3.5 w-3.5" />}<span className="text-[11px] font-semibold text-slate-500">{metric.shortName}</span></div>
-              <div className={`mt-0.5 whitespace-nowrap text-sm font-bold font-mono ${available ? meta.text : 'text-slate-400'}`}>{available ? metric.value : '—'} <span className="text-[10px] font-normal text-slate-500">{metric.unit}</span></div>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">{cards.map(({ id, metric, display }) => {
+            const available = Number.isFinite(metric.value); const judgedHere = available && metric.rangeKnown;
+            const meta = statusMeta(judgedHere ? metric.status : 'normal', t);
+            const out = judgedHere && metric.status !== 'normal';
+            return <button type="button" key={id} onClick={() => setSelectedAnatomyZone(zoneFor(id))} title={available ? limitOf(metric) : undefined} className={`rounded-lg border px-2.5 py-1.5 text-left transition-all hover:-translate-y-0.5 ${judgedHere ? meta.card : 'border-slate-200 bg-slate-50'}`}>
+              <div className="flex items-center gap-1">{ICONS[id] ?? <Activity className="h-3.5 w-3.5" />}<span className="text-[11px] font-semibold text-slate-500">{id === 'bp' ? t('Tansiyon', 'Blood pressure') : metric.shortName}</span></div>
+              <div className={`mt-0.5 whitespace-nowrap text-sm font-bold font-mono ${judgedHere ? meta.text : 'text-slate-400'}`}>{available ? (display ?? metric.value) : '—'} <span className="text-[10px] font-normal text-slate-500">{metric.unit}</span></div>
+              {available && <div className={`text-[10px] ${out ? 'font-semibold text-amber-700' : 'text-slate-400'}`}>{out ? `${meta.label} · ${limitOf(metric)}` : judgedHere ? t('Aralıkta', 'In range') : t('Eşik yok', 'No threshold')}</div>}
             </button>;
           })}</div>
         </div>

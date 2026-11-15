@@ -20,6 +20,12 @@ export interface VitalMetric {
   changeRate: string;
   category: 'cardio' | 'metabolic' | 'respiratory' | 'thermal' | 'ocular' | 'neuro';
   description: Text;
+  /** Backend eşik politikasıyla karşılaştırıldı mı? false → eşik yok; durum "normal" SAYILMAZ */
+  rangeKnown?: boolean;
+  lowerLimit?: number | null;
+  upperLimit?: number | null;
+  /** Backend ölçüm kodu (ör. heart_rate) */
+  code?: string;
 }
 
 export interface AstronautProfile {

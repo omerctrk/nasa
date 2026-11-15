@@ -13,7 +13,7 @@ from app.core.history_runtime import configure_history
 from app.core.pipeline_runtime import configure_pipelines
 from app.core.config import get_settings
 from app.realtime.notifications import install_notifications
-from app.routers import alerts, entries, health, knowledge, notifications, readings
+from app.routers import alerts, entries, health, knowledge, notifications, readings, thresholds
 from app.schemas.common import API_PREFIX
 
 app = FastAPI(title="ASTRA HEALTH Backend", version="0.1.0", lifespan=analysis_worker_lifespan)
@@ -27,6 +27,7 @@ app.include_router(alerts.me, prefix=API_PREFIX)
 app.include_router(alerts.ground, prefix=API_PREFIX)
 app.include_router(knowledge.router, prefix=API_PREFIX)
 app.include_router(notifications.router, prefix=API_PREFIX)
+app.include_router(thresholds.router, prefix=API_PREFIX)
 install_notifications(app)
 configure_auth(app, get_settings())
 configure_analysis(app)

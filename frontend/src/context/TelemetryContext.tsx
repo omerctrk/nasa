@@ -4,7 +4,9 @@ import type {
   MetricStatus, VitalMetric, VisionTestResult,
 } from '../types/telemetry';
 import { getProfile, type MissionProfile, type MissionProfileId } from '../data/missionProfiles';
-import { api, ApiError, type Alert, type Measurement, type Profile } from '../live/api';
+import { api, ApiError, type Alert, type Measurement, type Profile, type Result, type ThresholdPolicy } from '../live/api';
+import { checkRange } from '../lib/backend/thresholdStatus';
+import { adviceOf, breachText, isBreach } from '../lib/backend/resultView';
 
 export type NavigationTab = 'dashboard' | 'anatomy' | 'tests' | 'behavior' | 'reports' | 'settings' | 'vision-test' | 'cognitive-test';
 
@@ -38,6 +40,10 @@ interface TelemetryContextType {
   setMissionProfileId: (id: MissionProfileId) => void;
   loading: boolean;
   error: string | null;
+  /** Son anomali analizi sonucu (backend anomaly_results) — AI paneli bunu gösterir */
+  latestResult: Result | null;
+  /** Analizin kullandığı eşik politikası (GET /thresholds) */
+  thresholdPolicy: ThresholdPolicy | null;
   reload: () => void;
 }
 
@@ -81,14 +87,36 @@ const scenarioProfile = (scenario: string | null): MissionProfileId => {
   return name.includes('transit') ? 'mars_transit' : name.includes('mars') ? 'mars_surface' : name.includes('moon') || name.includes('ay') ? 'moon' : 'iss';
 };
 
-const asAlert = (alert: Alert): AnomalyAlert => ({
-  id: alert.alert_id, severity: alert.severity === 'CRITICAL' ? 'critical' : 'warning',
-  title: `${alert.severity} alarm`,
-  description: 'Bu alarm merkezi veritabanında kayıtlıdır. Ayrıntılı klinik öneri henüz yapılandırılmadı.',
-  timestamp: alert.created_at, parameter: alert.astronaut_id, protocolCode: alert.alert_id.slice(0, 12),
-  steps: [], countermeasure: 'Yer kontrolü alarm kaydını incelemelidir.', notifiedGroundControl: true,
-  backend: { alertId: alert.alert_id, module: 'anomaly', status: alert.status, anomalyResultId: alert.anomaly_result_id },
-});
+/** Alarm kartı ve aksiyon planı, alarmın bağlı olduğu analiz sonucundan doldurulur. */
+const asAlert = (alert: Alert, result: Result | null): AnomalyAlert => {
+  const linked = result && result.id === alert.anomaly_result_id ? result : null;
+  const breaches = linked ? linked.drivers.filter(isBreach) : [];
+  const advice = adviceOf(linked);
+  const steps = linked ? linked.recommendation.split('\n').map((s) => s.trim()).filter(Boolean) : [];
+  const actions = advice?.recommendations.map((r) => r.action).filter(Boolean) ?? [];
+  const review = linked?.level === 'review';
+  return {
+    id: alert.alert_id, severity: alert.severity === 'CRITICAL' ? 'critical' : 'warning',
+    title: linked
+      ? (review ? { tr: 'İncele: uçuş hekimine yükseltildi', en: 'Review: escalated to flight surgeon' }
+        : { tr: 'İzle: eşik dışı ölçüm', en: 'Watch: out-of-range measurement' })
+      : `${alert.severity} alarm`,
+    description: linked ? linked.summary
+      : { tr: 'Bu alarmın analiz sonucu okunamadı.', en: 'The analysis result for this alert could not be read.' },
+    timestamp: `${alert.created_at.slice(0, 10)} ${alert.created_at.slice(11, 16)} UTC`,
+    parameter: breaches.length
+      ? { tr: breaches.map((d) => breachText(d, 'tr')).join('; '), en: breaches.map((d) => breachText(d, 'en')).join('; ') }
+      : alert.astronaut_id,
+    protocolCode: alert.alert_id.slice(0, 12),
+    steps,
+    countermeasure: actions.length ? actions.join(' ')
+      : { tr: 'Kart destesinde bu bulgu için onaylı önlem yok; karar uçuş hekimindedir.',
+          en: 'No approved countermeasure card for this finding; the flight surgeon decides.' },
+    notifiedGroundControl: true,
+    backend: { alertId: alert.alert_id, module: 'anomaly', status: alert.status, level: linked?.level,
+      anomalyResultId: alert.anomaly_result_id },
+  };
+};
 
 const dateAdd = (date: string, days: number) => {
   const value = new Date(`${date}T00:00:00Z`);
@@ -96,12 +124,13 @@ const dateAdd = (date: string, days: number) => {
   return value.toISOString().slice(0, 10);
 };
 
-function vitalFromMeasurements(rows: Measurement[]): Record<string, VitalMetric> {
+function vitalFromMeasurements(rows: Measurement[], policy: ThresholdPolicy | null): Record<string, VitalMetric> {
   const mappings: Record<string, string> = {
     heart_rate: 'pulse', blood_glucose: 'glucose', body_temperature: 'temperature',
     systolic_bp: 'bp_systolic', diastolic_bp: 'bp_diastolic',
   };
   const next = Object.fromEntries(Object.entries(EMPTY_VITALS).map(([key, value]) => [key, { ...value, history: [] }])) as Record<string, VitalMetric>;
+  const codeOf = Object.fromEntries(Object.entries(mappings).map(([code, key]) => [key, code]));
   const grouped = new Map<string, Measurement[]>();
   for (const row of rows) {
     const key = mappings[row.measurement];
@@ -113,7 +142,12 @@ function vitalFromMeasurements(rows: Measurement[]): Record<string, VitalMetric>
     const history = values.map((row) => Number(row.value_num));
     const last = history.at(-1)!;
     const previous = history.at(-2) ?? last;
-    next[key] = { ...next[key], value: last, unit: values.at(-1)!.unit, history, trend: last > previous ? 'up' : last < previous ? 'down' : 'stable', changeRate: history.length > 1 ? `${last >= previous ? '+' : ''}${Math.round((last - previous) * 100) / 100} ${values.at(-1)!.unit}` : 'Tek kayıt' };
+    const unit = values.at(-1)!.unit;
+    // Durum backend eşiğinden: aralık dışı → "dikkat"; eşik yoksa bilinmiyor (normal sayılmaz)
+    const range = checkRange(policy, codeOf[key], unit, last);
+    next[key] = { ...next[key], value: last, unit, history, trend: last > previous ? 'up' : last < previous ? 'down' : 'stable', changeRate: history.length > 1 ? `${last >= previous ? '+' : ''}${Math.round((last - previous) * 100) / 100} ${unit}` : 'Tek kayıt',
+      status: range.status, rangeKnown: range.known, lowerLimit: range.lower, upperLimit: range.upper, code: codeOf[key],
+      minNormal: range.lower ?? Number.NaN, maxNormal: range.upper ?? Number.NaN };
   }
   return next;
 }
@@ -130,6 +164,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [missionProfileId, setMissionProfileId] = useState<MissionProfileId>('iss');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [latestResult, setLatestResult] = useState<Result | null>(null);
+  const [thresholdPolicy, setThresholdPolicy] = useState<ThresholdPolicy | null>(null);
 
   const reload = useCallback(() => {
     let active = true;
@@ -152,15 +188,27 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const rows = pages.flatMap((page) => page.data);
         const lastDate = rows.map((row) => row.measured_date).sort().at(-1) ?? profile.mission_start_date;
         const start = dateAdd(lastDate, -29);
-        const [alerts, cognitive] = await Promise.all([
+        const todayUtc = new Date().toISOString().slice(0, 10);
+        const [alerts, cognitive, policy, results] = await Promise.all([
           api.alerts(token, me.role), api.cognitive(token, start, dateAdd(lastDate, 1)),
+          api.thresholds(token),
+          api.results(token, me.role, profile.astronaut_id, dateAdd(todayUtc, -29), dateAdd(todayUtc, 1)),
         ]);
+        const newest = [...results.data].sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null;
         if (!active) return;
         const current = profileToAstronaut(profile);
         setAstronaut(current); setAvailableAstronauts([current]); setMissionProfileId(scenarioProfile(profile.scenario));
-        setVitals(vitalFromMeasurements(rows));
-        const alert = alerts.data.find((row) => row.status !== 'RESOLVED');
-        setCurrentAlert(alert ? asAlert(alert) : null);
+        setThresholdPolicy(policy.data);
+        setVitals(vitalFromMeasurements(rows, policy.data));
+        setLatestResult(newest);
+        const alert = [...alerts.data].sort((a, b) => b.created_at.localeCompare(a.created_at)).find((row) => row.status !== 'RESOLVED');
+        let linked: Result | null = null;
+        if (alert?.anomaly_result_id) {
+          linked = results.data.find((r) => r.id === alert.anomaly_result_id) ?? null;
+          if (!linked) linked = (await api.result(token, me.role, alert.anomaly_result_id).catch(() => null))?.data ?? null;
+        }
+        if (!active) return;
+        setCurrentAlert(alert ? asAlert(alert, linked) : null);
         setCognitiveTestHistory(cognitive.data.map((row) => ({ date: row.taken_at, reactionTimeMs: row.mean_rt_ms ?? 0, accuracyPercent: row.accuracy === null ? 0 : Math.round(row.accuracy * 100), memoryLevel: 0, fatigueIndexPercent: 0, readinessLevel: row.valid ? 'Geçerli kayıt' : 'Geçersiz kayıt' })));
       } catch (cause) {
         if (active) setError(cause instanceof ApiError ? cause.message : cause instanceof Error ? cause.message : 'Veri yüklenemedi.');
@@ -182,7 +230,8 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     cognitiveTestHistory, addCognitiveTestResult: () => undefined,
     systemTelemetery: { satelliteLatencyMs: 0, signalStrengthPercent: 0, activeSensors: 0, totalSensors: 0, cabinPressureKPa: 0, cabinO2Percent: 0, co2Percent: 0, radiationDosimetryMSv: 0, metTimeHours: 0 },
     openActionPlanModal, setOpenActionPlanModal, missionProfile, setMissionProfileId, loading, error, reload,
-  }), [currentTab, astronaut, availableAstronauts, vitals, selectedAnatomyZone, currentAlert, cognitiveTestHistory, openActionPlanModal, missionProfile, loading, error, reload]);
+    latestResult, thresholdPolicy,
+  }), [currentTab, astronaut, availableAstronauts, vitals, selectedAnatomyZone, currentAlert, cognitiveTestHistory, openActionPlanModal, missionProfile, loading, error, reload, latestResult, thresholdPolicy]);
   return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;
 };
 

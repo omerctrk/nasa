@@ -12,7 +12,7 @@
  *   POST /analysis/jobs              { module: 'anomaly', idempotency_key, module_scope } → 202 {job_id, module, state, status_url}
  *   GET  /analysis/jobs/{job_id}     → iş durumu
  *   POST /analysis/jobs/{job_id}/retry → 202 {job_id, module, state, status_url}
- *   Sonuç ayrıntısı için uç YOK (anomaly_result_id döner, içerik okunamıyor) — ekran bunu nazikçe gösterir.
+ *   GET  /me/anomaly-results/{id}    → sonuç ayrıntısı (özet, sürücüler, öneri, seviye)
  */
 import { USE_MOCK, apiRequest, ApiError } from '../apiClient';
 import type { AnalysisJob, AnomalyResult, JobState } from './types';
@@ -147,8 +147,13 @@ const fromAccepted = (a: JobAccepted, astronautId = ''): AnalysisJob => {
   };
 };
 
-/** Gerçek backend'de anomali sonucunun içeriğini okuyan uç henüz yok */
-export const RESULT_DETAILS_AVAILABLE = USE_MOCK;
+/** Sonuç ayrıntısı: GET /me/anomaly-results/{id} (backend app/routers/alerts.py) */
+export const RESULT_DETAILS_AVAILABLE = true;
+
+/** Backend sonucu (drivers) → ekran tipi (drivers_json) */
+interface BackendResult extends Omit<AnomalyResult, 'drivers_json' | 'measurement' | 'eye' | 'anomaly_score'> {
+  drivers: unknown[];
+}
 
 export const analysisApi = {
   async createJob(idempotencyKey: string, astronautId: string): Promise<AnalysisJob> {
@@ -169,7 +174,9 @@ export const analysisApi = {
   },
   async getResult(resultId: string): Promise<AnomalyResult> {
     if (USE_MOCK) return mock.result(resultId);
-    throw new ApiError(501, 'NOT_SUPPORTED', 'Analiz sonucu ayrıntısı henüz okunamıyor.');
+    const r = (await apiRequest<BackendResult>('GET', `/me/anomaly-results/${resultId}`)).data;
+    const { drivers, ...rest } = r;
+    return { ...rest, drivers_json: drivers, measurement: null, eye: null, anomaly_score: null };
   },
 };
 

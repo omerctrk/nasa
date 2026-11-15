@@ -11,12 +11,15 @@ import { statusMeta } from '../../utils/status';
 import { errorMessage } from '../../features/behavior/api';
 
 /** Analiz işini başlatır ve QUEUED → … → COMPLETED/FAILED boyunca izler. */
-const useAnalysisJob = (astronautId: string) => {
+const useAnalysisJob = (astronautId: string, onFinished?: (job: AnalysisJob, result: AnomalyResult | null) => void) => {
   const { t } = usePrefs();
   const [job, setJob] = useState<AnalysisJob | null>(null);
   const [result, setResult] = useState<AnomalyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const keyRef = useRef<string | null>(null);
+  const finishedRef = useRef<string | null>(null);
+  const onFinishedRef = useRef(onFinished);
+  onFinishedRef.current = onFinished;
 
   // Astronot değişince sıfırla
   useEffect(() => {
@@ -31,8 +34,16 @@ const useAnalysisJob = (astronautId: string) => {
       try {
         const j = await analysisApi.getJob(id);
         setJob(j);
-        // Gerçek backend'de sonuç ayrıntısı ucu henüz yok: iş tamamlandı bilgisi yeterli
-        if (j.state === 'COMPLETED' && j.anomaly_result_id && RESULT_DETAILS_AVAILABLE) setResult(await analysisApi.getResult(j.anomaly_result_id));
+        let res: AnomalyResult | null = null;
+        if (j.state === 'COMPLETED' && j.anomaly_result_id && RESULT_DETAILS_AVAILABLE) {
+          res = await analysisApi.getResult(j.anomaly_result_id);
+          setResult(res);
+        }
+        // Bitişi bir kez bildir: panel verisi (alarm, AI paneli, durumlar) yenilensin
+        if (isTerminal(j.state) && finishedRef.current !== j.job_id) {
+          finishedRef.current = j.job_id;
+          onFinishedRef.current?.(j, res);
+        }
       } catch (e) {
         setError(errorMessage(e, t));
       }
@@ -77,10 +88,10 @@ const useAnalysisJob = (astronautId: string) => {
   return { job, result, error, start, retry };
 };
 
-export const AnalysisStatus: React.FC = () => {
+export const AnalysisStatus: React.FC<{ onFinished?: (job: AnalysisJob, result: AnomalyResult | null) => void }> = ({ onFinished }) => {
   const { astronaut } = useTelemetry();
   const { t } = usePrefs();
-  const { job, result, error, start, retry } = useAnalysisJob(astronaut.id);
+  const { job, result, error, start, retry } = useAnalysisJob(astronaut.id, onFinished);
   const busy = !!job && !isTerminal(job.state);
 
   const stateText: Record<string, string> = {

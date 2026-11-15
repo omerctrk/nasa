@@ -85,12 +85,62 @@ export type Job = {
   error_code: string | null
   anomaly_result_id: string | null
 }
+/** Eşik dışı ölçüm sürücüsü (backend services/anomaly.py _breaches). Değerler ondalık metindir. */
+export type BreachDriver = {
+  record_id: string
+  module: string
+  measurement: string
+  unit: string
+  value: string
+  measured_date: string
+  status: 'above_range' | 'below_range'
+  direction: 'up' | 'down'
+  lower: string | null
+  upper: string | null
+  value_minus_bound: string | null
+  threshold_policy_version: string
+}
+/** Kart önericinin çıktısı (Yusuf, kart_onerici v4): öneriyi ve yükseltmeyi KOD verir. */
+export type AdviceDriver = {
+  type: 'advice'
+  disclaimer: string
+  explanations: { card_id?: string; text?: string; explanation?: string }[]
+  recommendations: { card_id?: string; action: string; priority?: string }[]
+  emergency: unknown[]
+  unmatched_findings: string[]
+  escalation_reasons: string[]
+}
 export type Result = {
   id: string
+  astronaut_id: string
+  mission_day: number | null
+  created_at: string
+  module_scope: 'physiological' | 'behavioral' | 'combined'
+  algorithm: string
+  model_version: string | null
+  is_anomaly: boolean
   level: 'normal' | 'watch' | 'review'
   summary: string
+  drivers: (BreachDriver | AdviceDriver)[]
+  baseline_status: string
+  data_quality_status: string
   recommendation: string
-  created_at: string
+  data_cutoff_at: string
+}
+export type ThresholdRule = {
+  module: string
+  measurement: string
+  unit: string
+  protocol_version: string
+  lower: string | null
+  upper: string | null
+}
+/** GET /thresholds: analizin kullandığı politikanın aynısı (config/thresholds.json). */
+export type ThresholdPolicy = {
+  version: string
+  boundary: 'inclusive' | string
+  source_note: string | null
+  rules: ThresholdRule[]
 }
 export type KnowledgeCard = {
   card_id: string
@@ -168,6 +218,11 @@ export const api = {
   job: (token: string, id: string) => request<Job>(`/analysis/jobs/${id}`, { token }),
   result: (token: string, role: User['role'], id: string) =>
     request<Result>(role === 'ASTRONAUT' ? `/me/anomaly-results/${id}` : `/ground/anomaly-results/${id}`, { token }),
+  /** start dahil, end hariç (YYYY-MM-DD) */
+  results: (token: string, role: User['role'], astronautId: string, start: string, end: string) =>
+    request<Result[]>(role === 'ASTRONAUT' ? '/me/anomaly-results' : `/ground/astronauts/${encodeURIComponent(astronautId)}/anomaly-results`,
+      { token, query: { start, end } }),
+  thresholds: (token: string) => request<ThresholdPolicy>('/thresholds', { token }),
   alerts: (token: string, role: User['role']) => request<Alert[]>(role === 'ASTRONAUT' ? '/me/alerts' : '/ground/alerts', { token }),
   acknowledge: (token: string, id: string) => request<Alert>(`/ground/alerts/${id}/acknowledge`, { token, method: 'POST' }),
   resolve: (token: string, id: string, note: string) => request<Alert>(`/ground/alerts/${id}/resolve`, {
