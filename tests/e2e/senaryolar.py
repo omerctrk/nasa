@@ -386,12 +386,7 @@ def main() -> int:
         check(st["state"] == "COMPLETED" and st["evaluation_status"] == "evaluated" and st["anomaly_result_id"],
               "evaluated (kişisel taban çizgisi; davranışta sabit eşik yok)", st)
         s, _, r = http("GET", f"/me/anomaly-results/{st['anomaly_result_id']}", ctx["astro"])
-        personal = [d for d in r["drivers"] if d.get("kind") == "baseline"]
-        check(personal and all(d["module"] == "behavioral" and int(d["baseline_days"]) >= 14 for d in personal),
-              "sürücüler baseline, modül behavioral, ≥14 gün", r["drivers"][:2])
-        check(not any(d.get("kind") == "threshold" for d in r["drivers"]), "davranışta eşik ihlali yok", r["drivers"])
-        sleep = next((d for d in personal if d["measurement"] == "sleep_hours"), None)
-        check(sleep and sleep["direction"] == "down" and sleep["unit"] == "h", "uyku süresi düşük sapma, birim h", sleep)
+        # Önce sonraki adımların ihtiyaç duyduğu kimlikler (doğrulama düşse de zincir kırılmasın)
         ctx["s7_result"] = r["id"]
         if r["level"] == "normal":
             ctx["completed_jobs"].append(st["job_id"])
@@ -399,8 +394,18 @@ def main() -> int:
             ctx["risk_jobs"] = ctx.get("risk_jobs", 0) + 1
             s, _, al = http("GET", "/ground/alerts?status=OPEN&astronaut_id=A007", ctx["ground"])
             mine = [a for a in al if a["anomaly_result_id"] == r["id"]]
+            if mine:
+                ctx["alert_s7"] = mine[0]["alert_id"]
             check(len(mine) == 1, "riskli davranış sonucu → tek alarm", al)
-            ctx["alert_s7"] = mine[0]["alert_id"]
+        personal = [d for d in r["drivers"] if d.get("kind") == "baseline"]
+        # Not: S3 bugünün check-in'ini 7.5 sa uykuyla güncelledi; hangi ölçümün sapacağı varsayılmaz.
+        check(all(d["module"] == "behavioral" and int(d["baseline_days"]) >= 14
+                  and abs(float(d["z"])) >= 2 and d["direction"] in ("up", "down") for d in personal),
+              "sapmalar: behavioral, ≥14 gün taban, |z| ≥ 2", personal[:2])
+        check(not any(d.get("kind") == "threshold" for d in r["drivers"]), "davranışta eşik ihlali yok", r["drivers"])
+        check((r["level"] == "normal") == (not personal), "sapma yoksa normal, varsa risk", (r["level"], len(personal)))
+        sleep = next((d for d in personal if d["measurement"] == "sleep_hours"), None)
+        check(sleep is None, "S3'te 7.5 sa girilen uyku sapma sayılmaz (kişisel ortalama ≈7.6)", sleep)
         return f"level={r['level']}, {len(personal)} sapma: " + ", ".join(f"{d['measurement']} z={d['z']}" for d in personal)
 
     # ---------------- S8 normal gün
