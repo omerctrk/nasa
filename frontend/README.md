@@ -16,9 +16,13 @@ npm run dev
 
 Open `http://127.0.0.1:5173/`. Vite proxies `/api/v1` and
 `/ws/v1/notifications` to the API at `127.0.0.1:8000`, so the browser uses one
-origin and needs no CORS exceptions. Sign in with the existing seeded astronaut
-or ground-control account. No passwords are stored in the repository; the access
-token lives in the browser tab's session storage and is removed on sign-out.
+origin and needs no CORS exceptions. The local Vite server opens a seeded
+astronaut session automatically; use the header buttons to switch to ground
+control. It reads the seed passwords from the ignored repository-root `.env`
+on the server side. Passwords are not bundled into the browser or committed.
+The temporary access token lives in the browser tab's session storage.
+This automatic session route exists only in the local Vite development server
+bound to `127.0.0.1`; a production build still requires normal sign-in.
 
 The live panel supports profile and measurement reads, daily check-ins,
 physiological entry, analysis job status, alerts, notifications, and Knowledge

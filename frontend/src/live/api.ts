@@ -112,6 +112,15 @@ export async function request<T>(path: string, options: Options = {}): Promise<{
 }
 
 export const api = {
+  devSession: async (role: User['role']) => {
+    const response = await fetch('/__dev/session', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }), signal: AbortSignal.timeout(15000),
+    })
+    const payload = await response.json().catch(() => null) as { access_token?: string } | null
+    if (!response.ok || !payload?.access_token) throw new ApiError(response.status, 'Yerel oturum açılamadı. API ve demo hesaplarını kontrol edin.')
+    return payload.access_token
+  },
   login: (email: string, password: string) => request<{ access_token: string }>('/auth/login', {
     method: 'POST', body: { email, password },
   }),

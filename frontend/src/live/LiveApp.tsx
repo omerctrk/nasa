@@ -63,6 +63,7 @@ export default function LiveApp() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  const [devPending, setDevPending] = useState(false)
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(TOKEN_KEY)
@@ -79,6 +80,20 @@ export default function LiveApp() {
     }
     setError(errorText(cause))
   }, [logout])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || token) return
+    let active = true
+    setDevPending(true)
+    api.devSession('ASTRONAUT').then((nextToken) => {
+      if (!active) return
+      sessionStorage.setItem(TOKEN_KEY, nextToken)
+      setToken(nextToken)
+      setError('')
+    }).catch((cause) => { if (active) report(cause) })
+      .finally(() => { if (active) setDevPending(false) })
+    return () => { active = false }
+  }, [token, report])
 
   useEffect(() => {
     if (!token) return
@@ -201,6 +216,18 @@ export default function LiveApp() {
     finally { setBusy(false) }
   }
 
+  async function switchDevRole(role: User['role']) {
+    if (!import.meta.env.DEV || user?.role === role) return
+    setBusy(true); setError(''); setNotice('')
+    try {
+      const nextToken = await api.devSession(role)
+      logout()
+      sessionStorage.setItem(TOKEN_KEY, nextToken)
+      setToken(nextToken)
+    } catch (cause) { report(cause) }
+    finally { setBusy(false) }
+  }
+
   async function saveCheckin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!token || !day) return
     setBusy(true); setError(''); setNotice('')
@@ -280,6 +307,15 @@ export default function LiveApp() {
     finally { setBusy(false) }
   }
 
+  if ((!token || !user) && import.meta.env.DEV) return <main className="min-h-screen grid place-items-center px-4">
+    <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
+      <h1 className="text-xl font-semibold">ASTRA HEALTH</h1>
+      <p className={`${subtle} mt-2`}>{devPending || token ? 'Yerel oturum açılıyor…' : 'Yerel oturum açılamadı.'}</p>
+      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+      {!devPending && !token && <button className={`${button} mt-4`} onClick={() => void switchDevRole('ASTRONAUT')}>Tekrar dene</button>}
+    </div>
+  </main>
+
   if (!token || !user) return <main className="min-h-screen grid place-items-center px-4">
     <form onSubmit={(event) => void signIn(event)} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg space-y-5">
       <div><div className="text-sm font-bold tracking-[0.25em] text-sky-700">ASTRA HEALTH</div>
@@ -299,7 +335,10 @@ export default function LiveApp() {
         <div><div className="text-xs font-bold tracking-[0.25em] text-sky-700">ASTRA HEALTH · CANLI VERİ</div>
           <h1 className="text-xl font-semibold">{user.role === 'ASTRONAUT' ? 'Astronot paneli' : 'Yer kontrolü paneli'}</h1></div>
         <div className="flex items-center gap-3 text-sm"><span className="text-slate-500">{user.email}</span>
-          <button onClick={logout} className="flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-slate-50"><LogOut className="h-4 w-4" />Çıkış</button></div>
+          {import.meta.env.DEV ? <div className="flex gap-1" aria-label="Yerel demo rolü">
+            <button className="rounded-lg border px-3 py-2 disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'ASTRONAUT'} onClick={() => void switchDevRole('ASTRONAUT')}>Astronot</button>
+            <button className="rounded-lg border px-3 py-2 disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'GROUND_CONTROL'} onClick={() => void switchDevRole('GROUND_CONTROL')}>Yer kontrolü</button>
+          </div> : <button onClick={logout} className="flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-slate-50"><LogOut className="h-4 w-4" />Çıkış</button>}</div>
       </div>
     </header>
     <main className="mx-auto max-w-7xl space-y-5 px-4 py-6">
