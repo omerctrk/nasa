@@ -103,3 +103,25 @@ def test_symptoms_never_null():
     for r in DATA["checkins"]:
         assert r["symptoms"] is not None
         assert isinstance(json.loads(r["symptoms"]), list)
+
+
+def test_second_astronaut_profile_differs_and_leaves_default_untouched():
+    """A009 (demo: hesaplar arası geçiş): aynı şekil, farklı senaryo; A007 çıktısı ve CONFIG değişmez."""
+    other = generate("A009")
+    assert CONFIG["astronaut_id"] == "A007" and generate() == DATA == generate("A007")
+    assert {k: len(v) for k, v in other.items()} == {k: len(v) for k, v in DATA.items()}
+    assert {r["astronaut_id"] for rows in other.values() for r in rows} == {"A009"}
+    ids = lambda data: {r["client_request_id"] for k in ("cognitive_tests", "weekly_assessments") for r in data[k]}  # noqa: E731
+    assert not ids(other) & ids(DATA)
+    late = lambda data, key: mean(r[key] for r in data["checkins"][-5:])  # noqa: E731
+    early = lambda data, key: mean(r[key] for r in data["checkins"][:60])  # noqa: E731
+    # A007: uyku kısalır, tepki süresi uzar. A009: davranış ve bilişsel testler stabil kalır.
+    assert early(DATA, "sleep_hours") - late(DATA, "sleep_hours") > 1
+    assert abs(early(other, "sleep_hours") - late(other, "sleep_hours")) < 0.5
+    pvt = lambda data, days: mean(r["mean_rt_ms"] for r in data["cognitive_tests"]  # noqa: E731
+                                  if r["test_type"] == "pvt" and r["mission_day"] in days)
+    assert pvt(DATA, range(68, 75)) - pvt(DATA, range(1, 61)) > 20
+    assert abs(pvt(other, range(68, 75)) - pvt(other, range(1, 61))) < 10
+    reported = lambda rows: {s for r in rows for s in json.loads(r["symptoms"])}  # noqa: E731
+    assert {"dizziness", "shortness_of_breath"} <= reported(other["checkins"][-4:])
+    assert reported(other["checkins"]) <= set(SYMPTOM_CODES)

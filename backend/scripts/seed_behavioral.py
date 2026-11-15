@@ -46,6 +46,30 @@ CONFIG = {
 }
 assert set(CONFIG["symptoms"]) <= set(SYMPTOM_CODES)
 
+# Astronot profilleri: CONFIG'in üzerine yazılan alanlar. A007 = CONFIG'in kendisi (değişmez).
+# A009 (demo: hesaplar arası geçiş) bambaşka ve ANİ bir senaryodur: dolaşım/solunum olayı.
+# Davranış ve bilişsel testler görev boyunca stabildir (A007'deki uyku/ruh hali/tepki süresi
+# bozulması burada YOK); yalnız son 4 günde baş dönmesi, nefes darlığı ve yorgunluk bildirilir.
+# Fizyolojik karşılığı (SpO2, nabız ve tansiyon düşüşü): scripts/seed_physiological.py PROFILES.
+PROFILES = {
+    "A007": {},
+    "A009": {
+        "astronaut_id": "A009",
+        "seed": 9007,
+        "stable_until": 70,
+        "base": {"mood": 8, "energy": 7, "stress": 2, "loneliness": 1, "crew_relation": 3,
+                 "bed_min": 22 * 60 + 30, "wake_min": 6 * 60 + 30, "quality": 4,
+                 "pvt_rt": 255.0, "pvt_lapse_p": 0.02, "pvt_false_p": 0.02,
+                 "rot_acc": 0.92, "rot_rt": 1400.0},
+        "drift": {"mood": 0, "energy": 0, "stress": 0, "loneliness": 0, "crew_relation": 0,
+                  "bed_min": 0, "wake_min": 0, "quality": 0,
+                  "pvt_rt": 0.0, "pvt_lapse_p": 0.0, "rot_acc": 0.0, "rot_rt": 0.0,
+                  "symptom_p": 0.8},
+        "symptoms": ("dizziness", "shortness_of_breath", "fatigue"),
+    },
+}
+assert all(set(p.get("symptoms", ())) <= set(SYMPTOM_CODES) for p in PROFILES.values())
+
 NS = uuid.UUID("6f1c2a52-6a4e-4f0e-9a43-0d3c5b7a9e10")
 UTC = timezone.utc
 
@@ -158,18 +182,25 @@ def make_weekly(rng, day: int) -> dict:
     }
 
 
-def generate() -> dict[str, list[dict]]:
-    rng = random.Random(CONFIG["seed"])
-    out = {"checkins": [], "cognitive_tests": [], "weekly_assessments": []}
-    for day in range(1, CONFIG["days"] + 1):
-        p = _progress(day)
-        out["checkins"].append(make_checkin(rng, day))
-        if day % 7 in CONFIG["test_weekdays"]:
-            out["cognitive_tests"].append(make_test(rng, day, "pvt", make_pvt_trials(rng, p), 0))
-            out["cognitive_tests"].append(make_test(rng, day, "rotation", make_rotation_trials(rng, p), 10))
-        if day % CONFIG["weekly_every"] == 0:
-            out["weekly_assessments"].append(make_weekly(rng, day))
-    return out
+def generate(astronaut_id: str = "A007") -> dict[str, list[dict]]:
+    """Bir astronotun senaryosunu üretir. Varsayılan (A007) çıktısı profil eklenmeden öncekiyle aynıdır."""
+    global CONFIG
+    original = CONFIG
+    CONFIG = {**original, **PROFILES[astronaut_id]}  # yardımcı fonksiyonlar CONFIG'i okur
+    try:
+        rng = random.Random(CONFIG["seed"])
+        out = {"checkins": [], "cognitive_tests": [], "weekly_assessments": []}
+        for day in range(1, CONFIG["days"] + 1):
+            p = _progress(day)
+            out["checkins"].append(make_checkin(rng, day))
+            if day % 7 in CONFIG["test_weekdays"]:
+                out["cognitive_tests"].append(make_test(rng, day, "pvt", make_pvt_trials(rng, p), 0))
+                out["cognitive_tests"].append(make_test(rng, day, "rotation", make_rotation_trials(rng, p), 10))
+            if day % CONFIG["weekly_every"] == 0:
+                out["weekly_assessments"].append(make_weekly(rng, day))
+        return out
+    finally:
+        CONFIG = original
 
 
 def main() -> None:

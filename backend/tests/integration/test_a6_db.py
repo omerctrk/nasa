@@ -28,6 +28,9 @@ def test_seeded_accounts(db):
     ground = repo.get_user_by_email(seed.GROUND_EMAIL)
     assert ground.role == "GROUND_CONTROL" and ground.astronaut_id is None
     assert repo.get_astronaut("A007").is_display_only is False
+    second = repo.get_user_by_email(seed.SECOND_ASTRONAUT_EMAIL)
+    assert second.role == "ASTRONAUT" and second.astronaut_id == "A009"
+    assert repo.get_astronaut("A009").is_display_only is False
     assert repo.get_astronaut(seed.DISPLAY_ASTRONAUT_ID).is_display_only is True
     assert repo.get_astronaut("A007").mission_start_date.isoformat() == "2027-01-05"
 

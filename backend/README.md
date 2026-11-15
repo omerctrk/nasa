@@ -7,11 +7,33 @@ FastAPI + SQLAlchemy 2.0 + Alembic + MS SQL Server 2022. Kaynaklar: `BACKEND_TAB
 ```bash
 cp backend/.env.example .env       # değerleri doldur; .env git'e girmez
 docker compose run --rm migrate    # db → bootstrap → migration (sa)
-docker compose run --rm seed       # sözlük, M01, A007 + gösterim profili, 2 giriş hesabı (astra_app)
+docker compose run --rm seed       # sözlük, M01, A007 + A009 + gösterim profili, 3 giriş hesabı (astra_app)
 docker compose up api              # API, astra_app hesabıyla açılır
 ```
 
 Kontrol: http://localhost:8001/api/v1/health/ready adresi `"db_user": "astra_app"` döndürmeli. `sa` değil `astra_app` yazması, API'nin sınırlı hesapla çalıştığını kanıtlar. Swagger: http://localhost:8001/docs (host portu 8001; konteyner içinde 8000)
+
+## İki astronot hesabı (demo: hesaplar arası geçiş)
+
+| Hesap | Astronot | Senaryo (görev günü 61–74) |
+|---|---|---|
+| `astronaut@astra.local` | A007 | Uyku kısalır, stres artar; nabız, tansiyon, kan şekeri, ateş ve kabin CO₂ yükselir, SpO₂ düşer |
+| `astronaut2@astra.local` | A009 | Ani olay (son 3 gün): SpO₂ %95 sınırının altına (~%91) iner, nabız (~46) ve tansiyon (~88/52) düşer; uyku, ruh hali ve bilişsel testler stabil |
+
+İkisi de `SEED_ASTRONAUT_PASSWORD` ile girer. Veriler: `scripts/seed_behavioral.py` (`PROFILES`) ve
+`scripts/seed_physiological.py` (`PROFILES`). `baslat.cmd` ikisini de yükler; elle:
+
+```bash
+docker compose run --rm migrate python -m scripts.refresh_demo_profile --astronaut A009 --apply   # senaryo değiştiyse eski üretilmiş veriyi siler
+docker compose run --rm seed python -m scripts.demo_data                                  # davranış, iki astronot
+docker compose run --rm seed python -m scripts.seed_physiological --astronaut A009 --apply
+```
+
+Yerel Vite panelinde sol alttaki mürettebat listesi hesap değiştiricidir: bir astronota tıklayınca o
+hesapla oturum açılır. Liste `backend/config/demo-accounts.json` dosyasından gelir (seed ile ortak).
+Yeni hesap eklemek için o dosyaya `{"astronaut_id": "...", "email": "..."}` satırı ekleyip seed'i
+(`baslat.cmd`) çalıştırın; hesap listede kendiliğinden görünür. Yeni astronota demo verisi de
+isteniyorsa `seed_behavioral.py` ve `seed_physiological.py` içindeki `PROFILES`'a profil eklenir.
 
 ## Knowledge Card API (0007)
 

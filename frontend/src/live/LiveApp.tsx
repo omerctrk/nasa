@@ -11,6 +11,8 @@ import {
 } from './api'
 
 const TOKEN_KEY = 'astra-live-token'
+// Yerel demo: hesap seçme listesi (bu ekran kullanımda değil; asıl liste context/TelemetryContext.tsx)
+const DEV_ASTRONAUTS = ['A007', 'A009']
 type View = 'dashboard' | 'anatomy' | 'tests' | 'behavior' | 'reports' | 'settings' | 'analysis' | 'alerts' | 'knowledge'
 const MEASURES: Record<string, string> = {
   heart_rate: 'BPM', systolic_bp: 'mmHg', diastolic_bp: 'mmHg',
@@ -373,11 +375,12 @@ export default function LiveApp() {
     finally { setBusy(false) }
   }
 
-  async function switchDevRole(role: User['role']) {
-    if (!import.meta.env.DEV || user?.role === role) return
+  async function switchDevRole(role: User['role'], astronautId?: string) {
+    if (!import.meta.env.DEV) return
+    if (user?.role === role && (role !== 'ASTRONAUT' || !astronautId || user.astronaut_id === astronautId)) return
     setBusy(true); setError(''); setNotice('')
     try {
-      const nextToken = await api.devSession(role)
+      const nextToken = await api.devSession(role, astronautId)
       logout()
       sessionStorage.setItem(TOKEN_KEY, nextToken)
       setToken(nextToken)
@@ -526,10 +529,17 @@ export default function LiveApp() {
           loadVersion.current += 1; setMeasurements([]); setCheckins([]); setDay(event.target.value)
         }} /></label>
         <button className="flex items-center gap-1 text-xs font-semibold text-sky-700" onClick={() => void loadData()}><RefreshCw className="h-3.5 w-3.5" />Veriyi yenile</button>
-        {import.meta.env.DEV ? <div className="flex gap-1" aria-label="Yerel demo rolü">
-          <button className="rounded-lg border px-2 py-1.5 text-xs disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'ASTRONAUT'} onClick={() => void switchDevRole('ASTRONAUT')}>Astronot</button>
-          <button className="rounded-lg border px-2 py-1.5 text-xs disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'GROUND_CONTROL'} onClick={() => void switchDevRole('GROUND_CONTROL')}>Yer kontrolü</button>
-        </div> : <button onClick={logout} className="flex items-center gap-1 rounded-lg border px-2 py-1.5"><LogOut className="h-4 w-4" />Çıkış</button>}
+        {import.meta.env.DEV ? <label className="block text-xs text-slate-500">Hesap
+          <select aria-label="Yerel demo hesabı" className={`${field} mt-1`} disabled={busy}
+            value={user.role === 'ASTRONAUT' ? user.astronaut_id ?? '' : 'GROUND_CONTROL'}
+            onChange={(event) => {
+              const next = event.target.value
+              void (next === 'GROUND_CONTROL' ? switchDevRole('GROUND_CONTROL') : switchDevRole('ASTRONAUT', next))
+            }}>
+            {DEV_ASTRONAUTS.map((id) => <option key={id} value={id}>Astronot {id}</option>)}
+            <option value="GROUND_CONTROL">Yer kontrolü</option>
+          </select>
+        </label> : <button onClick={logout} className="flex items-center gap-1 rounded-lg border px-2 py-1.5"><LogOut className="h-4 w-4" />Çıkış</button>}
       </div>
     </aside>
     <main className="relative z-10 mx-auto max-w-[90rem] space-y-5 px-4 py-6 sm:px-6">

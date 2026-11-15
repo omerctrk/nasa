@@ -3,8 +3,9 @@
 Ne ekler:
 - anomaly.MeasurementDefinitions: VIEW'ın kullandığı davranış kodları (göz/SANS kapatıldı)
 - core.Missions: M01 (gün 0 = 2027-01-05)
-- core.Astronauts: A007 (aktif) + bir gösterim profili (is_display_only=1)
-- core.Users: bir ASTRONAUT (A007) ve bir GROUND_CONTROL hesabı (Argon2 hash)
+- core.Astronauts: A007 ve A009 (aktif) + bir gösterim profili (is_display_only=1)
+- core.Users: iki ASTRONAUT (A007, A009) ve bir GROUND_CONTROL hesabı (Argon2 hash)
+  A009 demo için eklendi (hesaplar arası geçiş); A007 ile aynı SEED_ASTRONAUT_PASSWORD'ü kullanır.
 
 Kurallar:
 - Tekrar çalıştırılınca çift kayıt oluşmaz. Var olan görev/astronot/hesap DEĞİŞTİRİLMEZ
@@ -20,10 +21,12 @@ Kurallar:
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from dataclasses import dataclass, field
 from datetime import date
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -38,6 +41,15 @@ PROTOCOL_VERSION = "astra-v1"
 MISSION_ID = "M01"
 MISSION_DAY0 = date(2027, 1, 5)
 ACTIVE_ASTRONAUT_ID = "A007"
+# Demo astronot hesapları TEK yerde: config/demo-accounts.json ([{astronaut_id, email}, ...]).
+# Yeni hesap = o dosyaya bir satır + seed. Paneldeki hesap listesi (frontend/vite.config.ts) aynı
+# dosyayı okur. Hepsi SEED_ASTRONAUT_PASSWORD ile girer. İlk satır A007 olmalıdır.
+# A009'un verisi farklı bir senaryodur: scripts/seed_behavioral.py ve seed_physiological.py PROFILES.
+DEMO_ACCOUNTS: tuple[tuple[str, str], ...] = tuple(
+    (row["astronaut_id"], row["email"]) for row in json.loads(
+        (Path(__file__).parents[1] / "config" / "demo-accounts.json").read_text(encoding="utf-8")))
+ACTIVE_ASTRONAUT_IDS = tuple(astronaut_id for astronaut_id, _ in DEMO_ACCOUNTS)
+SECOND_ASTRONAUT_ID = "A009"
 
 # (kod, modül, kanonik birim, değer türü, kötüleşme yönü)
 # Göz kodları (near_acuity/contrast/amsler) SANS modülüyle birlikte kaldırıldı (takım kararı).
@@ -86,7 +98,13 @@ MISSION_SCENARIO = "ISS"  # SANS params: ISS kabin CO₂ kalibrasyonu
 MISSION_LENGTH_DAYS = 182  # SANS params.yaml: flight_days 182 [V]
 DISPLAY_ASTRONAUT_ID = "A008"  # TODO(ekip): ikinci (yalnız gösterim) profil kimliği
 ASTRONAUT_EMAIL = "astronaut@astra.local"  # TODO(ekip): demo giriş adresleri
+SECOND_ASTRONAUT_EMAIL = dict(DEMO_ACCOUNTS)[SECOND_ASTRONAUT_ID]
 GROUND_EMAIL = "kule@astra.local"
+if (DEMO_ACCOUNTS[0] != (ACTIVE_ASTRONAUT_ID, ASTRONAUT_EMAIL) or DISPLAY_ASTRONAUT_ID in ACTIVE_ASTRONAUT_IDS
+        or len(set(ACTIVE_ASTRONAUT_IDS)) != len(DEMO_ACCOUNTS)
+        or len({email.lower() for _, email in DEMO_ACCOUNTS} | {GROUND_EMAIL}) != len(DEMO_ACCOUNTS) + 1):
+    raise SystemExit("config/demo-accounts.json geçersiz: ilk satır A007/astronaut@astra.local olmalı; "
+                     "kimlik ve e-postalar benzersiz olmalı, gösterim profili (A008) kullanılamaz.")
 
 
 @dataclass
@@ -129,7 +147,8 @@ def _mission(db: Session, report: SeedReport) -> None:
 
 
 def _astronauts(db: Session, report: SeedReport) -> None:
-    for astronaut_id, display_only in ((ACTIVE_ASTRONAUT_ID, False), (DISPLAY_ASTRONAUT_ID, True)):
+    for astronaut_id, display_only in (*((a, False) for a in ACTIVE_ASTRONAUT_IDS),
+                                       (DISPLAY_ASTRONAUT_ID, True)):
         row = db.get(Astronaut, astronaut_id)
         if row is None:
             # SANS profil alanları (yaş, kilo, genler…) boş kalır: A9 JSON import doldurur.
@@ -148,7 +167,8 @@ def _astronauts(db: Session, report: SeedReport) -> None:
 def _users(db: Session, report: SeedReport, astronaut_pw: str, ground_pw: str,
            reset_passwords: bool) -> None:
     accounts = (
-        (normalize_email(ASTRONAUT_EMAIL), "ASTRONAUT", ACTIVE_ASTRONAUT_ID, astronaut_pw),
+        *((normalize_email(email), "ASTRONAUT", astronaut_id, astronaut_pw)
+          for astronaut_id, email in DEMO_ACCOUNTS),
         (normalize_email(GROUND_EMAIL), "GROUND_CONTROL", None, ground_pw),
     )
     for email, role, astronaut_id, password in accounts:

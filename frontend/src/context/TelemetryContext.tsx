@@ -206,9 +206,15 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           api.results(token, me.role, profile.astronaut_id, dateAdd(todayUtc, -29), dateAdd(todayUtc, 1)),
         ]);
         const newest = [...results.data].sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? null;
+        // Yerel demo: sol alttaki mürettebat listesi = giriş yapılabilen hesaplar (hesap değiştirici).
+        const accounts = import.meta.env.DEV ? await api.devAccounts().catch(() => [] as Profile[]) : [];
         if (!active) return;
         const current = profileToAstronaut(profile);
-        setAstronaut(current); setAvailableAstronauts([current]); setMissionProfileId(scenarioProfile(profile.scenario));
+        const others = accounts.filter((item) => item.astronaut_id !== profile.astronaut_id).map(profileToAstronaut);
+        const crew = accounts.some((item) => item.astronaut_id === profile.astronaut_id)
+          ? accounts.map((item) => item.astronaut_id === profile.astronaut_id ? current : profileToAstronaut(item))
+          : [current, ...others];
+        setAstronaut(current); setAvailableAstronauts(crew); setMissionProfileId(scenarioProfile(profile.scenario));
         setThresholdPolicy(policy.data);
         setVitals(vitalFromMeasurements(rows, policy.data));
         setLatestResult(newest);
@@ -230,10 +236,19 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   useEffect(() => reload(), [reload]);
+  // Hesap değiştirme (yerel demo): seçilen astronotun hesabıyla oturum açılır ve sayfa yeniden
+  // yüklenir; böylece bütün sayfalar (davranış, testler, raporlar) yeni kullanıcının verisini okur.
+  const setAstronautId = useCallback((id: string) => {
+    if (!import.meta.env.DEV || id === astronaut.id) return;
+    api.devSession('ASTRONAUT', id).then((token) => {
+      sessionStorage.setItem(TOKEN_KEY, token);
+      window.location.reload();
+    }).catch((cause) => setError(cause instanceof Error ? cause.message : 'Hesap değiştirilemedi.'));
+  }, [astronaut.id]);
   const setCurrentTab = (tab: NavigationTab) => { if (tab !== 'anatomy') setSelectedAnatomyZone(null); setCurrentTabState(tab); };
   const missionProfile = getProfile(missionProfileId);
   const value = useMemo(() => ({
-    currentTab, setCurrentTab, astronaut, setAstronautId: () => undefined, availableAstronauts, vitals,
+    currentTab, setCurrentTab, astronaut, setAstronautId, availableAstronauts, vitals,
     simulationScenario: 'normal' as const, setSimulationScenario: () => undefined, isSimulating: false, setIsSimulating: () => undefined,
     simulationIntervalMs: 0, setSimulationIntervalMs: () => undefined, selectedAnatomyZone, setSelectedAnatomyZone,
     currentAlert, resolveAlert: () => setCurrentAlert(null), triggerManualAlert: () => undefined,
@@ -242,7 +257,7 @@ export const TelemetryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     systemTelemetery: { satelliteLatencyMs: 0, signalStrengthPercent: 0, activeSensors: 0, totalSensors: 0, cabinPressureKPa: 0, cabinO2Percent: 0, co2Percent: 0, radiationDosimetryMSv: 0, metTimeHours: 0 },
     openActionPlanModal, setOpenActionPlanModal, missionProfile, setMissionProfileId, loading, error, reload,
     latestResult, thresholdPolicy,
-  }), [currentTab, astronaut, availableAstronauts, vitals, selectedAnatomyZone, currentAlert, cognitiveTestHistory, openActionPlanModal, missionProfile, loading, error, reload, latestResult, thresholdPolicy]);
+  }), [currentTab, astronaut, setAstronautId, availableAstronauts, vitals, selectedAnatomyZone, currentAlert, cognitiveTestHistory, openActionPlanModal, missionProfile, loading, error, reload, latestResult, thresholdPolicy]);
   return <TelemetryContext.Provider value={value}>{children}</TelemetryContext.Provider>;
 };
 

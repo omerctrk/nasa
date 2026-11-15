@@ -200,14 +200,20 @@ export async function request<T>(path: string, options: Options = {}): Promise<{
 }
 
 export const api = {
-  devSession: async (role: User['role']) => {
+  devSession: async (role: User['role'], astronaut?: string) => {
     const response = await fetch('/__dev/session', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }), signal: AbortSignal.timeout(15000),
+      body: JSON.stringify({ role, astronaut }), signal: AbortSignal.timeout(15000),
     })
     const payload = await response.json().catch(() => null) as { access_token?: string } | null
     if (!response.ok || !payload?.access_token) throw new ApiError(response.status, 'Yerel oturum açılamadı. API ve demo hesaplarını kontrol edin.')
     return payload.access_token
+  },
+  /** Yerel demo: giriş yapılabilen astronot hesapları (backend/config/demo-accounts.json). */
+  devAccounts: async (): Promise<Profile[]> => {
+    const response = await fetch('/__dev/accounts', { signal: AbortSignal.timeout(15000) })
+    if (!response.ok) throw new ApiError(response.status, 'Hesap listesi okunamadı.')
+    return await response.json() as Profile[]
   },
   login: (email: string, password: string) => request<{ access_token: string }>('/auth/login', {
     method: 'POST', body: { email, password },

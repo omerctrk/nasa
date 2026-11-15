@@ -63,6 +63,10 @@ def test_known_constants():
     assert seed.MISSION_ID == "M01" and str(seed.MISSION_DAY0) == "2027-01-05"
     assert seed.ACTIVE_ASTRONAUT_ID == "A007"
     assert seed.DISPLAY_ASTRONAUT_ID != seed.ACTIVE_ASTRONAUT_ID
+    # İkinci aktif astronot (demo: hesaplar arası geçiş): ayrı kimlik, ayrı e-posta
+    assert seed.ACTIVE_ASTRONAUT_IDS == ("A007", "A009")
+    assert seed.DISPLAY_ASTRONAUT_ID not in seed.ACTIVE_ASTRONAUT_IDS
+    assert seed.SECOND_ASTRONAUT_EMAIL not in (seed.ASTRONAUT_EMAIL, seed.GROUND_EMAIL)
 
 
 def test_passwords_are_not_in_repo():

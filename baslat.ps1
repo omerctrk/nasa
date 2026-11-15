@@ -33,6 +33,13 @@ elseif ($LASTEXITCODE -ne 0) { Kontrol "Takvim hizalama" }
 # Sentetik fizyolojik/ortam ölçümleri (nabız…, SpO2, göz içi basıncı, radyasyon, kabin CO2):
 # yalnız EKSİK gün/ölçümleri ekler (var olana dokunmaz), görev günü 74'e kadar.
 docker compose run --rm seed python -m scripts.seed_physiological --apply;   Kontrol "Sentetik ölçümler"
+# İkinci astronot (A009): davranış senaryosu + kendi fizyolojik profili. İkisi de yalnız eksikleri
+# ekler; A007'nin var olan kayıtlarına dokunmaz. (demo_data her iki astronotu da kontrol eder.)
+# Önce: A009'un senaryosu değiştiyse eski ÜRETİLMİŞ kayıtları silinir (sa; elle girilene dokunmaz).
+docker compose run --rm migrate python -m scripts.refresh_demo_profile --astronaut A009 --apply
+if ($LASTEXITCODE -ne 0) { Write-Host "UYARI: A009 profil yenileme çalışmadı (yukarıya bak); A009 eski verisiyle açılabilir." -ForegroundColor Yellow }
+docker compose run --rm seed python -m scripts.demo_data;                    Kontrol "Davranış demo verisi"
+docker compose run --rm seed python -m scripts.seed_physiological --astronaut A009 --apply;   Kontrol "Sentetik ölçümler (A009)"
 
 Adim 5 "Frontend açılıyor..."
 Set-Location frontend

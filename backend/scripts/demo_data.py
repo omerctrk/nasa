@@ -1,5 +1,8 @@
 """Demo verisi (A8, davranış kısmı): Şule'nin 74 günlük senaryosunu veritabanına yükler.
 
+İki aktif astronot yüklenir: A007 (Şule'nin özgün senaryosu) ve A009 (aynı üretici, farklı
+profil: scripts/seed_behavioral.py PROFILES). Takvim hizalaması görev düzeyindedir, bir kez yapılır.
+
 Kaynak: scripts/seed_behavioral.py (Şule) — ilk 60 gün stabil, son 14 gün kademeli değişim.
 Değerler DEMO amaçlıdır, klinik değildir; büyüklükler Şule'nin CONFIG'inde tek yerdedir.
 
@@ -60,28 +63,28 @@ def _align_to_today(db: Session, mission: Mission) -> None:
         raise SystemExit(RESET_HINT)
 
 
-def load(db: Session, align: bool = True) -> dict[str, int]:
+def load(db: Session, align: bool = True, astronaut_id: str = ASTRONAUT_ID) -> dict[str, int]:
     from scripts.seed_behavioral import CONFIG, generate
 
-    astronaut = db.get(Astronaut, ASTRONAUT_ID)
+    astronaut = db.get(Astronaut, astronaut_id)
     if astronaut is None:
-        raise SystemExit("A007 yok: önce 'docker compose run --rm seed' çalıştırın.")
+        raise SystemExit(f"{astronaut_id} yok: önce 'docker compose run --rm seed' çalıştırın.")
     mission = db.get(Mission, astronaut.mission_id)
     if align:
         _align_to_today(db, mission)
-    data = generate()
+    data = generate(astronaut_id)
     # Şule'nin günü 1 = CONFIG['mission_start']; bizde tarih = start_date + görev günü.
     shift = (mission.start_date + dt.timedelta(days=1)) - CONFIG["mission_start"]
     to_date = lambda day: mission.start_date + dt.timedelta(days=day)  # noqa: E731
     added = {"checkins": 0, "cognitive_tests": 0, "weekly_assessments": 0}
 
-    have_days = set(db.scalars(select(Checkin.date).where(Checkin.astronaut_id == ASTRONAUT_ID)))
+    have_days = set(db.scalars(select(Checkin.date).where(Checkin.astronaut_id == astronaut_id)))
     for r in data["checkins"]:
         day = to_date(r["mission_day"])
         if day in have_days:
             continue
         db.add(Checkin(
-            astronaut_id=ASTRONAUT_ID, date=day, mission_day=r["mission_day"],
+            astronaut_id=astronaut_id, date=day, mission_day=r["mission_day"],
             mood=r["mood"], energy=r["energy"], stress=r["stress"], loneliness=r["loneliness"],
             crew=r["crew_relation"], mood_index=r["mood_index"],
             bed_time=dt.time.fromisoformat(r["bed_time"]), wake_time=dt.time.fromisoformat(r["wake_time"]),
@@ -90,13 +93,13 @@ def load(db: Session, align: bool = True) -> dict[str, int]:
         added["checkins"] += 1
 
     have_tests = set(db.scalars(select(CognitiveTest.client_request_id)
-                                .where(CognitiveTest.astronaut_id == ASTRONAUT_ID)))
+                                .where(CognitiveTest.astronaut_id == astronaut_id)))
     for r in data["cognitive_tests"]:
         rid = uuid.UUID(r["client_request_id"])
         if rid in have_tests:
             continue
         db.add(CognitiveTest(
-            astronaut_id=ASTRONAUT_ID, client_request_id=rid, taken_at=_ts(r["taken_at"], shift),
+            astronaut_id=astronaut_id, client_request_id=rid, taken_at=_ts(r["taken_at"], shift),
             mission_day=r["mission_day"], test_type=r["test_type"], duration_s=r["duration_s"],
             n_trials=r["n_trials"], mean_rt_ms=r["mean_rt_ms"], median_rt_ms=r["median_rt_ms"],
             speed=r["speed"], lapses=r["lapses"], false_starts=r["false_starts"],
@@ -105,14 +108,14 @@ def load(db: Session, align: bool = True) -> dict[str, int]:
         added["cognitive_tests"] += 1
 
     have_weekly = set(db.scalars(select(WeeklyAssessment.client_request_id)
-                                 .where(WeeklyAssessment.astronaut_id == ASTRONAUT_ID)))
+                                 .where(WeeklyAssessment.astronaut_id == astronaut_id)))
     for r in data["weekly_assessments"]:
         rid = uuid.UUID(r["client_request_id"])
         if rid in have_weekly:
             continue
         json.loads(r["answers"])  # bozuk JSON'u DB'ye göndermeden yakala
         db.add(WeeklyAssessment(
-            astronaut_id=ASTRONAUT_ID, client_request_id=rid, taken_at=_ts(r["taken_at"], shift),
+            astronaut_id=astronaut_id, client_request_id=rid, taken_at=_ts(r["taken_at"], shift),
             mission_day=r["mission_day"], answers=r["answers"], who5_score=r["who5_score"],
             phq2_score=r["phq2_score"], gad2_score=r["gad2_score"],
             share_with_crew_medical=r["share_with_crew_medical"], source="seed"))
@@ -124,15 +127,21 @@ def load(db: Session, align: bool = True) -> dict[str, int]:
 def main(argv: list[str]) -> int:
     from app.db.session import SessionLocal
 
+    from scripts.seed_behavioral import PROFILES
+
     with SessionLocal() as db:
         try:
-            added = load(db, align="--sema-tarihi" not in argv)
+            # Takvim yalnız ilk astronottan (A007) önce hizalanır; diğerleri aynı takvime yüklenir.
+            added = {astronaut_id: load(db, align=i == 0 and "--sema-tarihi" not in argv,
+                                        astronaut_id=astronaut_id)
+                     for i, astronaut_id in enumerate(PROFILES)}
             db.commit()
             start = db.get(Mission, db.get(Astronaut, ASTRONAUT_ID).mission_id).start_date
         except BaseException:
             db.rollback()  # yarım yükleme bırakılmaz
             raise
-    print("Demo veri tamam:", ", ".join(f"{k}=+{v}" for k, v in added.items()))
+    for astronaut_id, counts in added.items():
+        print(f"Demo veri tamam ({astronaut_id}):", ", ".join(f"{k}=+{v}" for k, v in counts.items()))
     print(f"Görev günü 0: {start}  (senaryonun son günü: {start + dt.timedelta(days=LAST_DAY)})")
     return 0
 

@@ -41,14 +41,39 @@ PARAMETERS = {
     "radiation_dose": (0.55, 0.08, 0.0),
     "cabin_co2": (2.6, 0.3, 1.4),
 }
+# Per-astronaut overrides of PARAMETERS (demo: two accounts must show different findings).
+# A007 keeps the table above (late rise in pulse, pressure, glucose, temperature, CO2; SpO2 falls).
+# A009 is a different, acute story: a sudden cardio-respiratory event. Everything is flat until
+# mission day 71; over the last three days SpO2 falls below the 95 % limit (to ~91 %), the pulse
+# slows (~46 BPM) and blood pressure drops (~88/52 mmHg). Glucose, temperature, eye pressure,
+# radiation and cabin CO2 stay steady. Behavioral side: scripts/seed_behavioral.py PROFILES.
+# Optional 4th value = mission day after which the change starts (default 60, reaches full at 74).
+PROFILES = {
+    "A009": {
+        "heart_rate": (64, 3, -18, 71),
+        "systolic_bp": (112, 4, -24, 71),
+        "diastolic_bp": (72, 3, -20, 71),
+        "blood_glucose": (88, 5, 0),
+        "body_temperature": (36.5, 0.15, 0),
+        "spo2": (98.2, 0.8, -7.5, 71),
+        "intraocular_pressure": (14.8, 1.2, 0),
+        "radiation_dose": (0.5, 0.08, 0.0),
+        "cabin_co2": (2.4, 0.3, 0),
+    },
+}
+# Stored in each generated row's metadata ("profile"). scripts/refresh_demo_profile.py replaces an
+# astronaut's generated rows when this tag changes, so an edited scenario reaches an existing DB.
+PROFILE_TAGS = {"A009": "hypoxia-hypotension-v1"}
+DEFAULT_ONSET_DAY = 60
 # Device resolution: pulse oximeter reports whole %, tonometer 0.1 mmHg; others 2 decimals.
 DECIMALS = {"spo2": 0, "intraocular_pressure": 1}
 
 
 def sample(astronaut_id: str, day: date, mission_day: int, code: str) -> Decimal:
     rng = random.Random(f"{GENERATOR}:{astronaut_id}:{day}:{code}")
-    mean, variation, increase = PARAMETERS[code]
-    drift = min(1, max(0, (mission_day - 60) / 14))
+    mean, variation, increase, *rest = PROFILES.get(astronaut_id, PARAMETERS)[code]
+    onset = rest[0] if rest else DEFAULT_ONSET_DAY
+    drift = min(1, max(0, (mission_day - onset) / (LAST_DAY - onset)))
     value = round(mean + rng.uniform(-variation, variation) + increase * drift, DECIMALS.get(code, 2))
     return Decimal(str(value))
 
@@ -112,6 +137,8 @@ def main() -> None:
                         "generator": GENERATOR, "demo_only": True,
                         "scenario": "stable" if mission_day <= 60 else "gradual_demo_increase",
                         "protocol_version": PHYSIOLOGICAL_PROTOCOL,
+                        **({"profile": PROFILE_TAGS[args.astronaut]}
+                           if args.astronaut in PROFILE_TAGS else {}),
                         "quality_score_note": "Simulated quality; not a sensor assessment",
                     }),
                 ))
