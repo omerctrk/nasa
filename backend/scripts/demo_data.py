@@ -3,8 +3,12 @@
 Kaynak: scripts/seed_behavioral.py (Şule) — ilk 60 gün stabil, son 14 gün kademeli değişim.
 Değerler DEMO amaçlıdır, klinik değildir; büyüklükler Şule'nin CONFIG'inde tek yerdedir.
 
-Tarihler şemaya göre yeniden yerleştirilir: M01 görev günü 0 = core.Missions.start_date
-(şema: 2027-01-05), tarih = gün 0 + görev günü. Şule'nin kendi başlangıç tarihi kullanılmaz.
+Tarihler görev takvimine yerleştirilir: tarih = core.Missions.start_date (gün 0) + görev günü.
+
+Bugüne hizalama (varsayılan): şemadaki gün 0 (2027-01-05) gelecekte olduğu için panel
+"görev günü -51" gösterir ve son 30 günü boş bulur. Sunum için bu YEREL demo DB'sinde M01'in
+başlangıcı bugün - 75 gün yapılır: senaryonun son günü (74) dün olur, bugünün check-in'i boş
+kalır (canlı gösterilebilir). Şemadaki tarihi korumak için: --sema-tarihi
 
 - Yalnız davranış tabloları: behavioral.checkins / cognitive_tests / weekly_assessments.
   Fizyolojik ölçüm (nabız, tansiyon…) bu senaryoda YOK; uydurulmaz, ekipten gelecek.
@@ -33,13 +37,37 @@ def _ts(value: str, shift: dt.timedelta) -> dt.datetime:
     return t.astimezone(dt.UTC).replace(tzinfo=None)
 
 
-def load(db: Session) -> dict[str, int]:
+LAST_DAY = 74  # Şule'nin senaryosunun son görev günü
+
+RESET_HINT = (
+    "Eski demo verisi gelecek tarihte (2027) duruyor ve uygulama hesabı silemiyor.\n"
+    "Yerel demo veritabanını sıfırlayın:\n"
+    "  docker compose down -v\n"
+    "  baslat.cmd (çift tık)  -> sonra yeni bir terminalde bu komutu tekrar çalıştırın"
+)
+
+
+def _align_to_today(db: Session, mission: Mission) -> None:
+    """Senaryonun son günü dün olacak şekilde M01 başlangıcını kaydırır (yalnız boş DB'de)."""
+    today = dt.datetime.now(dt.UTC).date()
+    has_rows = db.scalar(select(Checkin.id).where(Checkin.astronaut_id == ASTRONAUT_ID,
+                                                  Checkin.source == "seed").limit(1)) is not None
+    if not has_rows:
+        mission.start_date = today - dt.timedelta(days=LAST_DAY + 1)
+        db.flush()
+    elif mission.start_date + dt.timedelta(days=LAST_DAY) >= today:
+        raise SystemExit(RESET_HINT)
+
+
+def load(db: Session, align: bool = True) -> dict[str, int]:
     from scripts.seed_behavioral import CONFIG, generate
 
     astronaut = db.get(Astronaut, ASTRONAUT_ID)
     if astronaut is None:
         raise SystemExit("A007 yok: önce 'docker compose run --rm seed' çalıştırın.")
     mission = db.get(Mission, astronaut.mission_id)
+    if align:
+        _align_to_today(db, mission)
     data = generate()
     # Şule'nin günü 1 = CONFIG['mission_start']; bizde tarih = start_date + görev günü.
     shift = (mission.start_date + dt.timedelta(days=1)) - CONFIG["mission_start"]
@@ -97,12 +125,14 @@ def main(argv: list[str]) -> int:
 
     with SessionLocal() as db:
         try:
-            added = load(db)
+            added = load(db, align="--sema-tarihi" not in argv)
             db.commit()
+            start = db.get(Mission, db.get(Astronaut, ASTRONAUT_ID).mission_id).start_date
         except BaseException:
             db.rollback()  # yarım yükleme bırakılmaz
             raise
     print("Demo veri tamam:", ", ".join(f"{k}=+{v}" for k, v in added.items()))
+    print(f"Görev günü 0: {start}  (senaryonun son günü: {start + dt.timedelta(days=LAST_DAY)})")
     return 0
 
 

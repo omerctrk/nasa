@@ -11,9 +11,9 @@ from scripts import demo_data, seed
 
 def test_demo_data_loads_once_onto_mission_calendar(db):
     seed.run_seed(db, "astro-pw", "kule-pw")
-    first = demo_data.load(db)
+    first = demo_data.load(db, align=False)
     assert all(0 <= n for n in first.values())
-    assert demo_data.load(db) == {"checkins": 0, "cognitive_tests": 0, "weekly_assessments": 0}
+    assert demo_data.load(db, align=False) == {"checkins": 0, "cognitive_tests": 0, "weekly_assessments": 0}
     days = set(db.scalars(select(Checkin.mission_day).where(Checkin.astronaut_id == "A007",
                                                              Checkin.source == "seed")))
     assert set(range(1, 75)) <= days
