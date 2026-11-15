@@ -46,3 +46,5 @@ Thumbs.db
 
 # Logs
 *.log
+backend/seed_output/
+backend/seed_output_before/
