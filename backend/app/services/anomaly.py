@@ -60,7 +60,7 @@ CARD_METRIC = {
     "crew": "crew_relation",
 }
 ALERT_SEVERITY = {AnomalyLevel.WATCH: Severity.WARNING, AnomalyLevel.REVIEW: Severity.WARNING}
-PROMPT_VERSION = "kart_onerici@401648d"  # Yusuf'un LLM dalındaki sürüm
+PROMPT_VERSION = "kart_onerici@df9955f"  # Yusuf'un LLM dalındaki sürüm
 CONFIGURED = {"within_range", "below_range", "above_range"}
 DIRECTION = {"above_range": "up", "below_range": "down"}
 
@@ -117,11 +117,12 @@ def _advice(deviations: dict, cards: list[dict], sor: Sor | None, raw: list) -> 
             return answer
         return kart_onerici.oner(deviations, cards, sor=recording_sor)
     # Model bağlı değil: Yusuf'un kod kararları (kart seçimi, acil kart, yükseltme) yine çalışır.
-    bos = {"summary": "", "explanations": [], "recommendations": [], "unmatched_findings": []}
+    # Öneriler kartın onaylı Türkçe cümlesidir (action_tr); modelsiz de aynen çıkar.
+    bos = {"summary": "", "explanations": [], "unmatched_findings": []}
     unmatched = kart_onerici.eslesmeyenler(deviations, cards)
     selected, emergency = kart_onerici.kart_sec(deviations, cards)
-    no_action = kart_onerici.aksiyonsuzlar(deviations, selected)
-    return kart_onerici.dogrula(bos, deviations, selected, emergency, unmatched, no_action)
+    oneriler, atlanan = kart_onerici.oneriler_kur(deviations, selected, emergency)
+    return kart_onerici.dogrula(bos, deviations, selected, emergency, unmatched, oneriler, atlanan)
 
 
 def _code_summary(drivers: list[dict]) -> str:

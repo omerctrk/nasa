@@ -117,9 +117,11 @@ def test_unmatched_metric_escalates_to_review():
 
 def test_model_answer_is_used_and_metadata_recorded():
     def sor(mesajlar, sema, deneme=0):
-        return {"summary": "Nabız yüksek.", "explanations": [], "recommendations": [],
-                "unmatched_findings": []}
-    snap = snapshot([record("r1", value="112")], [finding("r1", "above_range", delta="12")])
+        return {"summary": "Nabız yüksek.", "explanations": [], "unmatched_findings": []}
+    # Kart önerici v4: model yalnız açıklanacak risk/belirti kartı varsa çağrılır. Uçuşta
+    # (bağlam "general") yüksek vücut ısısının risk kartları var; nabız kartları iniş bağlamında.
+    snap = snapshot([record("r1", "body_temperature", "37.6", "°C")],
+                    [finding("r1", "above_range", lower="36", upper="37.1", delta="0.5")])
     ev = evaluate_snapshot(job(), snap, CARDS, sor=sor, model_name="qwen3:14b")
     assert ev.result.summary == "Nabız yüksek."
     assert ev.result.model_version == "qwen3:14b"

@@ -101,7 +101,8 @@
       "sleep_hours"
     ],
     "direction": "any",
-    "text": "A dynamic lighting schedule uses blue-enriched white light to promote alertness and blue-minimized white light before sleep. Sleep hygiene training and pre-sleep activities without supplemental light exposure are recommended.",
+    "text": "Before sleep, a dynamic lighting schedule uses blue-minimized white light. Blue-enriched white light is the part of the schedule used to promote alertness, not for the pre-sleep period. Sleep hygiene training and pre-sleep activities without supplemental light exposure are recommended.",
+    "action_tr": "Uykudan önce mavi ışığı azaltılmış beyaz ışık kullanın ve uyku öncesi etkinlikleri ek ışık olmadan yapın; uyku hijyeni eğitimi önerilir.",
     "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
     "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
     "locator": "Section IV.A.7.b (pp. 23-24); Section IV.B.3 (p. 33)"
@@ -116,6 +117,7 @@
     ],
     "direction": "any",
     "text": "NASA fitness-for-duty standards nominally limit crewmembers' scheduled work to 6.5 hours per day and recommend a 48-hour work week; these limits apply to work time, not to sleep. Naps can be used as a countermeasure for sleep loss, but a single 10-hour sleep opportunity cannot repay accumulated sleep loss.",
+    "action_tr": "Planlı çalışma süresini günde 6,5 saat ve haftada 48 saat sınırında tutun; uyku kaybı için kısa uykular (şekerleme) kullanılabilir.",
     "source": "Evidence Report: Risk of Performance Decrements and Adverse Health Outcomes Resulting from Sleep Loss, Circadian Desynchronization, and Work Overload",
     "url": "https://ntrs.nasa.gov/api/citations/20160003864/downloads/20160003864.pdf",
     "locator": "Section III (p. 8); Section IV.A.7 (p. 23); Section IV.B.1.b (p. 27)"
@@ -203,6 +205,7 @@
     ],
     "direction": "any",
     "text": "Properly conducted debriefs improve individual and team performance by approximately 20-25%. Crew-led team debriefs help maintain shared mental models and resolve conflicts.",
+    "action_tr": "Mürettebat liderliğinde ekip değerlendirme toplantıları (debrief) yapın.",
     "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
     "url": "https://ntrs.nasa.gov/citations/20220007465",
     "locator": "Section V.A.2 (p. 13)"
@@ -219,6 +222,7 @@
     ],
     "direction": "any",
     "text": "Foster social cohesion and buffer stress through shared team meals, group leisure activities, regular exercise, and structured communication protocols during delayed crew-to-ground interactions.",
+    "action_tr": "Ortak yemekler ve grup boş zaman etkinlikleri düzenleyin, düzenli egzersizi sürdürün; yer ile gecikmeli iletişimde yapılandırılmış iletişim protokollerini kullanın.",
     "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
     "url": "https://ntrs.nasa.gov/citations/20220007465",
     "locator": "Section V.C.2.c (pp. 49-50); Section VI.B.1 (p. 83)"
@@ -233,6 +237,7 @@
     ],
     "direction": "any",
     "text": "Schedule workloads with regular breaks to prevent conflict-distress spirals and allow adequate sleep. Provide crew autonomy in self-scheduling daily tasks.",
+    "action_tr": "İş yükünü düzenli molalarla planlayın ve mürettebata günlük görevlerini kendi planlama özerkliği tanıyın.",
     "source": "Risk of Performance and Behavioral Health Decrements Due to Inadequate Cooperation, Coordination, and Psychosocial Adaptations within a Team (NASA HRP Evidence Report, 2022)",
     "url": "https://ntrs.nasa.gov/citations/20220007465",
     "locator": "Section V.C.2.b (p. 45); Section V.C.4.a (p. 68)"
@@ -290,6 +295,7 @@
     ],
     "direction": "up",
     "text": "Non-pharmacological approaches for Space Adaptation Sickness include training to minimize provocative head movements, restricting head motion and activity, maintaining hydration, and increasing air circulation. EVAs are not scheduled within 72 hours of launch to allow symptoms to resolve.",
+    "action_tr": "Uzay uyum hastalığı belirtilerinde baş hareketlerini ve etkinliği sınırlayın, sıvı alımını sürdürün ve hava dolaşımını artırın.",
     "source": "NASA-STD-3001 Medical Technical Brief OCHMO-MTB-004: Space Adaptation Sickness and Space Readaptation Syndrome",
     "url": "https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-mtb-004-space-adaptation-sickness-sas.pdf",
     "locator": "Page 6 – Attenuating Factors; Page 8 – Non-Pharmacological Countermeasures"
@@ -306,7 +312,8 @@
     "text": "Space motion sickness symptoms can reappear when crewmembers return to Earth's gravity. This condition, called Terrestrial Readaptation Motion Sickness, may affect landing and spacecraft egress operations.",
     "source": "NASA-STD-3001 Medical Technical Brief OCHMO-MTB-004: Space Adaptation Sickness and Space Readaptation Syndrome",
     "url": "https://www.nasa.gov/wp-content/uploads/2025/09/ochmo-mtb-004-space-adaptation-sickness-sas.pdf",
-    "locator": "Executive Summary"
+    "locator": "Executive Summary",
+    "context": "landing"
   },
   {
     "id": "cog-06",
@@ -333,9 +340,11 @@
     ],
     "direction": "any",
     "text": "After long-duration flight, high-fidelity, just-in-time refresher training is recommended for landing and post-flight manual-control tasks, along with cognitive and sensorimotor self-assessments before challenging manual-control activities. Dual-task limitations should be considered when assigning duties during critical operations.",
+    "action_tr": "Zorlu elle kontrol görevlerinden önce bilişsel ve duyu-motor öz değerlendirme yapın; iniş ve uçuş sonrası elle kontrol görevleri için tazeleme eğitimi önerilir.",
     "source": "Long-duration spaceflight adversely affects post-landing operator proficiency",
     "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6389907/",
-    "locator": "Discussion – Countermeasure Recommendations"
+    "locator": "Discussion – Countermeasure Recommendations",
+    "context": "landing"
   },
   {
     "id": "cog-08",
@@ -349,6 +358,7 @@
     ],
     "direction": "any",
     "text": "Monthly cognitive testing with the WinSCAT tool compares each astronaut's in-flight results with an individual preflight baseline. Additional testing and assessment are indicated following an injury or illness in orbit.",
+    "action_tr": "Yörüngede bir yaralanma ya da hastalık sonrasında ek bilişsel test ve değerlendirme yapın; sonuçları kişisel uçuş öncesi taban değerinizle karşılaştırın.",
     "source": "NASA-STD-3001 Technical Brief OCHMO-TB-016: Behavioral Health and Performance",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/03/behavioral-health-technical-brief-ochmo.pdf",
     "locator": "Page 6 – In-Flight Psychological and Neurobehavioral Monitoring"
@@ -366,7 +376,8 @@
     "text": "Orthostatic intolerance is reported in approximately 20–30% of crew members after short-duration missions and 83% of astronauts after long-duration missions. Severe cases may involve presyncope or syncope and can impair a crew member's ability to exit the spacecraft after landing.",
     "source": "Risk of Orthostatic Intolerance During Re-exposure to Gravity (NASA HRP Evidence Report)",
     "url": "https://ntrs.nasa.gov/citations/20150007319",
-    "locator": "III. Introduction, pp. 5–6"
+    "locator": "III. Introduction, pp. 5–6",
+    "context": "landing"
   },
   {
     "id": "cardio-02",
@@ -381,7 +392,8 @@
     "text": "After spaceflight, orthostatic intolerance during standing or tilt testing may involve increased heart rate, decreased systolic blood pressure, and reduced stroke volume. These responses can impair the maintenance of arterial pressure and cerebral blood flow when the crew member returns to an upright posture.",
     "source": "Risk of Orthostatic Intolerance During Re-exposure to Gravity (NASA HRP Evidence Report)",
     "url": "https://ntrs.nasa.gov/citations/20150007319",
-    "locator": "IV. Evidence – A. Orthostatic Intolerance after Space Flight, pp. 8–17"
+    "locator": "IV. Evidence – A. Orthostatic Intolerance after Space Flight, pp. 8–17",
+    "context": "landing"
   },
   {
     "id": "cardio-03",
@@ -394,9 +406,11 @@
     ],
     "direction": "any",
     "text": "Combining fluid loading, re-entry compression garments, post-landing compression garments, and immediate access to medical care has helped control orthostatic intolerance risk after short-duration flights. No single countermeasure has completely eliminated this risk.",
+    "action_tr": "İniş için sıvı yüklemesi yapın, dönüş ve iniş sonrası kompresyon giysilerini kullanın ve tıbbi desteğe hemen erişimi sağlayın.",
     "source": "Risk of Orthostatic Intolerance During Re-exposure to Gravity (NASA HRP Evidence Report)",
     "url": "https://ntrs.nasa.gov/citations/20150007319",
-    "locator": "III. Introduction, p. 6"
+    "locator": "III. Introduction, p. 6",
+    "context": "landing"
   },
   {
     "id": "cardio-04",
@@ -410,7 +424,8 @@
     "text": "In a study of 12 astronauts after six-month missions, no participant experienced orthostatic intolerance or hypotension during routine daily activities in the first 24 hours after landing, under countermeasures that included in-flight exercise and fluid-volume resuscitation after return.",
     "source": "Impact of Prolonged Spaceflight on Orthostatic Tolerance During Ambulation and Blood Pressure Profiles in Astronauts",
     "url": "https://pubmed.ncbi.nlm.nih.gov/31319685/",
-    "locator": "Abstract – Results and Conclusions"
+    "locator": "Abstract – Results and Conclusions",
+    "context": "landing"
   },
   {
     "id": "cardio-05",
@@ -536,9 +551,11 @@
     ],
     "direction": "up",
     "text": "If average CO2 partial pressure remains above the limit over several days for unknown reasons, the Flight Control Team should identify and repair degraded CO2 scrubbing equipment or activate supplemental CO2 scrubbing equipment as needed.",
+    "action_tr": "Ortalama CO2 kısmi basıncı günlerce sınırın üzerinde kalıyorsa uçuş kontrol ekibi bozulan CO2 temizleme donanımını bulup onarmalı ya da ek CO2 temizleme donanımını devreye almalıdır.",
     "source": "NASA-STD-3001 Medical Technical Brief: Carbon Dioxide (CO2), OCHMO-TB-004, Rev D",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-004-carbon-dioxide.pdf",
-    "locator": "Page 7, Reference Information – ISS CO2 Levels"
+    "locator": "Page 7, Reference Information – ISS CO2 Levels",
+    "context": "co2_high"
   },
   {
     "id": "resp-05",
@@ -552,7 +569,8 @@
     "text": "Future missions may use constant partial cabin depressurization to reduce nitrogen in the body before spacewalks. This altered cabin environment can increase the risk of mild hypoxia, which occurs when oxygen levels in body tissues become lower than normal.",
     "source": "NASA – Risk of Hypoxia",
     "url": "https://www.nasa.gov/reference/risk-of-hypoxia/",
-    "locator": "What are the top risks?"
+    "locator": "What are the top risks?",
+    "context": "eva"
   },
   {
     "id": "resp-06",
@@ -612,7 +630,8 @@
     "text": "During the Apollo missions, acute health effects reported after lunar dust inhalation included sore throat, sneezing, and coughing. Longer-term dust exposure may pose respiratory disease risks.",
     "source": "Lunar Dust: The Hazard and Astronaut Exposure Risks",
     "url": "https://doi.org/10.1007/s11038-010-9365-0",
-    "locator": "Abstract"
+    "locator": "Abstract",
+    "context": "lunar_surface"
   },
   {
     "id": "resp-10",
@@ -625,9 +644,11 @@
     ],
     "direction": "up",
     "text": "Suit cleaning before and after vehicle entry, dust collection and removal, and suitable air filtration are important lunar dust-control measures. Temporary dust masks and goggles may also help reduce superficial responses such as sneezing and eye irritation.",
+    "action_tr": "Araca giriş öncesi ve sonrasında giysiyi temizleyin, tozu toplayıp uzaklaştırın ve uygun hava filtrasyonu kullanın; geçici toz maskesi ve gözlük hapşırma ile göz tahrişini azaltabilir.",
     "source": "NASA-STD-3001 Technical Brief: Lunar Dust (OCHMO-TB-011, Rev C)",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-011-lunar-dust-technical-brief.pdf",
-    "locator": "Reference Data, p. 5; Application – Design Testing and Mitigation, p. 6"
+    "locator": "Reference Data, p. 5; Application – Design Testing and Mitigation, p. 6",
+    "context": "lunar_surface"
   },
   {
     "id": "vision-01",
@@ -667,6 +688,7 @@
     ],
     "direction": "any",
     "text": "Periodic ocular monitoring before, during, and after spaceflight identifies changes in vision and eye structure. In-flight assessments include visual acuity testing, Amsler grid, optical coherence tomography, and retinal imaging.",
+    "action_tr": "Uçuş içi göz değerlendirmesi yapın: görme keskinliği testi, Amsler ızgarası, optik koherens tomografi ve retina görüntüleme.",
     "source": "NASA-STD-3001 Medical Technical Brief: Spaceflight Associated Neuro-ocular Syndrome (SANS), OCHMO-MTB-001",
     "url": "https://www.nasa.gov/wp-content/uploads/2024/02/ochmo-mtb-001-sans.pdf",
     "locator": "Pages 6–7, Monitoring & Diagnostics; Page 9, MED B Evaluation"
@@ -681,6 +703,7 @@
     ],
     "direction": "any",
     "text": "Providing crew members with optical correction, such as glasses with increased lens power, can mitigate SANS-related changes in refractive error.",
+    "action_tr": "Kırma kusurundaki değişiklik için optik düzeltme kullanın (örneğin mercek gücü artırılmış gözlük).",
     "source": "NASA-STD-3001 Medical Technical Brief: Spaceflight Associated Neuro-ocular Syndrome (SANS), OCHMO-MTB-001",
     "url": "https://www.nasa.gov/wp-content/uploads/2024/02/ochmo-mtb-001-sans.pdf",
     "locator": "Page 9, MED B Evaluation; Requirement V1 3004"
@@ -700,7 +723,7 @@
   },
   {
     "id": "vision-06",
-    "type": "countermeasure",
+    "type": "sign",
     "system": "mental",
     "metrics": [
       "eye_pressure"
@@ -735,7 +758,8 @@
     "text": "Weakened spine-stabilizing muscles and reduced hip-flexion strength were considered contributors to back pain after flight. This was an expert-panel assessment based on the available evidence.",
     "source": "2018 NASA Spine Workshop (NASA/TM-20205004306)",
     "url": "https://ntrs.nasa.gov/api/citations/20205004306/downloads/20205004306-TM-20205004306.pdf",
-    "locator": "Appendix 1: Panel Recommendations, recommendation 2"
+    "locator": "Appendix 1: Panel Recommendations, recommendation 2",
+    "context": "landing"
   },
   {
     "id": "musc-03",
@@ -746,6 +770,7 @@
     ],
     "direction": "up",
     "text": "Condition the deep muscles supporting the trunk with exercise before flight, and continue targeting these stabilizing muscles with exercise during flight.",
+    "action_tr": "Gövdeyi destekleyen derin kasları egzersizle güçlendirin ve bu egzersizleri uçuş sırasında sürdürün.",
     "source": "2018 NASA Spine Workshop (NASA/TM-20205004306)",
     "url": "https://ntrs.nasa.gov/api/citations/20205004306/downloads/20205004306-TM-20205004306.pdf",
     "locator": "Appendix 1: Panel Recommendations, recommendations 6-7"
@@ -759,6 +784,7 @@
     ],
     "direction": "up",
     "text": "The knees-to-chest posture can alleviate spaceflight-associated back pain.",
+    "action_tr": "Sırt ağrısını hafifletmek için dizleri göğse çekme pozisyonunu deneyin.",
     "source": "NASA-STD-3001 Technical Brief OCHMO-TB-041 Rev B: Sleep Accommodations",
     "url": "https://www.nasa.gov/sites/default/files/atoms/files/sleep_accomodations_technical_brief_ochmo.pdf",
     "locator": "Page 9 - Application: Design Considerations"
@@ -844,9 +870,11 @@
     ],
     "direction": "up",
     "text": "Aerobic and resistance exercise are components of a candidate immune countermeasure strategy intended to support crew immune health during future deep-space missions.",
+    "action_tr": "Bağışıklık sağlığını desteklemek için aerobik ve direnç egzersizini sürdürün (aday koruyucu strateji).",
     "source": "NASA Evidence Report: Risk of Crew Adverse Health Event Due to Altered Immune Response",
     "url": "https://humanresearchroadmap.nasa.gov/evidence/reports/IMMUNE%20EB%20Update%202021%20v02%20FINAL_6-15-22.pdf",
-    "locator": "XI. Countermeasure Development, printed page 35"
+    "locator": "XI. Countermeasure Development, printed page 35",
+    "context": "prevention"
   },
   {
     "id": "nutr-01",
@@ -886,6 +914,7 @@
     ],
     "direction": "up",
     "text": "The spaceflight fluid requirement is 1-1.5 mL/kcal, with a minimum of 2000 mL/d. Water rationing should be avoided.",
+    "action_tr": "Günde en az 2000 mL sıvı alın (gereksinim 1-1,5 mL/kcal); su kısıtlaması yapmayın.",
     "source": "Evidence Report: Risk Factor of Inadequate Nutrition (NASA Human Research Program)",
     "url": "https://ntrs.nasa.gov/citations/20150000512",
     "locator": "Section V.F, '3. Risk', p. 35"
@@ -899,6 +928,7 @@
     ],
     "direction": "up",
     "text": "Gut transit is slower in orbit, so adequate dietary fiber is essential to maintain gut function and reduce constipation. Low fiber combined with low fluid intake may lead to constipation. The spaceflight fiber requirement is 10-14 g/1000 kcal.",
+    "action_tr": "Bağırsak işlevi için yeterli lif alın (1000 kcal başına 10-14 g); düşük lif ile düşük sıvı alımı birlikte kabızlığa yol açabilir.",
     "source": "Evidence Report: Risk Factor of Inadequate Nutrition (NASA Human Research Program)",
     "url": "https://ntrs.nasa.gov/citations/20150000512",
     "locator": "Section V.D Dietary Fiber, p. 28"
@@ -916,7 +946,8 @@
     "text": "A large solar particle event can cause acute radiation effects if crew are unshielded. Early signs include nausea, vomiting, loss of appetite, and fatigue, along with skin injury. Accurate event alerts, dosimetry, and shielding are essential to avoid these effects.",
     "source": "Space Radiation and Risks to Human Health (NASA Space Radiation Program, Huff, 2014)",
     "url": "https://ntrs.nasa.gov/citations/20140005866",
-    "locator": "Slide 3; Slide 11 (Acute Radiation Syndromes)"
+    "locator": "Slide 3; Slide 11 (Acute Radiation Syndromes)",
+    "context": "spe"
   },
   {
     "id": "rad-02",
@@ -945,9 +976,11 @@
     ],
     "direction": "up",
     "text": "During extreme solar particle events, crew should take cover in a radiation shelter ('storm shelter') that uses onboard water, food, and high-hydrogen materials to keep crew dose low.",
+    "action_tr": "Aşırı güneş parçacık olayı sırasında radyasyon sığınağına (fırtına sığınağı) geçin.",
     "source": "NASA-STD-3001 Medical Technical Brief: Design for Ionizing Radiation Protection, OCHMO-TB-020, Rev C",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-020-radiation-protection.pdf",
-    "locator": "Page 8, V2 11001 & V2 11002"
+    "locator": "Page 8, V2 11001 & V2 11002",
+    "context": "spe"
   },
   {
     "id": "emerg-01",
@@ -962,7 +995,8 @@
     "text": "Type I decompression sickness typically involves itching, musculoskeletal pain, and mild rashes. Type II may involve neurological symptoms, including numbness, weakness, and cognitive issues, as well as inner-ear and cardiopulmonary problems.",
     "source": "NASA-STD-3001 Technical Brief OCHMO-TB-037: Decompression Sickness (DCS) Risk Mitigation",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf",
-    "locator": "Page 3 – Classification/Symptoms"
+    "locator": "Page 3 – Classification/Symptoms",
+    "context": "eva"
   },
   {
     "id": "emerg-02",
@@ -977,7 +1011,8 @@
     "text": "A high venous gas embolism bubble load can cause coughing and shortness of breath. Arterial gas embolism can cause severe effects, including stroke-like neurological symptoms, loss of consciousness, seizures, and cardiac ischemia.",
     "source": "NASA-STD-3001 Technical Brief OCHMO-TB-037: Decompression Sickness (DCS) Risk Mitigation",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf",
-    "locator": "Page 2 – Two Main Types of Intravascular Bubbles"
+    "locator": "Page 2 – Two Main Types of Intravascular Bubbles",
+    "context": "eva"
   },
   {
     "id": "emerg-03",
@@ -990,9 +1025,11 @@
     ],
     "direction": "up",
     "text": "Prebreathe protocols are an effective method for reducing decompression sickness risk before extravehicular activity. They help remove nitrogen from the body before the crewmember transitions to the lower pressure of an EVA suit.",
+    "action_tr": "Araç dışı etkinlikten önce ön solunum (prebreathe) protokolünü uygulayın.",
     "source": "NASA-STD-3001 Technical Brief OCHMO-TB-037: Decompression Sickness (DCS) Risk Mitigation",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-037-decompression-sickness.pdf",
-    "locator": "Page 1 – Executive Summary; Page 4 – DCS Prevention"
+    "locator": "Page 1 – Executive Summary; Page 4 – DCS Prevention",
+    "context": "prevention"
   },
   {
     "id": "resp-11",
@@ -1003,6 +1040,7 @@
     ],
     "direction": "down",
     "text": "Crew are trained to don oxygen masks any time symptoms of hypoxia are experienced. Once hypoxia is diagnosed, the main treatment is supplemental oxygen, and crew can be trained to use quick-don masks.",
+    "action_tr": "Hipoksi belirtileri hissettiğiniz anda oksijen maskesini takın.",
     "source": "NASA-STD-3001 Technical Brief OCHMO-TB-003 Rev A: Habitable Atmosphere",
     "url": "https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-003-habitable-atmosphere.pdf",
     "locator": "Page 3 – Total Pressure Limits; Page 6 – Hypoxia Treatment",

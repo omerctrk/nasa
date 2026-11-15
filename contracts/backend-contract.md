@@ -278,8 +278,14 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
   `no_current_measurements`. Karar her iki durumda `insufficient_data`.
   Eşikler DEMO politikasıdır (`config/thresholds.json`, `source_note`); klinik aralık değildir.
   Ayrıntı: `contracts/history-thresholds.md` "15 Kasım 2026 ekip kararı".
-- **Model**: `LLM_BASE_URL` doluysa Yusuf'un `kart_onerici.oner()` Ollama ile çağrılır (özet,
-  açıklama, öneri). Boşsa kart seçimi/yükseltme yine kodla yapılır, özet kodla yazılır.
+- **Model**: Yusuf'un kart önericisi **sürüm 4** (`LLM/` dalı, df9955f; backend kopyası
+  `app/providers/kart_onerici.py`, kartlar `config/knowledge_cards.json`). Öneriler kartın onaylı
+  Türkçe cümlesidir (`action_tr`) ve KODLA kurulur; model öneri yazmaz. Model yalnız özet ve
+  risk/belirti kartlarının açıklamasını yazar; açıklanacak kart yoksa hiç çağrılmaz. Kartlar
+  `context` ile süzülür (uçuşta yalnız `general`; iniş kartları uçuşta seçilmez, acil kartlar
+  süzülmez). `LLM_BASE_URL` boşsa öneriler/acil kart/yükseltme yine çalışır, özet kodla yazılır.
+  Not: `dbo.knowledge_cards` tablosunda `action_tr`/`context` sütunu yoktur; tablo doldurulursa
+  bu alanlar kaybolur (öneri çıkmaz). Şimdilik tablo boş, dosya kullanılır.
   Kart metrik adları: `pvt_mean_rt→pvt_mean_rt_ms`, `rotation_mean_rt→rotation_mean_rt_ms`,
   `body_temperature→body_temp`, `crew→crew_relation`.
 - **Ö6 yazım** (aynı Session): `anomaly_results` → (watch/review ise) `ops.Alerts` → olaylar.
