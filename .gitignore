@@ -1,0 +1,36 @@
+
+# NASA raw data and local datasets
+data/raw/
+data/processed/
+data/test/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# Linux virtual environment
+.venv-linux/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Model and ML caches
+.cache/
+hf_cache/
+models/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
