@@ -10,6 +10,12 @@ from app.services.behavioral_scoring import SYMPTOM_CODES as SCORING_SYMPTOM_COD
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 QUESTIONS_PATH = PROJECT_ROOT / "contracts" / "behavioral" / "questions.json"
 
+# Docker'da yalnız backend/ klasörü bağlanır (/app); proje kökündeki contracts/ orada yoktur.
+# Sözleşme dosyası görünmüyorsa bu testler hata yerine gerekçesiyle atlanır; yerelde
+# proje kökünden çalıştırınca normal koşar.
+if not QUESTIONS_PATH.exists():
+    pytest.skip(f"{QUESTIONS_PATH} bu ortamda yok (contracts/ bağlı değil)", allow_module_level=True)
+
 SYMPTOM_CODES = [
     "headache", "fatigue", "nausea", "dizziness", "blurred_vision",
     "eye_pressure", "back_pain", "cough", "shortness_of_breath",
