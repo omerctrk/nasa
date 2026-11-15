@@ -1,10 +1,14 @@
 # ASTRA HEALTH frontend
 
-The running interface uses the AHMS sidebar and cosmic styling, with patient
-records loaded from the FastAPI backend and central `AstraHealth` database.
+The running interface retains the frontend branch's AHMS navigation, cosmic
+styling, dashboard sections, and 3D anatomy model. Patient records load from
+the FastAPI backend and central `AstraHealth` database.
 The old simulation code is retained in source but is not loaded at runtime.
 Missing measurements, assessments, and alarms are displayed as missing; no
 browser-generated values are substituted.
+The 3D model is a visual anatomy asset, not a patient measurement. Its region
+labels use only stored readings. Radiation, cabin sensor, and similar values
+stay empty until a database-backed source exists.
 
 ## Local run
 
@@ -27,8 +31,8 @@ This automatic session route exists only in the local Vite development server
 bound to `127.0.0.1`; a production build still requires normal sign-in.
 
 The live panel supports profile and measurement reads, daily check-ins,
-physiological entry, analysis job status, alerts, notifications, and Knowledge
-Card reads/creation for ground control. The analysis model and clinical threshold
+weekly and cognitive history, physiological entry, analysis job status, alerts,
+notifications, and Knowledge Card reads/creation for ground control. The analysis model and clinical threshold
 rules are not configured yet. An analysis can therefore finish as
 `insufficient_data` without producing a health result or alarm.
 

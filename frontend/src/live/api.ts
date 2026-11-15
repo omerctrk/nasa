@@ -48,7 +48,26 @@ export type Checkin = {
   mood_index: number
   bed_time: string
   wake_time: string
+  sleep_hours: number
   sleep_quality: number
+}
+export type WeeklyAssessment = {
+  id: number
+  taken_at: string
+  mission_day: number
+  who5_score: number
+  phq2_score: number
+  gad2_score: number
+  share_with_crew_medical: boolean
+}
+export type CognitiveTest = {
+  id: number
+  taken_at: string
+  mission_day: number
+  test_type: string
+  mean_rt_ms: number | null
+  accuracy: number | null
+  valid: boolean
 }
 export type Alert = {
   alert_id: string
@@ -133,8 +152,12 @@ export const api = {
       { token, query: { start, end } }),
   checkins: (token: string, start: string, end: string) =>
     request<Checkin[]>('/me/checkins', { token, query: { start, end } }),
+  weekly: (token: string, start: string, end: string) =>
+    request<WeeklyAssessment[]>('/me/weekly-assessments', { token, query: { start, end } }),
+  cognitive: (token: string, start: string, end: string) =>
+    request<CognitiveTest[]>('/me/cognitive-tests', { token, query: { start, end } }),
   checkin: (token: string, day: string) => request<Checkin>(`/me/checkins/${day}`, { token }),
-  putCheckin: (token: string, day: string, body: Omit<Checkin, 'date'>, etag: string | null) =>
+  putCheckin: (token: string, day: string, body: Omit<Checkin, 'date' | 'sleep_hours'>, etag: string | null) =>
     request<Checkin>(`/me/checkins/${day}`, { token, method: 'PUT', body,
       ...(etag ? { headers: { 'If-Match': etag } } : {}) }),
   physiological: (token: string, body: { client_request_id: string; measurement: string; value_num: number;
