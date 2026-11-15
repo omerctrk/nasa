@@ -335,6 +335,7 @@ export default function LiveApp() {
         <div><div className="text-xs font-bold tracking-[0.25em] text-sky-700">ASTRA HEALTH · CANLI VERİ</div>
           <h1 className="text-xl font-semibold">{user.role === 'ASTRONAUT' ? 'Astronot paneli' : 'Yer kontrolü paneli'}</h1></div>
         <div className="flex items-center gap-3 text-sm"><span className="text-slate-500">{user.email}</span>
+          <a href="/" className="rounded-lg border px-3 py-2 hover:bg-slate-50">Orijinal arayüz</a>
           {import.meta.env.DEV ? <div className="flex gap-1" aria-label="Yerel demo rolü">
             <button className="rounded-lg border px-3 py-2 disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'ASTRONAUT'} onClick={() => void switchDevRole('ASTRONAUT')}>Astronot</button>
             <button className="rounded-lg border px-3 py-2 disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'GROUND_CONTROL'} onClick={() => void switchDevRole('GROUND_CONTROL')}>Yer kontrolü</button>

@@ -50,6 +50,10 @@ const AppContent: React.FC = () => {
       <Header />
 
       <main className="flex-1 w-full max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-6 py-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <span><strong>Simülasyon görünümü.</strong> Bu ekrandaki sağlık değerleri örnektir.</span>
+          <a href="/?view=live" className="rounded-lg bg-sky-700 px-4 py-2 font-semibold text-white hover:bg-sky-800">Canlı backend verilerini aç</a>
+        </div>
         {renderCurrentView()}
       </main>
 

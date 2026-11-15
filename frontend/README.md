@@ -1,8 +1,9 @@
 # ASTRA HEALTH frontend
 
-The `frontend` branch UI is included here. The default screen is the live FastAPI
-client. It shows only records returned by the central `AstraHealth` database.
-The older simulation UI is available only with `VITE_USE_MOCK=true`.
+The `frontend` branch's original simulation UI is the default landing page.
+It is labeled as a simulation because its readings are generated in the browser.
+Use the visible **Canlı backend verilerini aç** link or `/?view=live` for the
+FastAPI client, which shows only records from the central `AstraHealth` database.
 
 ## Local run
 
@@ -14,7 +15,8 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`. Vite proxies `/api/v1` and
+Open `http://127.0.0.1:5173/` for the original interface, then use its live-data
+link for the connected panel. Vite proxies `/api/v1` and
 `/ws/v1/notifications` to the API at `127.0.0.1:8000`, so the browser uses one
 origin and needs no CORS exceptions. The local Vite server opens a seeded
 astronaut session automatically; use the header buttons to switch to ground
@@ -30,5 +32,5 @@ Card reads/creation for ground control. The analysis model and clinical threshol
 rules are not configured yet. An analysis can therefore finish as
 `insufficient_data` without producing a health result or alarm.
 
-Use `VITE_USE_MOCK=true npm run dev` only for the original visual simulation.
-Its SANS and emergency screens are demo content and are not backed by this API.
+The original visual simulation's SANS and emergency screens are demo content
+and are not backed by this API.
