@@ -23,5 +23,15 @@ def configure_pipelines(app, settings: Settings) -> None:
                          settings.model_connect_timeout_seconds, settings.model_total_timeout_seconds)
     app.state.analysis_pipelines = {
         AnalysisModule.ANOMALY: AnomalyPipeline(preparer, load_cards(settings.knowledge_cards_path),
-                                                sor, settings.llm_model if sor else None),
+                                                sor, settings.llm_model if sor else None,
+                                                model_budget_seconds(settings) if sor else None),
     }
+
+
+def model_budget_seconds(settings: Settings) -> float:
+    """Model bütçesi işçinin değerlendirme zaman aşımının %75'i (en az 1 sn).
+
+    İşçi aynı süreyi (model_total_timeout_seconds) tüm değerlendirmeye uygular; model bu
+    bütçeyi aşarsa pipeline modelsiz karara döner ve iş zaman aşımına düşmeden tamamlanır.
+    """
+    return max(1.0, settings.model_total_timeout_seconds * 0.75)

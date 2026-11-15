@@ -18,9 +18,15 @@ Karar kuralları (sayı UYDURMAZ; eşikler config/thresholds.json'dan, ekip dold
     tamamlanmada astronota job_id'li analysis.completed. Riskli işe ayrıca tamamlanma olayı yok.
   - provider_metadata: sağlayıcı/model/prompt sürümü, ham model cevapları, seviye gerekçesi.
   - baseline_status=provisional: veri yeterlilik politikası yok, ready denmez.
+  - Model yalnız AÇIKLAMA yazar; kararı kod verir. Bu yüzden model erişilemez, süre bütçesini
+    aşar veya isteği reddederse iş BAŞARISIZ OLMAZ: aynı karar modelsiz yeniden üretilir
+    (algorithm="threshold_rules"), provider_metadata.llm_fallback nedeni taşır. Eşik aşımının
+    alarmı model sağlığına bağlı değildir.
 """
 from __future__ import annotations
 
+import asyncio
+import functools
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -50,7 +56,7 @@ from app.schemas.common import (
     ModuleScope,
     Severity,
 )
-from app.workers.analysis import InvalidModelOutput, PermanentModelError
+from app.workers.analysis import InvalidModelOutput, PermanentModelError, TransientModelError
 
 # Bizim ölçüm kodlarımız ↔ kart destesindeki metrik adları (aynı olanlar listelenmez).
 CARD_METRIC = {
@@ -248,17 +254,46 @@ def persist_evaluation(repo, job: JobRecord, evaluation: Evaluation) -> JobOutco
                       provider_metadata=evaluation.provider_metadata or None)
 
 
+# Model hatası → modelsiz (kural tabanlı) karar. Kod hatası (InvalidModelOutput vb.) yutulmaz.
+MODEL_FALLBACK_CODES: tuple[tuple[type[BaseException], str], ...] = (
+    (TimeoutError, "MODEL_TIMEOUT"),
+    (TransientModelError, "MODEL_CONNECTION_ERROR"),
+    (PermanentModelError, "MODEL_REQUEST_REJECTED"),
+)
+
+
+def with_fallback(evaluation: Evaluation, code: str, model_name: str | None) -> Evaluation:
+    """Modelsiz değerlendirmeye geri dönüş nedenini ekler (değer/hata metni taşımaz)."""
+    meta = dict(evaluation.provider_metadata) | {
+        "llm_fallback": code, "llm_error": True, "llm_model_requested": model_name}
+    return Evaluation(evaluation.status, evaluation.result, evaluation.outcome, meta)
+
+
 class AnomalyPipeline:
     def __init__(self, preparer, cards: list[dict], sor: Sor | None = None,
-                 model_name: str | None = None):
+                 model_name: str | None = None, model_budget_seconds: float | None = None):
         self.preparer, self.cards, self.sor, self.model_name = preparer, cards, sor, model_name
+        # İşçinin değerlendirme zaman aşımından KISA olmalı; yoksa geri dönüşe sıra gelmez.
+        self.model_budget_seconds = model_budget_seconds
 
     async def prepare(self, job: JobRecord) -> dict:
         return await self.preparer.prepare(job)
 
     async def evaluate(self, job: JobRecord, snapshot: dict) -> Evaluation:
-        return await run_in_threadpool(evaluate_snapshot, job, snapshot, self.cards,
-                                       self.sor, self.model_name)
+        if self.sor is None:
+            return await run_in_threadpool(evaluate_snapshot, job, snapshot, self.cards, None, None)
+        loop = asyncio.get_running_loop()
+        # run_in_executor: süre dolunca bekleme bırakılır (iş parçacığı HTTP zaman aşımıyla kendisi biter).
+        call = loop.run_in_executor(None, functools.partial(
+            evaluate_snapshot, job, snapshot, self.cards, self.sor, self.model_name))
+        try:
+            if self.model_budget_seconds is None:
+                return await call
+            return await asyncio.wait_for(call, self.model_budget_seconds)
+        except tuple(exc for exc, _ in MODEL_FALLBACK_CODES) as exc:
+            code = next(c for e, c in MODEL_FALLBACK_CODES if isinstance(exc, e))
+        fallback = await run_in_threadpool(evaluate_snapshot, job, snapshot, self.cards, None, None)
+        return with_fallback(fallback, code, self.model_name)
 
     def persist(self, repo, job: JobRecord, result: object) -> JobOutcome:
         return persist_evaluation(repo, job, result)

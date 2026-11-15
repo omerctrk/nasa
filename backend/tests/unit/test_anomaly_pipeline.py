@@ -268,3 +268,102 @@ def test_pipeline_evaluate_runs_in_thread():
     pipe = AnomalyPipeline(preparer=None, cards=CARDS)
     ev = asyncio.run(pipe.evaluate(job(), snapshot([], [])))
     assert isinstance(ev, Evaluation) and ev.status is EvaluationStatus.INSUFFICIENT_DATA
+
+
+# --- Model geri dönüşü: model yalnız açıklama yazar; hatası kararı/alarmı düşürmez ---------
+
+def _risk_snapshot():
+    # Uçuş bağlamında risk kartı olan ölçüm: model gerçekten çağrılır (kart önerici v4).
+    return snapshot([record("r1", "body_temperature", "37.8", "°C")],
+                    [finding("r1", "above_range", lower="36", upper="37.1", delta="0.7")])
+
+
+@pytest.mark.parametrize("error, code", [
+    (TransientModelError(), "MODEL_CONNECTION_ERROR"),
+    (PermanentModelError(), "MODEL_REQUEST_REJECTED"),
+    (TimeoutError(), "MODEL_TIMEOUT"),
+])
+def test_model_failure_falls_back_to_rule_decision(error, code):
+    import asyncio
+    calls = []
+
+    def sor(*_):
+        calls.append(1)
+        raise error
+    pipe = AnomalyPipeline(preparer=None, cards=CARDS, sor=sor, model_name="qwen3:14b",
+                           model_budget_seconds=5)
+    ev = asyncio.run(pipe.evaluate(job(), _risk_snapshot()))
+    expected = evaluate_snapshot(job(), _risk_snapshot(), CARDS)  # modelsiz karar
+    assert calls, "model çağrılmalıydı"
+    assert ev.status is EvaluationStatus.EVALUATED
+    assert ev.result.level is expected.result.level and ev.result.is_anomaly
+    assert ev.result.recommendation == expected.result.recommendation
+    assert ev.result.model_version is None and ev.result.algorithm == "threshold_rules"
+    assert "body_temperature 37.8" in ev.result.summary  # kodla yazılan özet
+    meta = ev.provider_metadata
+    assert meta["llm_fallback"] == code and meta["llm_error"] is True
+    assert meta["llm_model_requested"] == "qwen3:14b" and meta["algorithm"] == "threshold_rules"
+
+
+def test_slow_model_is_abandoned_within_budget():
+    import asyncio
+    import threading
+    import time
+    release = threading.Event()
+
+    def sor(*_):
+        release.wait(5)  # askıda kalan model
+        return {"summary": "geç", "explanations": [], "unmatched_findings": []}
+    pipe = AnomalyPipeline(preparer=None, cards=CARDS, sor=sor, model_name="m",
+                           model_budget_seconds=0.3)
+
+    async def timed():
+        # Süre olay döngüsü İÇİNDE ölçülür: asyncio.run kapanışta bırakılan iş parçacığını
+        # bekler; uygulamada döngü yaşar, işçi beklemez.
+        t0 = time.monotonic()
+        try:
+            return await pipe.evaluate(job(), _risk_snapshot()), time.monotonic() - t0
+        finally:
+            release.set()
+    ev, elapsed = asyncio.run(timed())
+    assert elapsed < 2
+    assert ev.provider_metadata["llm_fallback"] == "MODEL_TIMEOUT"
+    assert ev.result.summary != "geç" and ev.result.is_anomaly
+
+
+def test_fallback_result_persists_with_alert():
+    import asyncio
+
+    def sor(*_):
+        raise TransientModelError()
+    pipe = AnomalyPipeline(preparer=None, cards=CARDS, sor=sor, model_name="m", model_budget_seconds=5)
+    ev = asyncio.run(pipe.evaluate(job(), _risk_snapshot()))
+    repo = FakeRepo()
+    outcome = persist_evaluation(repo, job(), ev)
+    assert outcome.state is JobState.COMPLETED and outcome.anomaly_result_id
+    assert len(repo.alerts) == 1
+    assert outcome.provider_metadata["llm_fallback"] == "MODEL_CONNECTION_ERROR"
+
+
+def test_code_errors_are_not_masked_by_fallback():
+    import asyncio
+
+    def sor(*_):
+        raise TransientModelError()
+    pipe = AnomalyPipeline(preparer=None, cards=CARDS, sor=sor, model_name="m", model_budget_seconds=5)
+    with pytest.raises(InvalidModelOutput):  # başka astronotun snapshot'ı: kod hatası, geri dönüş yok
+        asyncio.run(pipe.evaluate(job(), snapshot([], [], astronaut="A999")))
+
+
+def test_model_budget_is_shorter_than_worker_timeout():
+    from app.core.pipeline_runtime import model_budget_seconds
+
+    class App:
+        class state:
+            history_preparer = object()
+    settings = Settings(db_password="x", llm_base_url="http://ollama:11434",
+                        model_total_timeout_seconds=60)
+    configure_pipelines(App, settings)
+    pipe = App.state.analysis_pipelines[AnalysisModule.ANOMALY]
+    assert pipe.sor is not None and pipe.model_budget_seconds == model_budget_seconds(settings) == 45
+    assert pipe.model_budget_seconds < settings.model_total_timeout_seconds
