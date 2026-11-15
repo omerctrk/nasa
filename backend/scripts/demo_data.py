@@ -7,8 +7,9 @@ Tarihler görev takvimine yerleştirilir: tarih = core.Missions.start_date (gün
 
 Bugüne hizalama (varsayılan): şemadaki gün 0 (2027-01-05) gelecekte olduğu için panel
 "görev günü -51" gösterir ve son 30 günü boş bulur. Sunum için bu YEREL demo DB'sinde M01'in
-başlangıcı bugün - 75 gün yapılır: senaryonun son günü (74) dün olur, bugünün check-in'i boş
-kalır (canlı gösterilebilir). Şemadaki tarihi korumak için: --sema-tarihi
+başlangıcı bugün - 74 gün yapılır: senaryonun son günü (74) BUGÜN olur; panel, check-in ve
+analiz 74. günü "bugün" görür (ekip kararı: referans gün 74). Sonraki günlerde takvimi yeniden
+hizalamak için: scripts/realign_demo.py. Şemadaki tarihi korumak için: --sema-tarihi
 
 - Yalnız davranış tabloları: behavioral.checkins / cognitive_tests / weekly_assessments.
   Fizyolojik ölçüm (nabız, tansiyon…) bu senaryoda YOK; uydurulmaz, ekipten gelecek.
@@ -48,14 +49,14 @@ RESET_HINT = (
 
 
 def _align_to_today(db: Session, mission: Mission) -> None:
-    """Senaryonun son günü dün olacak şekilde M01 başlangıcını kaydırır (yalnız boş DB'de)."""
+    """Senaryonun son günü bugün olacak şekilde M01 başlangıcını kaydırır (yalnız boş DB'de)."""
     today = dt.datetime.now(dt.UTC).date()
     has_rows = db.scalar(select(Checkin.id).where(Checkin.astronaut_id == ASTRONAUT_ID,
                                                   Checkin.source == "seed").limit(1)) is not None
     if not has_rows:
-        mission.start_date = today - dt.timedelta(days=LAST_DAY + 1)
+        mission.start_date = today - dt.timedelta(days=LAST_DAY)
         db.flush()
-    elif mission.start_date + dt.timedelta(days=LAST_DAY) >= today:
+    elif mission.start_date + dt.timedelta(days=LAST_DAY) > today:  # senaryo gelecekte kalmış
         raise SystemExit(RESET_HINT)
 
 

@@ -34,7 +34,10 @@ docker @dc run --rm migrate;                                Dur "Migration"
 
 Adim 3 "Seed + 74 günlük demo davranış verisi (astra_app)..."
 docker @dc run --rm seed;                                   Dur "Seed"
-docker @dc run --rm seed python -m scripts.demo_data;       Dur "Demo verisi"
+# Şema tarihiyle (2027) yükle, sonra takvim aracı gerçek SQL Server'da bugüne kaydırsın (74 = bugün)
+docker @dc run --rm seed python -m scripts.demo_data --sema-tarihi;   Dur "Demo verisi"
+docker @dc run --rm migrate python -m scripts.realign_demo --apply;   Dur "Takvim hizalama"
+docker @dc run --rm migrate python -m scripts.realign_demo --apply;   Dur "Takvim hizalama (tekrar: değişiklik olmamalı)"
 
 Adim 4 "API + işçi başlatılıyor..."
 docker @dc up -d --wait api;                                Dur "API"

@@ -4,7 +4,7 @@ Ayrı, geçici bir Docker yığınında (proje adı astra-e2e) çalışır; ası
 Çalıştırma: tests/e2e/e2e_calistir.cmd (çift tık). Elle:
     docker compose -p astra-e2e -f docker-compose.yml -f tests/e2e/docker-compose.e2e.yml run --rm e2e
 
-Hikâye (tek astronot A007, tek gün = bugün; demo verisi dün biten 74 günlük davranış geçmişi):
+Hikâye (tek astronot A007, bugün = görev günü 74; demo verisi bugün biten 74 günlük davranış geçmişi):
   S0  Sistem ayakta mı, API sınırlı hesapla mı çalışıyor
   S1  Kimlik ve rol sınırları
   S2  Profil ve görev takvimi (demo hizalaması)
@@ -237,20 +237,21 @@ def main() -> int:
             check(s == 403 and err_code(b) == "FORBIDDEN", f"{method} {path} → 403 FORBIDDEN", (s, b))
 
     # ---------------- S2
-    @step("S2 Profil", "profil + görev takvimi demo verisine hizalı (dün = görev günü 74)")
+    @step("S2 Profil", "takvim hizalı: bugün = görev günü 74 (realign_demo, 2027 şema tarihinden kaydırıldı)")
     def _():
         s, _, p = http("GET", "/me/profile", ctx["astro"])
         check(s == 200 and p["astronaut_id"] == "A007" and not p["is_display_only"], "A007 aktif", p)
         start = dt.date.fromisoformat(p["mission_start_date"])
         ctx["day0"] = start
-        check((TODAY - start).days == 75, "bugün = görev günü 75 (demo_data hizalaması)",
-              (start.isoformat(), (TODAY - start).days))
+        check((TODAY - start).days == 74, "bugün = görev günü 74", (start.isoformat(), (TODAY - start).days))
         s, _, rows = http("GET", f"/me/checkins?start={(TODAY - dt.timedelta(days=80)).isoformat()}"
-                                 f"&end={TODAY.isoformat()}", ctx["astro"])
-        check(s == 200 and len(rows) >= 70, "≥70 günlük demo check-in", (s, len(rows) if isinstance(rows, list) else rows))
+                                 f"&end={TOMORROW.isoformat()}", ctx["astro"])
+        check(s == 200 and len(rows) == 74, "74 günlük demo check-in", (s, len(rows) if isinstance(rows, list) else rows))
+        check(all((dt.date.fromisoformat(r["date"]) - start).days == r["mission_day"] for r in rows),
+              "her kayıtta tarih − gün 0 = mission_day (kaydırma ilişkiyi korudu)", rows[:2])
         last = max(rows, key=lambda r: r["date"])
-        check(last["date"] == (TODAY - dt.timedelta(days=1)).isoformat() and last["mission_day"] == 74,
-              "son demo günü = dün, mission_day 74", last)
+        check(last["date"] == TODAY.isoformat() and last["mission_day"] == 74,
+              "son demo günü = bugün, mission_day 74", last)
         return f"görev günü 0 = {start}, {len(rows)} demo check-in"
 
     @step("S2 Profil", "kule profil listesi: A007 aktif, A008 yalnız gösterim")
@@ -263,26 +264,32 @@ def main() -> int:
     checkin = {"mood": 7, "energy": 6, "stress": 3, "loneliness": 1, "crew": 3, "mood_index": 68.5,
                "bed_time": "23:10:00", "wake_time": "06:40:00", "sleep_quality": 4, "symptoms": []}
 
-    @step("S3 Check-in", "bugün boş (404), yeni kayıt 201 + ETag, uyku süresi backend'de hesaplanır")
+    @step("S3 Check-in", "bugünün (74) demo check-in'i hazır: GET 200 + ETag")
     def _():
-        s, _, b = http("GET", f"/me/checkins/{TODAY}", ctx["astro"])
-        check(s == 404 and err_code(b) == "NOT_FOUND", "404 (bugün henüz girilmedi)", (s, b))
-        s, h, b = http("PUT", f"/me/checkins/{TODAY}", ctx["astro"], checkin)
-        check(s == 201 and h.get("ETag"), "201 + ETag", (s, h.get("ETag"), b))
-        check(b["sleep_hours"] == 7.5 and b["mission_day"] == 75, "sleep_hours 7.5, mission_day 75", b)
+        s, h, b = http("GET", f"/me/checkins/{TODAY}", ctx["astro"])
+        check(s == 200 and h.get("ETag") and b["mission_day"] == 74 and b["source"] == "seed",
+              "200 + ETag, mission_day 74, kaynak seed", (s, h.get("ETag"), b))
         ctx["etag"] = h["ETag"]
 
-    @step("S3 Check-in", "If-Match'siz ikinci PUT 412, doğru ETag ile güncelleme 200, eski ETag 412")
+    @step("S3 Check-in", "If-Match'siz PUT 412, doğru ETag ile güncelleme 200 (manual), eski ETag 412")
     def _():
         s, _, b = http("PUT", f"/me/checkins/{TODAY}", ctx["astro"], checkin)
         check(s == 412 and err_code(b) == "PRECONDITION_FAILED", "412", (s, b))
         upd = checkin | {"stress": 5, "mood": 6}
         s, h, b = http("PUT", f"/me/checkins/{TODAY}", ctx["astro"], upd, {"If-Match": ctx["etag"]})
-        check(s == 200 and b["stress"] == 5 and h.get("ETag") != ctx["etag"], "200, stress=5, yeni ETag", (s, b))
+        check(s == 200 and b["stress"] == 5 and b["source"] == "manual" and b["sleep_hours"] == 7.5
+              and h.get("ETag") != ctx["etag"], "200, stress=5, manual, uyku 7.5 sa, yeni ETag", (s, b))
         s, _, b = http("PUT", f"/me/checkins/{TODAY}", ctx["astro"], checkin, {"If-Match": ctx["etag"]})
         check(s == 412, "eski ETag → 412", (s, b))
         s, h2, b = http("GET", f"/me/checkins/{TODAY}", ctx["astro"])
         check(s == 200 and b["stress"] == 5 and h2.get("ETag") == h.get("ETag"), "GET son hâli + aynı ETag", (s, b))
+
+    @step("S3 Check-in", "boş gün (75 = yarın): GET 404, If-Match'siz PUT 201, mission_day 75")
+    def _():
+        s, _, b = http("GET", f"/me/checkins/{TOMORROW}", ctx["astro"])
+        check(s == 404 and err_code(b) == "NOT_FOUND", "404", (s, b))
+        s, h, b = http("PUT", f"/me/checkins/{TOMORROW}", ctx["astro"], checkin)
+        check(s == 201 and h.get("ETag") and b["mission_day"] == 75, "201 + ETag, mission_day 75", (s, b))
 
     @step("S3 Check-in", "kural dışı değer (mood=11) → 422 VALIDATION_ERROR zarfı, alan adı ile")
     def _():
@@ -299,7 +306,7 @@ def main() -> int:
     @step("S4 Bilişsel/haftalık", "PVT 201; aynı istek tekrarı 200 aynı id; aynı anahtar farklı içerik 409")
     def _():
         s, _, a = http("POST", "/me/cognitive-tests", ctx["astro"], pvt)
-        check(s == 201 and a["mission_day"] == 75, "201, mission_day 75", (s, a))
+        check(s == 201 and a["mission_day"] == 74, "201, mission_day 74", (s, a))
         s, _, b = http("POST", "/me/cognitive-tests", ctx["astro"], pvt)
         check(s == 200 and b["id"] == a["id"], "200 aynı id", (s, b))
         s, _, c = http("POST", "/me/cognitive-tests", ctx["astro"], pvt | {"lapses": 4})
@@ -445,7 +452,7 @@ def main() -> int:
         ctx["alert2"], ctx["combined_result"], ctx["combined_job"] = mine[0]["alert_id"], r["id"], st["job_id"]
 
     # ---------------- S11 okuma tutarlılığı
-    @step("S11 Tutarlılık", "astronot ve kule bugünün ölçümlerini aynı görür; mission_day 75")
+    @step("S11 Tutarlılık", "astronot ve kule bugünün ölçümlerini aynı görür; mission_day 74")
     def _():
         q = f"?start={TODAY}&end={TOMORROW}"  # end hariç
         s1, _, mine = http("GET", "/me/measurements" + q, ctx["astro"])
@@ -455,7 +462,7 @@ def main() -> int:
         check(sorted(map(key, mine)) == sorted(map(key, theirs)), "iki görünüm aynı", (len(mine), len(theirs)))
         phys = [m for m in mine if m["module"] == "physiological"]
         check(len(phys) == 1 + len(NORMAL) + len(RISK), "8 fizyolojik kayıt (1 düşük kalite + 5 + 2)", len(phys))
-        check(all(m["mission_day"] == 75 for m in mine if m.get("mission_day") is not None), "mission_day 75",
+        check(all(m["mission_day"] == 74 for m in mine if m.get("mission_day") is not None), "mission_day 74",
               {m["mission_day"] for m in mine})
         beh = {m["measurement"] for m in mine if m["module"] == "behavioral"}
         check({"stress", "sleep_hours", "pvt_mean_rt"} <= beh, "check-in + PVT görünümde", beh)

@@ -2,7 +2,7 @@
 # Çalıştırma: baslat.cmd dosyasına çift tıkla.  Kapatma: bu pencerede Ctrl+C, sonra durdur.cmd
 Set-Location $PSScriptRoot
 
-function Adim($no, $yazi) { Write-Host "`n[$no/4] $yazi" -ForegroundColor Cyan }
+function Adim($no, $yazi) { Write-Host "`n[$no/5] $yazi" -ForegroundColor Cyan }
 function Kontrol($ne) {
   if ($LASTEXITCODE -ne 0) {
     Write-Host "`nHATA: $ne başarısız oldu. Yukarıdaki kırmızı satırlara bak." -ForegroundColor Red
@@ -25,7 +25,13 @@ docker compose run --rm migrate;     Kontrol "Migration"
 Adim 3 "Demo hesaplar ve sözlük yükleniyor..."
 docker compose run --rm seed;        Kontrol "Seed"
 
-Adim 4 "Frontend açılıyor..."
+Adim 4 "Demo takvimi bugüne hizalanıyor (görev günü 74 = bugün)..."
+# Kuru çalışma değil: --apply. Reddederse (ör. 74. günden sonraki kayıt) demo yine açılır, uyarı verilir.
+docker compose run --rm migrate python -m scripts.realign_demo --apply
+if ($LASTEXITCODE -eq 3) { Write-Host "UYARI: takvim hizalanmadı (yukarıdaki nedene bak); demo mevcut takvimle açılıyor." -ForegroundColor Yellow }
+elseif ($LASTEXITCODE -ne 0) { Kontrol "Takvim hizalama" }
+
+Adim 5 "Frontend açılıyor..."
 Set-Location frontend
 # npm ci kilit dosyasıyla birebir uyum ister; sürüm farkı olan bilgisayarlarda npm install daha toleranslı
 if (-not (Test-Path "node_modules\.bin\vite.cmd")) { npm install --no-audit --no-fund; Kontrol "npm install" }

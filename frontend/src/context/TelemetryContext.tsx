@@ -72,7 +72,8 @@ const profileToAstronaut = (profile: Profile): AstronautProfile => ({
   ...emptyAstronaut, id: profile.astronaut_id, astronautId: profile.astronaut_id,
   missionId: profile.mission_id, name: profile.display_name, mission: profile.mission_name,
   isDisplayOnly: profile.is_display_only,
-  solDay: Math.max(0, Math.round((Date.now() - Date.parse(`${profile.mission_start_date}T00:00:00Z`)) / 86400000)),
+  // Backend ile aynı kural: görev günü = bugün(UTC) − gün 0, tam gün (round öğleden sonra +1 gösterirdi).
+  solDay: Math.max(0, Math.floor((Date.now() - Date.parse(`${profile.mission_start_date}T00:00:00Z`)) / 86400000)),
 });
 
 const scenarioProfile = (scenario: string | null): MissionProfileId => {
