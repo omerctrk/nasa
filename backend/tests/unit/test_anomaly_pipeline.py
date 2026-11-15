@@ -70,6 +70,15 @@ def test_no_current_measurements_is_insufficient():
     assert ev.outcome["reason"] == "no_current_measurements"
 
 
+def test_all_excluded_records_are_reported_separately_from_no_data():
+    frozen = snapshot([], []) | {"exclusion_counts": {"definition_not_configured": 710,
+                                                      "quality_policy_not_configured": 365}}
+    ev = evaluate_snapshot(job(), frozen, CARDS)
+    assert ev.status is EvaluationStatus.INSUFFICIENT_DATA and ev.result is None
+    assert ev.outcome["reason"] == "all_records_excluded"
+    assert ev.outcome["exclusion_counts"] == frozen["exclusion_counts"]
+
+
 def test_unconfigured_thresholds_are_not_normal():
     ev = evaluate_snapshot(job(), snapshot([record("r1")], [finding("r1", "not_configured")]), CARDS)
     assert ev.status is EvaluationStatus.INSUFFICIENT_DATA

@@ -33,7 +33,8 @@ def record(number=1, **changes):
                               "value_text": None, "unit": "BPM", "protocol_version": "module-v2",
                               "measured_date": NOW.date(), "measured_at": None, "time_precision": "date",
                               "mission_day": 74, "eye": None, "source": "synthetic", "valid": True,
-                              "quality_score": None, "session_id": None, "metadata_json": None} | changes))
+                              # Fizyolojik kaynak kalite puanı taşır; history-v3 en az 0.90 ister.
+                              "quality_score": Decimal("0.95"), "session_id": None, "metadata_json": None} | changes))
 
 
 def history_policy():

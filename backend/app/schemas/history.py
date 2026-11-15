@@ -53,6 +53,8 @@ class ThresholdRule(MeasurementContext):
 class ThresholdPolicy(PolicyModel):
     version: Text
     boundary: Literal["inclusive"] = "inclusive"
+    # Sınırların nereden geldiği (ör. "demo, klinik değil"); snapshot'a politika ile birlikte donar.
+    source_note: Text | None = None
     rules: tuple[ThresholdRule, ...] = ()
 
     @model_validator(mode="after")

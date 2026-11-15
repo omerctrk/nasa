@@ -1,5 +1,12 @@
 {
-  "version": "thresholds-unconfigured-v1",
+  "version": "demo-thresholds-v1",
   "boundary": "inclusive",
-  "rules": []
+  "source_note": "DEMO politikasi; klinik referans araligi DEGILDIR. Kaynak: A007 sentetik veri, gorev gunu 1-60, ortalama + 3 populasyon standart sapmasi (yukari yuvarlanmis). Yalniz ust sinir; davranis olcumlerine esik tanimlanmadi.",
+  "rules": [
+    {"module": "physiological", "measurement": "heart_rate", "unit": "BPM", "protocol_version": "module-v2", "upper": 80},
+    {"module": "physiological", "measurement": "systolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "upper": 130},
+    {"module": "physiological", "measurement": "diastolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "upper": 86},
+    {"module": "physiological", "measurement": "blood_glucose", "unit": "mg/dL", "protocol_version": "module-v2", "upper": 111},
+    {"module": "physiological", "measurement": "body_temperature", "unit": "°C", "protocol_version": "module-v2", "upper": 37.10}
+  ]
 }

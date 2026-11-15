@@ -84,9 +84,20 @@ def test_policy_file_preserves_decimals_and_rejects_duplicate_keys(tmp_path):
         load_threshold_policy(path)
 
 
-def test_shipped_configuration_has_no_invented_thresholds():
+def test_shipped_thresholds_are_only_the_team_approved_demo_limits():
+    """Ekip kararı (15 Kasım 2026): yalnız 5 fizyolojik DEMO üst sınırı; davranışa eşik yok.
+    Kaynak: A007 sentetik gün 1-60, ortalama + 3 popülasyon SS. Klinik aralık değildir."""
     from tests.fixtures.history import ROOT
-    assert not load_threshold_policy(ROOT / "config/thresholds.json").rules
+    shipped = load_threshold_policy(ROOT / "config/thresholds.json")
+    assert {(r.module.value, r.measurement, r.unit, r.protocol_version, r.lower, r.upper)
+            for r in shipped.rules} == {
+        ("physiological", "heart_rate", "BPM", "module-v2", None, Decimal("80")),
+        ("physiological", "systolic_bp", "mmHg", "module-v2", None, Decimal("130")),
+        ("physiological", "diastolic_bp", "mmHg", "module-v2", None, Decimal("86")),
+        ("physiological", "blood_glucose", "mg/dL", "module-v2", None, Decimal("111")),
+        ("physiological", "body_temperature", "°C", "module-v2", None, Decimal("37.10")),
+    }
+    assert "DEMO" in shipped.source_note and "klinik" in shipped.source_note
     assert history_policy().sufficiency_policy_status == "not_configured"
     with pytest.raises(ValidationError):
         HistoryPolicy(**(history_policy().model_dump() | {"sufficiency_policy_status": "ready"}))

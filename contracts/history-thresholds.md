@@ -49,7 +49,8 @@ Policy sürümü ve tam kullanılan kurallar snapshot'a kopyalanır; semantic JS
 de saklanır. Aynı version metniyle dosya değişse bile içerik hash'i farkı görünür.
 Her yeni hazırlık dosyaları yeniden okur; retry mevcut kalıcı snapshot'ı kullanır.
 
-Başlangıç policy'si tanımları teyitli beş fizyolojik ve üç göz ölçümünü içerir.
+Güncel policy (history-v3) beş fizyolojik ve on bir davranış ölçümünü içerir; göz satırları
+SANS ile birlikte kaldırıldı (bkz. "15 Kasım 2026 ekip kararı").
 Birim/protokol eşleşmesi tamdır (ör. BPM ile bpm otomatik eşlenmez). Diğer özellikler
 tanım ve kalite kararı verilene kadar definition_not_configured olarak dışlanır.
 Davranış ölçeklerinin yönü/formülü ve PVT speed bu çalışmada uydurulmadı.
@@ -87,7 +88,8 @@ eşik aşanları değil, normal aralıktaki güncel ölçümleri de görür.
 
 ## Eşikler
 
-thresholds.json başlangıçta version ve boş rules içerir; klinik sayılar yoktur.
+thresholds.json klinik sayı içermez; yalnız ekipçe onaylı beş fizyolojik DEMO üst sınırını
+taşır (bkz. "15 Kasım 2026 ekip kararı"). Opsiyonel `source_note` sınırların kaynağını belirtir.
 Her kural module/measurement/unit/protocol_version/eye bağlamına aittir. En az bir
 alt/üst sınır gerekir; ters aralık, duplicate kural, NaN/Infinity ve duplicate JSON
 anahtarları reddedilir. Göz kuralları OD ve OS için ayrı tanımlanır; wildcard yoktur.
@@ -111,6 +113,30 @@ excluded_records kalite/tanım nedenleriyle yerel denetim içindir; model_input'
 sufficiency.status=not_configured, baseline_status=null kalır; 74 kayıt bulunması
 otomatik ready kararı değildir. Veri yeterlilik politikası ayrıca uygulanmadan Ö5/Ö6
 bu girdiye klinik başarı/ready statüsü atamamalıdır.
+
+## 15 Kasım 2026 ekip kararı (history-v3, demo-thresholds-v1)
+
+Onaylayanlar: Aybala, Ömer, Şule. Bu değerler demo politikasıdır; klinik karar değildir.
+
+- **Kalite:** fizyolojik beş ölçüm için `minimum_quality_score = 0.90` (sentetik üreticinin
+  0.94–0.99 aralığına göre). Davranış kayıtlarında quality_score boştur ve kalite sınırı
+  uygulanmaz (boş = kalite ölçülmedi).
+- **Davranış özellikleri (yalnız geçmiş/özet; eşik ve anomali kararı YOK):** `stress,
+  loneliness, crew, mood_index, sleep_hours, sleep_quality, pvt_mean_rt, pvt_lapses,
+  pvt_false_starts, rotation_accuracy, rotation_mean_rt` (protokol `astra-v1`, birimler
+  sözlükle aynı). Sözlük/VIEW kodları değişmedi; kart adlarına çeviri `services/anomaly.py`
+  `CARD_METRIC` içindedir. Alınmayanlar: `mood`, `energy` (mood_index'in içinde),
+  `pvt_median_rt`, `dsst_*` (DSST çıkarıldı). PVT/döndürme haftada iki gün yapılır;
+  `days_without_observations` bunlar için eksik veri anlamına gelmez.
+- **Fizyolojik demo üst sınırları:** heart_rate 80 BPM, systolic_bp 130 mmHg, diastolic_bp
+  86 mmHg, blood_glucose 111 mg/dL, body_temperature 37.10 °C. Kaynak: A007 sentetik veri,
+  görev günü 1–60, ortalama + 3 popülasyon standart sapması (yukarı yuvarlanmış). Alt sınır
+  yoktur. Sunumda "simüle eşik" olarak belirtilmelidir.
+- **Yeterlilik:** `sufficiency_policy_status` not_configured kalır; sonuçlar
+  `baseline_status=provisional` yazılır (anlamı: `backend-contract.md` §10a).
+- **Demo ortamı:** 74 günlük sentetik verinin tamamı için `ANOMALY_REFERENCE_DATE=2026-11-14`.
+  Yalnız davranış kapsamındaki analiz eşiksiz olduğundan `insufficient_data` döner; demo sonucu
+  için `physiological` veya `combined` kapsam kullanılır.
 
 ## Test ve kalan teslimler
 

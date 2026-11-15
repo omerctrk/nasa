@@ -37,6 +37,22 @@ def test_physiological_seed_matches_history_policy():
     assert all(d == "unconfirmed" for *_, d in seed.PHYSIOLOGICAL_DEFINITIONS)
 
 
+def test_behavioral_policy_features_match_seed_dictionary():
+    """Ekip kararı (15 Kasım 2026): 11 davranış kodu yalnız geçmiş/özet için onaylı. Kod, birim ve
+    protokol sözlükle aynı olmalı; mood/energy (mood_index'in içinde), pvt_median_rt ve DSST yok."""
+    import json
+
+    policy = json.loads((ROOT / "config/history-policy.json").read_text(encoding="utf-8"))
+    confirmed = {(f["measurement"], f["unit"], f["protocol_version"]) for f in policy["features"]
+                 if f["module"] == "behavioral" and f.get("definition_confirmed")}
+    seeded = {(c, u, seed.PROTOCOL_VERSION) for c, m, u, *_ in seed.DEFINITIONS}
+    assert confirmed <= seeded
+    assert {c for c, *_ in confirmed} == {
+        "stress", "loneliness", "crew", "mood_index", "sleep_hours", "sleep_quality",
+        "pvt_mean_rt", "pvt_lapses", "pvt_false_starts", "rotation_accuracy", "rotation_mean_rt"}
+    assert all("minimum_quality_score" not in f for f in policy["features"] if f["module"] == "behavioral")
+
+
 def test_no_invented_score_directions():
     for code, module, *_, direction in seed.DEFINITIONS:
         if module == "behavioral":

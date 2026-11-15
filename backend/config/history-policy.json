@@ -1,13 +1,24 @@
 {
-  "version": "history-v2",
+  "version": "history-v3",
   "summary_days": 74,
   "recent_days": 7,
   "sufficiency_policy_status": "not_configured",
   "features": [
-    {"module": "physiological", "measurement": "heart_rate", "unit": "BPM", "protocol_version": "module-v2", "definition_confirmed": true},
-    {"module": "physiological", "measurement": "systolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "definition_confirmed": true},
-    {"module": "physiological", "measurement": "diastolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "definition_confirmed": true},
-    {"module": "physiological", "measurement": "blood_glucose", "unit": "mg/dL", "protocol_version": "module-v2", "definition_confirmed": true},
-    {"module": "physiological", "measurement": "body_temperature", "unit": "°C", "protocol_version": "module-v2", "definition_confirmed": true}
+    {"module": "physiological", "measurement": "heart_rate", "unit": "BPM", "protocol_version": "module-v2", "definition_confirmed": true, "minimum_quality_score": 0.90},
+    {"module": "physiological", "measurement": "systolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "definition_confirmed": true, "minimum_quality_score": 0.90},
+    {"module": "physiological", "measurement": "diastolic_bp", "unit": "mmHg", "protocol_version": "module-v2", "definition_confirmed": true, "minimum_quality_score": 0.90},
+    {"module": "physiological", "measurement": "blood_glucose", "unit": "mg/dL", "protocol_version": "module-v2", "definition_confirmed": true, "minimum_quality_score": 0.90},
+    {"module": "physiological", "measurement": "body_temperature", "unit": "°C", "protocol_version": "module-v2", "definition_confirmed": true, "minimum_quality_score": 0.90},
+    {"module": "behavioral", "measurement": "stress", "unit": "score_0_10", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "loneliness", "unit": "score_0_4", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "crew", "unit": "score_0_4", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "mood_index", "unit": "score_0_100", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "sleep_hours", "unit": "h", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "sleep_quality", "unit": "score_1_5", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "pvt_mean_rt", "unit": "ms", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "pvt_lapses", "unit": "count", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "pvt_false_starts", "unit": "count", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "rotation_accuracy", "unit": "ratio_0_1", "protocol_version": "astra-v1", "definition_confirmed": true},
+    {"module": "behavioral", "measurement": "rotation_mean_rt", "unit": "ms", "protocol_version": "astra-v1", "definition_confirmed": true}
   ]
 }

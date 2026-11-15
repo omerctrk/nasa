@@ -143,6 +143,17 @@ def evaluate_snapshot(job: JobRecord, snapshot: dict, cards: list[dict],
     meta = {"algorithm": "threshold_rules", "provider": None, "model": None,
             "threshold_policy_version": model_input.get("threshold_policy_version")}
     if not model_input.get("current_measurements"):
+        # "Hiç kayıt yok" ile "kayıt var ama tanım/kalite politikası eksik olduğu için hepsi
+        # dışlandı" aynı şey değildir. İkincisinde yalnız neden SAYILARI taşınır (değer yok);
+        # karar yine insufficient_data kalır.
+        excluded = snapshot.get("exclusion_counts") or {}
+        if excluded:
+            return Evaluation(EvaluationStatus.INSUFFICIENT_DATA,
+                              outcome={"reason": "all_records_excluded",
+                                       "message": "Analiz penceresindeki kayıtların tamamı tanım/"
+                                                  "kalite politikası nedeniyle dışlandı.",
+                                       "exclusion_counts": dict(excluded)},
+                              provider_metadata=meta)
         return Evaluation(EvaluationStatus.INSUFFICIENT_DATA,
                           outcome={"reason": "no_current_measurements",
                                    "message": "Analiz penceresinde güncel ölçüm yok."},

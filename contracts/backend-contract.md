@@ -131,8 +131,9 @@ fırlatır; repository hataları otomatik çevrilir.
 | `POST /api/v1/me/physiological` | Aynı; yalnız sözlükte `physiological` kod ve kanonik birim |
 
 Yeni kayıt 201, aynı isteğin tekrarı 200. Gösterim profili → 403. `astronaut_id` ve
-`mission_day` istemciden alınmaz. `mood_index` formülü teyit edilene kadar istemciden gelir
-(açık karar); `sleep_hours` yatış→uyanış süresinden hesaplanır.
+`mission_day` istemciden alınmaz. `mood_index` formülü teyit edildi (15 Kasım, Şule):
+`(mood + energy + (10 - stress)) / 3 × 10`; değer şimdilik yine istemciden gelir (sunucuda
+hesaplama ayrı iş). `sleep_hours` yatış→uyanış süresinden hesaplanır.
 
 `app/routers/deps.py` şimdilik yer tutucudur (her isteğe 401); Ömer Ö1'de `current_user()`
 gövdesini yazar, imzalar değişmez.
@@ -269,7 +270,14 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
   güncel ölçüm yok → `insufficient_data`; hiçbir ölçüm için eşik tanımlı değil →
   `insufficient_data` (bilinmeyen normal değildir); ihlal yok → `normal`; ihlal var → en az
   `watch`; Yusuf'un kart önericisi doktora yükseltme derse → `review`.
-  `baseline_status=provisional` (yeterlilik politikası yok).
+  `baseline_status=provisional` (yeterlilik politikası yok). **`provisional` anlamı (15 Kasım,
+  takım kararı):** eşik değerlendirmesi mevcut geçmişle yapılmıştır; resmi veri yeterliliği
+  politikası henüz tanımlı değildir. Sonuç `ready` kabul edilmez.
+  Güncel ölçüm yokken kayıtların tamamı tanım/kalite politikası nedeniyle dışlanmışsa outcome
+  `reason=all_records_excluded` ve neden sayılarını taşır; hiç kayıt yoksa
+  `no_current_measurements`. Karar her iki durumda `insufficient_data`.
+  Eşikler DEMO politikasıdır (`config/thresholds.json`, `source_note`); klinik aralık değildir.
+  Ayrıntı: `contracts/history-thresholds.md` "15 Kasım 2026 ekip kararı".
 - **Model**: `LLM_BASE_URL` doluysa Yusuf'un `kart_onerici.oner()` Ollama ile çağrılır (özet,
   açıklama, öneri). Boşsa kart seçimi/yükseltme yine kodla yapılır, özet kodla yazılır.
   Kart metrik adları: `pvt_mean_rt→pvt_mean_rt_ms`, `rotation_mean_rt→rotation_mean_rt_ms`,

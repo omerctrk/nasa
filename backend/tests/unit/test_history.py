@@ -167,3 +167,31 @@ def test_model_sees_normal_values_as_well_as_valid_threshold_breaches():
     result = build([record(1, value_num=42), record(2, value_num=60)], thresholds=bounds)
     assert len(result["model_input"]["current_measurements"]) == 2
     assert result["model_input"]["valid_threshold_breach_record_ids"] == ["physiological:2"]
+
+
+def behavioral(number=1, **changes):
+    return record(number, **({"record_id": f"checkin:{number}:stress", "module": "behavioral",
+                              "measurement": "stress", "unit": "score_0_10",
+                              "protocol_version": "astra-v1", "quality_score": None,
+                              "value_num": 4} | changes))
+
+
+def test_shipped_policy_applies_quality_minimum_only_to_physiological():
+    rows = [record(1), record(2, quality_score="0.90"), record(3, quality_score="0.89"),
+            record(4, quality_score=None), behavioral(5)]
+    result = build(rows)
+    assert {item["record_id"] for item in result["history_records"]} == {
+        "physiological:1", "physiological:2", "checkin:5:stress"}
+    assert result["exclusion_counts"] == {"low_quality": 1, "quality_score_missing": 1}
+
+
+def test_shipped_policy_summarizes_only_approved_behavioral_codes():
+    rows = [behavioral(1), behavioral(2, record_id="checkin:2:mood", measurement="mood"),
+            behavioral(3, record_id="cognitive:3:pvt_median_rt", measurement="pvt_median_rt", unit="ms"),
+            behavioral(4, record_id="cognitive:4:pvt_mean_rt", measurement="pvt_mean_rt", unit="ms",
+                       valid=False)]
+    result = build(rows)
+    assert [group["measurement"] for group in result["model_input"]["summary"]] == ["stress"]
+    assert result["exclusion_counts"] == {"definition_not_configured": 2, "invalid_record": 1}
+    # Davranışa eşik tanımlı değil: bulgu "not_configured" kalır, normal sayılmaz.
+    assert [f["status"] for f in result["model_input"]["threshold_findings"]] == ["not_configured"]
