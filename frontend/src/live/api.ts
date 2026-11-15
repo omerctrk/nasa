@@ -33,6 +33,7 @@ export type Measurement = {
   value_text: string | null
   unit: string
   measured_date: string
+  measured_at: string | null
   mission_day: number | null
   source: string
   valid: boolean

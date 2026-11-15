@@ -2,11 +2,9 @@ import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/cosmic.css'
-// Keep the frontend branch's original interface as the landing page. Its
-// simulated readings are labeled in the UI; real backend data is one click away.
-const App = new URLSearchParams(location.search).get('view') === 'live'
-  ? lazy(() => import('./live/LiveApp.tsx'))
-  : lazy(() => import('./App.tsx'))
+// The running application reads patient records only through the backend.
+// The legacy simulation sources stay in the repository but are never loaded.
+const App = lazy(() => import('./live/LiveApp.tsx'))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

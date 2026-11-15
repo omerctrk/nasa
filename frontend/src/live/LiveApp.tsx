@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import {
-  Activity, Bell, BookOpen, ClipboardList, Database, LogOut, RefreshCw, ShieldCheck,
+  Activity, Bell, BookOpen, ClipboardList, Database, Globe2, LayoutDashboard,
+  LogOut, RefreshCw, ShieldCheck,
 } from 'lucide-react'
+import { AuroraBackground } from '../components/layout/AuroraBackground'
 import {
   api, ApiError, type Alert, type Checkin, type Job, type KnowledgeCard,
   type Measurement, type NotificationEvent, type Profile, type Result, type User,
 } from './api'
 
 const TOKEN_KEY = 'astra-live-token'
+type View = 'dashboard' | 'records' | 'analysis' | 'alerts' | 'knowledge'
 const MEASURES: Record<string, string> = {
   heart_rate: 'BPM', systolic_bp: 'mmHg', diastolic_bp: 'mmHg',
   blood_glucose: 'mg/dL', body_temperature: '°C',
@@ -46,6 +49,7 @@ const subtle = 'text-sm text-slate-500'
 
 export default function LiveApp() {
   const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) ?? '')
+  const [view, setView] = useState<View>('dashboard')
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [crew, setCrew] = useState<Profile[]>([])
@@ -224,6 +228,7 @@ export default function LiveApp() {
       logout()
       sessionStorage.setItem(TOKEN_KEY, nextToken)
       setToken(nextToken)
+      setView('dashboard')
     } catch (cause) { report(cause) }
     finally { setBusy(false) }
   }
@@ -329,20 +334,48 @@ export default function LiveApp() {
   </main>
 
   const selectedProfile = user.role === 'ASTRONAUT' ? profile : crew.find((item) => item.astronaut_id === selectedId)
-  return <div className="min-h-screen bg-slate-50 text-slate-800">
-    <header className="border-b border-slate-200 bg-white px-5 py-4">
-      <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4">
-        <div><div className="text-xs font-bold tracking-[0.25em] text-sky-700">ASTRA HEALTH · CANLI VERİ</div>
-          <h1 className="text-xl font-semibold">{user.role === 'ASTRONAUT' ? 'Astronot paneli' : 'Yer kontrolü paneli'}</h1></div>
-        <div className="flex items-center gap-3 text-sm"><span className="text-slate-500">{user.email}</span>
-          <a href="/" className="rounded-lg border px-3 py-2 hover:bg-slate-50">Orijinal arayüz</a>
-          {import.meta.env.DEV ? <div className="flex gap-1" aria-label="Yerel demo rolü">
-            <button className="rounded-lg border px-3 py-2 disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'ASTRONAUT'} onClick={() => void switchDevRole('ASTRONAUT')}>Astronot</button>
-            <button className="rounded-lg border px-3 py-2 disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'GROUND_CONTROL'} onClick={() => void switchDevRole('GROUND_CONTROL')}>Yer kontrolü</button>
-          </div> : <button onClick={logout} className="flex items-center gap-1 rounded-lg border px-3 py-2 hover:bg-slate-50"><LogOut className="h-4 w-4" />Çıkış</button>}</div>
+  const navigation: { id: View; label: string; icon: typeof Activity }[] = [
+    { id: 'dashboard', label: 'Ana Panel', icon: LayoutDashboard },
+    { id: 'records', label: 'Ölçümler ve Check-in', icon: Activity },
+    { id: 'analysis', label: 'Analiz', icon: Database },
+    { id: 'alerts', label: 'Alarmlar ve Bildirimler', icon: Bell },
+    ...(user.role === 'GROUND_CONTROL' ? [{ id: 'knowledge' as View, label: 'Bilgi Kartları', icon: BookOpen }] : []),
+  ]
+  const currentTitle = navigation.find((item) => item.id === view)?.label ?? 'Ana Panel'
+  const latestMeasurements = Array.from(
+    measurements.filter((item) => item.valid && (item.value_num !== null || item.value_text !== null))
+      .sort((a, b) => (b.measured_at ?? b.measured_date).localeCompare(a.measured_at ?? a.measured_date))
+      .reduce((latest, item) => {
+        const key = `${item.module}:${item.measurement}`
+        if (!latest.has(key)) latest.set(key, item)
+        return latest
+      }, new Map<string, Measurement>()).values(),
+  ).slice(0, 6)
+  return <div className="min-h-screen text-slate-800 lg:pl-[17rem]">
+    <AuroraBackground />
+    <aside className="relative z-10 border-b border-slate-200 bg-white/90 p-4 backdrop-blur-xl lg:fixed lg:inset-y-0 lg:left-0 lg:w-[17rem] lg:border-b-0 lg:border-r lg:p-5 flex flex-col gap-5 shadow-sm">
+      <button className="flex items-center gap-3 text-left" onClick={() => setView('dashboard')}>
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-sky-500 to-cyan-400 text-white shadow-lg"><Globe2 className="h-5 w-5" /></span>
+        <span><strong className="block text-lg tracking-[0.12em]">AHMS</strong><small className="text-slate-500">Astronot Sağlık İzleme</small></span>
+      </button>
+      <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">SQL Server · canlı kayıtlar</div>
+      <nav aria-label="Ana menü" className="flex flex-wrap gap-1 lg:flex-col">
+        {navigation.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setView(id)}
+          className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-all ${view === id ? 'nav-active' : 'border-transparent text-slate-600 hover:bg-slate-100/70'}`}>
+          <Icon className="h-[18px] w-[18px]" />{label}</button>)}
+      </nav>
+      <div className="mt-auto space-y-3 border-t border-slate-200 pt-4 text-sm">
+        <div className="font-semibold text-slate-900">{selectedProfile?.display_name ?? user.email}</div>
+        <div className="text-xs text-slate-500">{selectedProfile?.mission_name ?? 'Görev profili yükleniyor'} · {selectedProfile?.astronaut_id ?? ''}</div>
+        {import.meta.env.DEV ? <div className="flex gap-1" aria-label="Yerel demo rolü">
+          <button className="rounded-lg border px-2 py-1.5 text-xs disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'ASTRONAUT'} onClick={() => void switchDevRole('ASTRONAUT')}>Astronot</button>
+          <button className="rounded-lg border px-2 py-1.5 text-xs disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'GROUND_CONTROL'} onClick={() => void switchDevRole('GROUND_CONTROL')}>Yer kontrolü</button>
+        </div> : <button onClick={logout} className="flex items-center gap-1 rounded-lg border px-2 py-1.5"><LogOut className="h-4 w-4" />Çıkış</button>}
       </div>
-    </header>
-    <main className="mx-auto max-w-7xl space-y-5 px-4 py-6">
+    </aside>
+    <main className="relative z-10 mx-auto max-w-[90rem] space-y-5 px-4 py-6 sm:px-6">
+      <div><div className="text-xs font-bold tracking-[0.2em] text-sky-700">ASTRA HEALTH · CANLI VERİ</div>
+        <h1 className="text-2xl font-bold text-slate-900">{currentTitle}</h1></div>
       <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] items-end">
         <div><div className="text-sm text-slate-500">Görev profili</div>
           {user.role === 'GROUND_CONTROL'
@@ -358,14 +391,30 @@ export default function LiveApp() {
       </div>
       {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
       {notice && <div role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</div>}
+      {view === 'dashboard' && <div className="grid gap-4 sm:grid-cols-3">
+        {[['Ölçüm kaydı · 30 gün', measurements.length], ['Alarm kaydı', alerts.length], ['Bildirim', events.length]].map(([label, value]) =>
+          <div key={label} className="glass-card rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500">{label}</div><div className="mt-2 font-mono text-3xl font-bold text-sky-800">{value}</div>
+          </div>)}
+      </div>}
+      {view === 'dashboard' && <section className="space-y-3">
+        <h2 className="px-1 text-sm font-bold text-slate-800">Son kayıtlı göstergeler</h2>
+        {latestMeasurements.length === 0 ? <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 text-sm text-slate-500">Seçilen dönemde geçerli ölçüm bulunmuyor.</div>
+          : <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{latestMeasurements.map((item) =>
+            <div key={`${item.module}:${item.measurement}`} className="glass-card rounded-2xl border border-sky-100 bg-white/90 p-4 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{item.measurement.replaceAll('_', ' ')}</div>
+              <div className="mt-2 font-mono text-2xl font-bold text-sky-800">{item.value_num ?? item.value_text} <span className="text-sm font-medium text-slate-500">{item.unit}</span></div>
+              <div className="mt-2 text-xs text-slate-500">{item.measured_at ?? item.measured_date} · {item.source}</div>
+            </div>)}</div>}
+      </section>}
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title="Ölçümler · son 30 gün" icon={Activity}>
+        {(view === 'dashboard' || view === 'records') && <Card title="Ölçümler · son 30 gün" icon={Activity}>
           {measurements.length === 0 ? <p className={subtle}>Bu aralıkta kayıtlı ölçüm yok.</p>
             : <div className="max-h-80 overflow-auto divide-y divide-slate-100">{measurements.slice(0, 60).map((item) => <div key={item.record_id} className="flex justify-between gap-3 py-2 text-sm">
-              <div><div className="font-medium">{item.measurement}</div><div className="text-xs text-slate-500">{item.measured_date} · {item.module} · {item.source}</div></div>
+              <div><div className="font-medium">{item.measurement}</div><div className="text-xs text-slate-500">{item.measured_at ?? item.measured_date} · {item.module} · {item.source}</div></div>
               <div className="font-mono">{item.value_num ?? item.value_text ?? '—'} {item.unit}</div></div>)}</div>}
-        </Card>
-        <Card title="Alarmlar" icon={ShieldCheck}>
+        </Card>}
+        {(view === 'dashboard' || view === 'alerts') && <Card title="Alarmlar" icon={ShieldCheck}>
           {alerts.length === 0 ? <p className={subtle}>Kayıtlı alarm yok. Bu, değerlendirme yapıldığı anlamına gelmez.</p>
             : <div className="space-y-3">{alerts.map((item) => <div key={item.alert_id} className="rounded-lg border p-3 text-sm">
               <div className="flex justify-between"><b>{item.severity}</b><span>{item.status}</span></div>
@@ -374,8 +423,8 @@ export default function LiveApp() {
                 {item.status === 'OPEN' && <button className="text-sky-700" disabled={busy} onClick={() => void updateAlert(item, 'acknowledge')}>Onayla</button>}
                 {item.status === 'ACKNOWLEDGED' && <button className="text-sky-700" disabled={busy} onClick={() => void updateAlert(item, 'resolve')}>Kapat</button>}
               </div>}</div>)}</div>}
-        </Card>
-        {user.role === 'ASTRONAUT' && <>
+        </Card>}
+        {view === 'records' && user.role === 'ASTRONAUT' && <>
           <Card title="Günlük check-in" icon={ClipboardList}>
             <form key={`${day}-${checkinEtag ?? 'new'}`} onSubmit={(event) => void saveCheckin(event)} className="grid grid-cols-2 gap-3 text-sm">
               {(['mood', 'energy', 'stress', 'loneliness', 'crew', 'mood_index'] as const).map((name) => <label key={name}>{name}
@@ -396,19 +445,20 @@ export default function LiveApp() {
               <button className={button} disabled={busy || !day}>Ölçümü kaydet</button>
             </form>
           </Card>
-          <Card title="Analiz işi" icon={Database}>
-            <p className={subtle}>Model servisi ve eşikler hazır değilken değerlendirme sonucu yetersiz veri olabilir.</p>
-            <button className={`${button} mt-3`} disabled={busy || !!job && !['COMPLETED', 'FAILED'].includes(job.state)} onClick={() => void startAnalysis()}>Analiz isteği oluştur</button>
-            {job && <div className="mt-3 text-sm">İş: <span className="font-mono">{job.job_id}</span><br />Durum: <b>{job.state}</b>
-              {job.evaluation_status && <span> · {job.evaluation_status}</span>}{job.error_code && <span> · {job.error_code}</span>}</div>}
-            {result && <div className="mt-3 rounded-lg bg-sky-50 p-3 text-sm"><b>{result.level}</b><p>{result.summary}</p><p>{result.recommendation}</p></div>}
-          </Card>
           <Card title="Check-in geçmişi" icon={ClipboardList}>
             {checkins.length === 0 ? <p className={subtle}>Bu aralıkta check-in yok.</p>
               : <div className="max-h-72 overflow-auto divide-y">{checkins.map((item) => <div key={item.date} className="flex justify-between py-2 text-sm"><span>{item.date}</span><span>Ruh hâli {item.mood} · Uyku {item.sleep_quality}/5</span></div>)}</div>}
           </Card>
         </>}
-        {user.role === 'GROUND_CONTROL' && <Card title="Bilgi kartları" icon={BookOpen}>
+        {view === 'analysis' && <Card title="Analiz işi" icon={Database}>
+          {user.role === 'ASTRONAUT' ? <><p className={subtle}>Model servisi ve eşikler hazır değilken değerlendirme sonucu yetersiz veri olabilir.</p>
+            <button className={`${button} mt-3`} disabled={busy || !!job && !['COMPLETED', 'FAILED'].includes(job.state)} onClick={() => void startAnalysis()}>Analiz isteği oluştur</button>
+            {job && <div className="mt-3 text-sm">İş: <span className="font-mono">{job.job_id}</span><br />Durum: <b>{job.state}</b>
+              {job.evaluation_status && <span> · {job.evaluation_status}</span>}{job.error_code && <span> · {job.error_code}</span>}</div>}
+            {result && <div className="mt-3 rounded-lg bg-sky-50 p-3 text-sm"><b>{result.level}</b><p>{result.summary}</p><p>{result.recommendation}</p></div>}</>
+            : <p className={subtle}>Analiz işi astronot hesabından başlatılır. Yer kontrolü alarmları izler.</p>}
+        </Card>}
+        {view === 'knowledge' && user.role === 'GROUND_CONTROL' && <Card title="Bilgi kartları" icon={BookOpen}>
           <p className={`${subtle} mb-3`}>SQL Server’daki kayıtlar: {cards.length}</p>
           <div className="max-h-48 overflow-auto divide-y">{cards.map((item) => <div key={item.card_id} className="py-2 text-sm"><b>{item.card_id}</b> · {item.system}<p className="text-slate-500 line-clamp-2">{item.text}</p></div>)}</div>
           <details className="mt-4"><summary className="cursor-pointer text-sm font-medium text-sky-700">Yeni kart ekle</summary>
@@ -419,11 +469,11 @@ export default function LiveApp() {
               <button className={button} disabled={busy}>Kartı kaydet</button>
             </form></details>
         </Card>}
-        <Card title="Bildirimler" icon={Bell}>
+        {(view === 'dashboard' || view === 'alerts') && <Card title="Bildirimler" icon={Bell}>
           {events.length === 0 ? <p className={subtle}>Bekleyen bildirim yok.</p>
             : <div className="max-h-72 overflow-auto divide-y">{events.map((item) => <div key={item.event_id} className="py-2 text-sm"><b>{item.event_type}</b>
               <p className="text-slate-500">{item.created_at.slice(0, 16)}</p></div>)}</div>}
-        </Card>
+        </Card>}
       </div>
     </main>
   </div>
