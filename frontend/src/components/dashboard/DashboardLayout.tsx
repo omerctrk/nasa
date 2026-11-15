@@ -81,16 +81,16 @@ const StatusBanner: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="xl:col-span-7 rounded-2xl border border-emerald-200 bg-emerald-50 neon-emerald px-4 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center text-white shrink-0">
+        <div className="xl:col-span-7 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-slate-500 flex items-center justify-center text-white shrink-0">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-emerald-800">{t('Her şey yolunda', 'All clear')}</h2>
+            <h2 className="text-sm font-bold text-slate-800">{t('Açık alarm kaydı yok', 'No open alert record')}</h2>
             <p className="text-xs text-slate-700">
               {t(
-                'Tüm göstergeler normal aralıkta. Planlı ölçümlerinize devam edin.',
-                'All indicators are within normal range. Keep up with your scheduled checks.'
+                'Bu durum klinik değerlendirme yapıldığı veya tüm göstergelerin normal olduğu anlamına gelmez.',
+                'This does not mean that a clinical evaluation ran or all indicators are normal.'
               )}
             </p>
           </div>

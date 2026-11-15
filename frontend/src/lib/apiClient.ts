@@ -3,13 +3,13 @@
  *
  * Ortam değişkenleri (.env):
  *   VITE_API_BASE_URL  varsayılan "/api/v1"
- *   VITE_USE_MOCK      "false" olunca gerçek API kullanılır (varsayılan: sahte veri)
+ *   VITE_USE_MOCK      geliştirme için açıkça "true" verilmedikçe kapalıdır
  *
  * Not: Belgedeki NEXT_PUBLIC_USE_MOCK, bu proje Vite kullandığı için VITE_USE_MOCK'tur.
  */
 
 export const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
-export const USE_MOCK: boolean = (import.meta.env.VITE_USE_MOCK ?? 'true') !== 'false';
+export const USE_MOCK: boolean = import.meta.env.VITE_USE_MOCK === 'true';
 
 /** Backend hata biçimi: {"error": {code, message, details, trace_id}} */
 export class ApiError extends Error {
@@ -30,7 +30,7 @@ export class ApiError extends Error {
 /** Oturum belirteci. Giriş sistemi eklenince burası güncellenir. */
 export const getAuthToken = (): string | null => {
   try {
-    return localStorage.getItem('ahms-token');
+    return sessionStorage.getItem('astra-live-token');
   } catch {
     return null;
   }

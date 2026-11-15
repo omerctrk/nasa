@@ -29,12 +29,15 @@ export interface ZoneContent {
 const worst = (...s: MetricStatus[]): MetricStatus =>
   s.includes('critical') ? 'critical' : s.includes('warning') ? 'warning' : 'normal';
 
-/**
- * Vücut bölgeleri için içerik. Sabit değerler (optik sinir kılıfı, kemik kaybı vb.)
- * şimdilik örnek veridir; backend bağlandığında buradan beslenebilir.
- */
 export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, VitalMetric>, t: T): ZoneContent => {
   const reports = { label: t('Trend raporunu aç', 'Open trend report'), tab: 'reports' as const, icon: <LineChart className="w-4 h-4" /> };
+  const measured = (label: string, metric: VitalMetric): ZoneMetric => ({
+    label,
+    value: Number.isFinite(metric.value) ? `${metric.value} ${metric.unit}` : t('Kayıt yok', 'No record'),
+    normal: t('Eşik tanımlanmadı', 'No threshold configured'),
+    status: metric.status,
+  });
+  const unavailable = (label: string): ZoneMetric => ({ label, value: t('Kayıt yok', 'No record'), normal: t('Veri kaynağı bağlı değil', 'Data source not connected'), status: 'normal' });
 
   switch (zone) {
     case 'head':
@@ -45,10 +48,10 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
         icon: <Brain className="w-6 h-6 text-indigo-600" />,
         status: vitals.iop.status,
         metrics: [
-          { label: t('Göz içi basıncı', 'Eye pressure (IOP)'), value: `${vitals.iop.value} mmHg`, normal: '10–21 mmHg', status: vitals.iop.status },
-          { label: t('Optik sinir kılıfı', 'Optic nerve sheath'), value: '5.8 mm', normal: '4.5–5.9 mm', status: 'normal' },
-          { label: t('Tepki süresi', 'Reaction time'), value: '224 ms', normal: '< 260 ms', status: 'normal' },
-          { label: t('Uyku', 'Sleep'), value: `${vitals.sleep.value} ${t('saat', 'h')}`, normal: t('7–8.5 saat', '7–8.5 h'), status: vitals.sleep.status },
+          measured(t('Göz içi basıncı', 'Eye pressure (IOP)'), vitals.iop),
+          unavailable(t('Optik sinir kılıfı', 'Optic nerve sheath')),
+          unavailable(t('Tepki süresi', 'Reaction time')),
+          measured(t('Uyku', 'Sleep'), vitals.sleep),
         ],
         spaceEffect: t(
           'Ağırlıksız ortamda yaklaşık 2 litre vücut sıvısı kafaya doğru kayar. Bu, göz arkasındaki basıncı artırıp görmeyi bulanıklaştırabilir. Buna SANS (uzay uçuşuna bağlı nöro-oküler sendrom) denir.',
@@ -73,10 +76,10 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
         icon: <Heart className="w-6 h-6 text-rose-500" />,
         status: worst(vitals.pulse.status, vitals.oxygen.status),
         metrics: [
-          { label: t('Nabız', 'Heart rate'), value: `${vitals.pulse.value} bpm`, normal: '60–90 bpm', status: vitals.pulse.status },
-          { label: t('Oksijen (SpO₂)', 'Oxygen (SpO₂)'), value: `${vitals.oxygen.value}%`, normal: '96–100%', status: vitals.oxygen.status },
-          { label: t('Tansiyon', 'Blood pressure'), value: '118/76 mmHg', normal: '90–120 / 60–80', status: 'normal' },
-          { label: t('Kalp debisi', 'Cardiac output'), value: t('5.4 L/dk', '5.4 L/min'), normal: t('4.8–6.2 L/dk', '4.8–6.2 L/min'), status: 'normal' },
+          measured(t('Nabız', 'Heart rate'), vitals.pulse),
+          measured(t('Oksijen (SpO₂)', 'Oxygen (SpO₂)'), vitals.oxygen),
+          unavailable(t('Tansiyon', 'Blood pressure')),
+          unavailable(t('Kalp debisi', 'Cardiac output')),
         ],
         spaceEffect: t(
           'Yerçekimi olmadığında kalp kanı yukarı pompalamak için daha az çalışır ve zamanla zayıflayabilir. Dünyaya dönüşte ayağa kalkınca baş dönmesi yaşanabilir.',
@@ -97,10 +100,10 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
         icon: <Activity className="w-6 h-6 text-emerald-600" />,
         status: worst(vitals.glucose.status, vitals.temperature.status),
         metrics: [
-          { label: t('Kan şekeri', 'Blood glucose'), value: `${vitals.glucose.value} mg/dL`, normal: '70–110 mg/dL', status: vitals.glucose.status },
-          { label: t('Vücut ısısı', 'Body temperature'), value: `${vitals.temperature.value} °C`, normal: '36.3–37.2 °C', status: vitals.temperature.status },
-          { label: t('Elektrolit (Na/K)', 'Electrolytes (Na/K)'), value: '141 / 4.2', normal: '135–145 / 3.5–5.0', status: 'normal' },
-          { label: t('Günlük sıvı', 'Daily fluid'), value: '1.8 L', normal: '≥ 2.4 L', status: 'warning' },
+          measured(t('Kan şekeri', 'Blood glucose'), vitals.glucose),
+          measured(t('Vücut ısısı', 'Body temperature'), vitals.temperature),
+          unavailable(t('Elektrolit (Na/K)', 'Electrolytes (Na/K)')),
+          unavailable(t('Günlük sıvı', 'Daily fluid')),
         ],
         spaceEffect: t(
           'Uzayda insülin duyarlılığı azalabilir ve kemiklerden çıkan kalsiyum böbrek taşı riskini artırır. Isınan kabin ve egzersiz vücut ısısını yükseltebilir.',
@@ -122,10 +125,10 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
         icon: <Bone className="w-6 h-6 text-indigo-600" />,
         status: 'normal',
         metrics: [
-          { label: t('Kemik kaybı', 'Bone loss'), value: t('%0.4 / ay', '0.4% / mo'), normal: t('< %1 / ay', '< 1% / mo'), status: 'normal' },
-          { label: t('Bacak kas gücü', 'Leg muscle strength'), value: '93%', normal: '> 88%', status: 'normal' },
-          { label: t('Egzersiz uyumu', 'Exercise adherence'), value: '96%', normal: '> 90%', status: 'normal' },
-          { label: t('Omurga uzaması', 'Spine lengthening'), value: '+3.4 cm', normal: '+2–5 cm', status: 'normal' },
+          unavailable(t('Kemik kaybı', 'Bone loss')),
+          unavailable(t('Bacak kas gücü', 'Leg muscle strength')),
+          unavailable(t('Egzersiz uyumu', 'Exercise adherence')),
+          unavailable(t('Omurga uzaması', 'Spine lengthening')),
         ],
         spaceEffect: t(
           'Ağırlık taşımayan kemikler ayda %1–1.5 oranında mineral kaybedebilir. Kaslar küçülür ve omurga diskleri genişleyerek bel ağrısına yol açabilir.',

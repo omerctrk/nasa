@@ -31,6 +31,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
   const cardContainerRef = useRef<HTMLDivElement>(null);
   const { vitals, selectedAnatomyZone, setSelectedAnatomyZone, astronaut } = useTelemetry();
   const { t } = usePrefs();
+  const metricText = (value: number, unit: string) => Number.isFinite(value) ? `${value} ${unit}` : t('Kayıt yok', 'No record');
   const worst = (...st: string[]) => (st.includes('critical') ? 'critical' : st.includes('warning') ? 'warning' : 'normal') as 'normal' | 'warning' | 'critical';
   const zoneStatus = {
     head: statusMeta(vitals.iop.status, t),
@@ -447,7 +448,8 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
       // Realistic heartbeat pulse synchronized with astronaut pulse rate
       if (heartMeshRef.current && initialHeartScaleRef.current) {
         const base = initialHeartScaleRef.current;
-        const pulseRateHz = ((vitals.pulse?.value || 74) / 60) * Math.PI * 2;
+        const pulse = vitals.pulse?.value;
+        const pulseRateHz = (Number.isFinite(pulse) ? pulse / 60 : 0) * Math.PI * 2;
         const beatFactor = 1.0 + Math.pow(Math.sin(elapsed * pulseRateHz), 6) * 0.08;
         heartMeshRef.current.scale.set(
           base.x * beatFactor,
@@ -686,7 +688,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
             </div>
             <div>
               <div className="text-xs font-bold leading-none">{t('Baş & Gözler', 'Head & Eyes')}</div>
-              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{t('Göz basıncı', 'Eye pressure')} {vitals.iop.value} mmHg</div>
+              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{t('Göz basıncı', 'Eye pressure')} {metricText(vitals.iop.value, 'mmHg')}</div>
             </div>
             <span className={`w-2 h-2 rounded-full shrink-0 ${zoneStatus.head.dot}`} title={zoneStatus.head.label} />
           </div>
@@ -716,7 +718,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
             </div>
             <div>
               <div className="text-xs font-bold leading-none">{t('Kalp & Akciğer', 'Heart & Lungs')}</div>
-              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{vitals.pulse.value} bpm • SpO₂ {vitals.oxygen.value}%</div>
+              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{metricText(vitals.pulse.value, 'bpm')} • SpO₂ {metricText(vitals.oxygen.value, '%')}</div>
             </div>
             <span className={`w-2 h-2 rounded-full shrink-0 ${zoneStatus.chest.dot}`} title={zoneStatus.chest.label} />
           </div>
@@ -746,7 +748,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
             </div>
             <div>
               <div className="text-xs font-bold leading-none">{t('Metabolizma', 'Metabolism')}</div>
-              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{vitals.glucose.value} mg/dL • {vitals.temperature.value}°C</div>
+              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{metricText(vitals.glucose.value, 'mg/dL')} • {metricText(vitals.temperature.value, '°C')}</div>
             </div>
             <span className={`w-2 h-2 rounded-full shrink-0 ${zoneStatus.abdomen.dot}`} title={zoneStatus.abdomen.label} />
           </div>
@@ -776,7 +778,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
             </div>
             <div>
               <div className="text-xs font-bold leading-none">{t('Kas & Kemik', 'Muscle & Bone')}</div>
-              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{t('Egzersiz uyumu %96', 'Exercise adherence 96%')}</div>
+              <div className="text-[10px] opacity-75 mt-0.5 leading-none">{t('Veri kaynağı bağlı değil', 'Data source not connected')}</div>
             </div>
             <span className={`w-2 h-2 rounded-full shrink-0 ${zoneStatus.musculoskeletal.dot}`} title={zoneStatus.musculoskeletal.label} />
           </div>
