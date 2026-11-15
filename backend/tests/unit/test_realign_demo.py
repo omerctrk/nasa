@@ -41,9 +41,10 @@ def test_each_table_shifts_in_one_dateadd_update():
 class FakeDB:
     """realign()'ın sorduğu sayımları SQL metnine göre yanıtlar; yazılanları kaydeder."""
 
-    def __init__(self, start, late=0, broken=0):
+    def __init__(self, start, late=0, broken=0, late_source="synthetic"):
         self.mission = types.SimpleNamespace(start_date=start)
-        self.late, self.broken, self.executed, self.flushed = late, broken, [], False
+        self.late, self.broken, self.late_source = late, broken, late_source
+        self.executed, self.flushed = [], False
 
     def get(self, _model, _key):
         return self.mission
@@ -60,7 +61,12 @@ class FakeDB:
         return 10
 
     def execute(self, stmt):
-        self.executed.append(str(stmt.compile(dialect=mssql.dialect())))
+        sql = str(stmt.compile(dialect=mssql.dialect()))
+        if sql.startswith("SELECT"):  # 74 sonrası ayrıntı: (kaynak, gün, adet)
+            rows = [(self.late_source, 75, self.late)] if self.late and "MeasurementRecords" in sql else []
+            return types.SimpleNamespace(all=lambda: rows)
+        self.executed.append(sql)
+        return types.SimpleNamespace(rowcount=self.late if sql.startswith("DELETE") else 10)
 
     def flush(self):
         self.flushed = True
@@ -83,10 +89,40 @@ def test_already_aligned_changes_nothing():
     assert report["mode"] == "already_aligned" and db.executed == []
 
 
-def test_refuses_when_records_exist_after_scenario_end():
-    db = FakeDB(dt.date(2026, 9, 1), late=3)
-    with pytest.raises(ra.RealignRefused, match="74"):
+def _late_db(source):
+    db = FakeDB(dt.date(2026, 9, 1), late=5, late_source=source)
+    db.scalar_orig = db.scalar
+    # yalnız ölçüm tablosunda 74 sonrası kayıt var
+    db.scalar = lambda stmt: (0 if "mission_day >" in str(stmt.compile(dialect=mssql.dialect()))
+                              and "MeasurementRecords" not in str(stmt.compile(dialect=mssql.dialect()))
+                              else db.scalar_orig(stmt))
+    return db
+
+
+def test_refuses_generated_records_after_scenario_end_without_flag_and_explains():
+    db = _late_db("synthetic")
+    with pytest.raises(ra.RealignRefused) as err:
         ra.realign(db, TODAY, apply=True)
+    msg = str(err.value)
+    assert "'synthetic': {75: 5}" in msg and "--drop-generated-after-last-day" in msg
+    assert db.executed == [] and db.mission.start_date == dt.date(2026, 9, 1)
+
+
+def test_drop_flag_deletes_only_generated_then_aligns():
+    db = _late_db("synthetic")
+    report = ra.realign(db, TODAY, apply=True, drop_generated_after_last_day=True)
+    deletes = [q for q in db.executed if q.startswith("DELETE")]
+    assert len(deletes) == 1 and "MeasurementRecords" in deletes[0]
+    assert "mission_day >" in deletes[0] and "source IN" in deletes[0]
+    assert db.executed.index(deletes[0]) == 0  # önce sil, sonra kaydır
+    assert report["dropped_generated_after_last_day"] == {"anomaly.MeasurementRecords": 5}
+    assert db.mission.start_date == dt.date(2026, 9, 2)
+
+
+def test_manual_records_after_scenario_end_are_never_dropped():
+    db = _late_db("manual")
+    with pytest.raises(ra.RealignRefused, match="Elle girilmiş"):
+        ra.realign(db, TODAY, apply=True, drop_generated_after_last_day=True)
     assert db.executed == [] and db.mission.start_date == dt.date(2026, 9, 1)
 
 

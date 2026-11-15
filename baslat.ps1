@@ -35,6 +35,19 @@ Adim 5 "Frontend açılıyor..."
 Set-Location frontend
 # npm ci kilit dosyasıyla birebir uyum ister; sürüm farkı olan bilgisayarlarda npm install daha toleranslı
 if (-not (Test-Path "node_modules\.bin\vite.cmd")) { npm install --no-audit --no-fund; Kontrol "npm install" }
+# Önceki çalıştırmadan açık kalan Vite (5173) yeni kodu gölgeler: yalnız node süreciyse kapat.
+$eski = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue |
+  Select-Object -ExpandProperty OwningProcess -Unique
+foreach ($pid5173 in $eski) {
+  $p = Get-Process -Id $pid5173 -ErrorAction SilentlyContinue
+  if ($p -and $p.ProcessName -eq "node") {
+    Write-Host "Eski frontend sunucusu kapatılıyor (PID $pid5173)..." -ForegroundColor Yellow
+    Stop-Process -Id $pid5173 -Force; Start-Sleep 1
+  } elseif ($p) {
+    Write-Host "HATA: 5173 portunu '$($p.ProcessName)' (PID $pid5173) kullanıyor; kapatıp tekrar deneyin." -ForegroundColor Red
+    Read-Host "Kapatmak için Enter"; exit 1
+  }
+}
 # Vite hazır olunca tarayıcı açılsın
 Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile','-Command','Start-Sleep 5; Start-Process "http://127.0.0.1:5173/"'
 Write-Host "`nHazır: http://127.0.0.1:5173/   API belgesi: http://127.0.0.1:8001/docs" -ForegroundColor Green

@@ -15,6 +15,9 @@ alarmlar, bildirimler). Bunlar demoda gerçekten olanlardır.
 Güvenlik:
 - Varsayılan KURU çalışmadır; yalnız --apply ile yazar. Tek transaction: ya hepsi ya hiçbiri.
 - Senaryo sonrasına (görev günü > 74) ait kayıt varsa durur: hizalama o kaydı geleceğe atardı.
+  Ret mesajı bu kayıtları kaynağa göre (manual / synthetic / seed) ve tarihe göre listeler.
+  Hepsi üretilmiş demo verisiyse (synthetic/seed) --drop-generated-after-last-day ile silinip
+  hizalanabilir; elle girilmiş (manual) kayıt varsa bu bayrakla da durur.
 - Tarihi görev günüyle tutmayan kayıt varsa durur (önceden bozulmuş veri büyütülmez).
 - Her tablo TEK UPDATE ile kayar (DATEADD); UNIQUE(astronot, gün) ara adımda çakışmaz.
 
@@ -30,7 +33,7 @@ import datetime as dt
 import json
 import sys
 
-from sqlalchemy import func, literal_column, select, update
+from sqlalchemy import delete, func, literal_column, select, update
 from sqlalchemy.orm import Session
 
 from app.models import Astronaut, Mission
@@ -52,6 +55,9 @@ TABLES = (
 )
 
 
+GENERATED_SOURCES = ("synthetic", "seed")  # demo üreticileri; "manual" insan girişidir
+
+
 class RealignRefused(SystemExit):
     pass
 
@@ -68,7 +74,19 @@ def shift_statement(model, astronaut_col, columns, astronaut_ids, delta: int):
             .execution_options(synchronize_session=False))
 
 
-def realign(db: Session, today: dt.date, apply: bool = False) -> dict:
+def _beyond_detail(db: Session, model, astro, ids) -> dict:
+    """74'ten sonraki kayıtlar: {kaynak: {görev günü: adet}}."""
+    rows = db.execute(select(model.source, model.mission_day, func.count())
+                      .where(astro.in_(ids), model.mission_day > LAST_DAY)
+                      .group_by(model.source, model.mission_day)).all()
+    detail: dict = {}
+    for source, day, count in rows:
+        detail.setdefault(source, {})[int(day)] = int(count)
+    return detail
+
+
+def realign(db: Session, today: dt.date, apply: bool = False,
+            drop_generated_after_last_day: bool = False) -> dict:
     mission = db.get(Mission, MISSION_ID)
     if mission is None:
         raise RealignRefused(f"{MISSION_ID} yok: önce seed çalıştırın.")
@@ -85,17 +103,29 @@ def realign(db: Session, today: dt.date, apply: bool = False) -> dict:
         late = db.scalar(select(func.count()).select_from(model)
                          .where(astro.in_(ids), mission_day > LAST_DAY)) or 0
         if late:
-            beyond[name] = late
+            beyond[name] = _beyond_detail(db, model, astro, ids)
         if date_col is not None:
             bad = db.scalar(select(func.count()).select_from(model).where(
                 astro.in_(ids), mission_day.is_not(None),
                 func.datediff(literal_column("day"), mission.start_date, date_col) != mission_day)) or 0
             if bad:
                 broken[name] = bad
-    if beyond:
+    manual = {n: d for n, d in beyond.items() if set(d) - set(GENERATED_SOURCES)}
+    if beyond and (manual or not drop_generated_after_last_day):
+        hint = ("Elle girilmiş kayıt var; bunlar silinmez, inceleyin." if manual else
+                "Hepsi üretilmiş demo verisi: --drop-generated-after-last-day ile silinip hizalanabilir.")
         raise RealignRefused(
-            f"Görev günü {LAST_DAY}'ten sonraki kayıtlar var {beyond}: hizalama bunları geleceğe "
-            "atardı. Demo veritabanını sıfırlayın (docker compose down -v) veya kayıtları inceleyin.")
+            f"Görev günü {LAST_DAY}'ten sonraki kayıtlar var (tablo: {{kaynak: {{gün: adet}}}}) "
+            f"{beyond}: hizalama bunları geleceğe atardı. {hint}")
+    if beyond:
+        dropped = {}
+        for name, model, astro, _cols, _date_col in TABLES:
+            if name in beyond:
+                result = db.execute(delete(model).where(
+                    astro.in_(ids), model.mission_day > LAST_DAY,
+                    model.source.in_(GENERATED_SOURCES)).execution_options(synchronize_session=False))
+                dropped[name] = result.rowcount
+        report["dropped_generated_after_last_day"] = dropped
     if broken:
         raise RealignRefused(f"Tarihi görev günüyle tutmayan kayıtlar var {broken}; hizalama durdu.")
     if delta == 0:
@@ -116,12 +146,16 @@ def main(argv: list[str]) -> int:
 
     parser = argparse.ArgumentParser(description="Demo takvimini bugüne hizalar (son gün = bugün).")
     parser.add_argument("--apply", action="store_true", help="değişiklikleri yaz (yoksa kuru çalışma)")
+    parser.add_argument("--drop-generated-after-last-day", action="store_true",
+                        help=f"görev günü {LAST_DAY}'ten sonraki synthetic/seed kayıtları sil (manual'a dokunmaz)")
     args = parser.parse_args(argv)
     today = dt.datetime.now(dt.UTC).date()
     with SessionLocal() as db:
         try:
-            report = realign(db, today, apply=args.apply)
-            if args.apply and report["mode"] == "applied":
+            report = realign(db, today, apply=args.apply,
+                             drop_generated_after_last_day=args.drop_generated_after_last_day)
+            changed = report["mode"] == "applied" or report.get("dropped_generated_after_last_day")
+            if args.apply and changed:
                 db.commit()
             else:
                 db.rollback()

@@ -1,7 +1,9 @@
 """Fill missing daily physiological demo measurements without replacing history.
 
-Example: python -m scripts.seed_physiological --end-date 2026-11-15 --apply
-Without --apply, only report proposed counts. Values are demo scenarios, not
+Example: python -m scripts.seed_physiological --end-date <görev günü 74'ün tarihi> --apply
+Without --apply, only report proposed counts. The end date may not pass mission day 74
+(the demo scenario's last day = "today" after scripts/realign_demo.py); generated rows after
+it would block calendar realignment. Use --beyond-scenario only on purpose. Values are demo scenarios, not
 clinical reference ranges. Behavioral records remain in their own source tables.
 """
 from __future__ import annotations
@@ -18,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models import Astronaut, MeasurementDefinition, MeasurementRecord, Mission
+from scripts.demo_data import LAST_DAY
 from scripts.seed import PHYSIOLOGICAL_DEFINITIONS, PHYSIOLOGICAL_PROTOCOL
 
 GENERATOR = "physiological-demo-v1"
@@ -43,6 +46,8 @@ def main() -> None:
     parser.add_argument("--astronaut", default="A007")
     parser.add_argument("--end-date", type=date.fromisoformat, required=True)
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--beyond-scenario", action="store_true",
+                        help=f"görev günü {LAST_DAY}'ten sonrasına da üret (takvim hizalamayı engeller)")
     args = parser.parse_args()
     engine = create_engine(get_settings().database_url)
     with Session(engine) as db, db.begin():
@@ -53,6 +58,10 @@ def main() -> None:
         start = mission.start_date + timedelta(days=1)
         if not start <= args.end_date < mission.start_date + timedelta(days=mission.length_days):
             raise SystemExit("End date must be within the mission.")
+        last = mission.start_date + timedelta(days=LAST_DAY)
+        if args.end_date > last and not args.beyond_scenario:
+            raise SystemExit(f"End date passes scenario day {LAST_DAY} ({last}); realign_demo would "
+                             "refuse. Use that date, or --beyond-scenario on purpose.")
         for code, module, unit, kind, direction in PHYSIOLOGICAL_DEFINITIONS:
             definition = db.get(MeasurementDefinition, code)
             expected = dict(module=module, canonical_unit=unit, value_kind=kind,
