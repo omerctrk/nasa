@@ -8,11 +8,11 @@
  * - Başarısızlıkta sahte "normal" sonucu gösterilmez.
  * - Yetersiz/geçersiz veride iş COMPLETED olabilir ama sonuç yoktur (evaluation_status).
  *
- * UÇ NOKTALAR VARSAYIMDIR (şemada yol verilmedi):
- *   POST /analysis/jobs              { module: 'anomaly' }  + Idempotency-Key
- *   GET  /analysis/jobs/{job_id}
- *   POST /analysis/jobs/{job_id}/retry
- *   GET  /anomaly/results/{id}
+ * UÇ NOKTALAR (ASTRA backend, contracts/backend-contract.md §8):
+ *   POST /analysis/jobs              { module: 'anomaly', idempotency_key, module_scope } → 202 {job_id, module, state, status_url}
+ *   GET  /analysis/jobs/{job_id}     → iş durumu
+ *   POST /analysis/jobs/{job_id}/retry → 202 {job_id, module, state, status_url}
+ *   Sonuç ayrıntısı için uç YOK (anomaly_result_id döner, içerik okunamıyor) — ekran bunu nazikçe gösterir.
  */
 import { USE_MOCK, apiRequest, ApiError } from '../apiClient';
 import type { AnalysisJob, AnomalyResult, JobState } from './types';
@@ -124,14 +124,40 @@ const publicJob = ({ startedAt, fail, result, ...job }: MockJob): AnalysisJob =>
 
 // ---------------------------------------------------------------- dışa açık API
 
+/** 202 cevabı: yalnız kimlik ve durum gelir; ekranın beklediği iş şekline tamamlanır */
+interface JobAccepted {
+  job_id: string;
+  module: 'anomaly' | 'sans';
+  state: JobState;
+  status_url: string;
+}
+const fromAccepted = (a: JobAccepted, astronautId = ''): AnalysisJob => {
+  const now = new Date().toISOString();
+  return {
+    job_id: a.job_id,
+    module: a.module,
+    state: a.state,
+    evaluation_status: null,
+    error_code: null,
+    created_at: now,
+    updated_at: now,
+    astronaut_id: astronautId,
+    anomaly_result_id: null,
+    sans_analysis_id: null,
+  };
+};
+
+/** Gerçek backend'de anomali sonucunun içeriğini okuyan uç henüz yok */
+export const RESULT_DETAILS_AVAILABLE = USE_MOCK;
+
 export const analysisApi = {
   async createJob(idempotencyKey: string, astronautId: string): Promise<AnalysisJob> {
     if (USE_MOCK) return mock.create(idempotencyKey, astronautId);
-    const r = await apiRequest<AnalysisJob>('POST', '/analysis/jobs', {
-      body: { module: 'anomaly' },
-      headers: { 'Idempotency-Key': idempotencyKey },
+    const r = await apiRequest<JobAccepted>('POST', '/analysis/jobs', {
+      // SANS kapsamı backend'de kapatıldı; birleşik (fizyolojik + davranış) analiz istenir
+      body: { module: 'anomaly', idempotency_key: idempotencyKey, module_scope: 'combined' },
     });
-    return r.data;
+    return fromAccepted(r.data, astronautId);
   },
   async getJob(jobId: string): Promise<AnalysisJob> {
     if (USE_MOCK) return mock.get(jobId);
@@ -139,11 +165,11 @@ export const analysisApi = {
   },
   async retryJob(jobId: string): Promise<AnalysisJob> {
     if (USE_MOCK) return mock.retry(jobId);
-    return (await apiRequest<AnalysisJob>('POST', `/analysis/jobs/${jobId}/retry`)).data;
+    return fromAccepted((await apiRequest<JobAccepted>('POST', `/analysis/jobs/${jobId}/retry`)).data);
   },
   async getResult(resultId: string): Promise<AnomalyResult> {
     if (USE_MOCK) return mock.result(resultId);
-    return (await apiRequest<AnomalyResult>('GET', `/anomaly/results/${resultId}`)).data;
+    throw new ApiError(501, 'NOT_SUPPORTED', 'Analiz sonucu ayrıntısı henüz okunamıyor.');
   },
 };
 

@@ -19,12 +19,11 @@ import type {
   CognitiveTestInput,
   ListResponse,
   MissionInfo,
-  PvtTrial,
-  RotationTrial,
   WeeklyAssessment,
   WeeklyAssessmentInput,
 } from '../types';
 import { daysBetween, todayUtc } from '../date';
+import { moodIndex, summarizeTest, weeklyScores } from '../scoring';
 
 const LAUNCH_DATE = '2026-09-01'; // görev günü 0
 
@@ -62,14 +61,6 @@ const paginate = <T>(items: T[], limit = 20, cursor?: string | null): ListRespon
 
 const missionDay = (date: string) => daysBetween(LAUNCH_DATE, date);
 const etagFor = (date: string) => `"checkin-${date}-v${db.checkinVersion.get(date) ?? 1}"`;
-
-const median = (a: number[]) => {
-  if (!a.length) return null;
-  const s = [...a].sort((x, y) => x - y);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
-const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export const mockServer = {
   async getMission(): Promise<ApiResponse<MissionInfo>> {
@@ -123,7 +114,7 @@ export const mockServer = {
       ...input,
       bed_time: `${input.bed_time}:00`,
       wake_time: `${input.wake_time}:00`,
-      mood_index: round1(((input.mood + input.energy + (10 - input.stress)) / 3) * 10),
+      mood_index: moodIndex(input),
       sleep_hours: Math.round((mins / 60) * 100) / 100,
       source: 'manual',
       created_at: existing?.created_at ?? new Date().toISOString(),
@@ -158,41 +149,8 @@ export const mockServer = {
       source: 'manual',
     };
 
-    let result: CognitiveTest;
-    if (input.test_type === 'pvt') {
-      const trials = input.trials as PvtTrial[];
-      const rts = trials.filter((t) => !t.false_start && t.rt_ms !== null && t.rt_ms >= 100).map((t) => t.rt_ms as number);
-      const falseStarts = trials.filter((t) => t.false_start || (t.rt_ms !== null && t.rt_ms < 100)).length;
-      const valid = rts.length >= 5 && falseStarts <= Math.max(3, trials.length * 0.2);
-      result = {
-        ...base,
-        mean_rt_ms: valid ? round1(rts.reduce((s, v) => s + v, 0) / rts.length) : null,
-        median_rt_ms: valid ? round1(median(rts) ?? 0) : null,
-        speed: valid ? Math.round((rts.reduce((s, v) => s + 1000 / v, 0) / rts.length) * 100) / 100 : null,
-        lapses: valid ? rts.filter((r) => r > 500).length + trials.filter((t) => !t.false_start && t.rt_ms === null).length : null,
-        false_starts: falseStarts,
-        accuracy: null,
-        correct_count: null,
-        valid,
-        invalid_reason: valid ? null : rts.length < 5 ? 'too_few_trials' : 'too_many_false_starts',
-      };
-    } else {
-      const trials = input.trials as RotationTrial[];
-      const correct = trials.filter((t) => t.answer !== null && (t.answer === 'mirror') === t.mirror);
-      const rts = correct.map((t) => t.rt_ms as number);
-      result = {
-        ...base,
-        mean_rt_ms: rts.length ? round1(rts.reduce((s, v) => s + v, 0) / rts.length) : null,
-        median_rt_ms: null,
-        speed: null,
-        lapses: null,
-        false_starts: null,
-        accuracy: Math.round((correct.length / Math.max(1, trials.length)) * 10000) / 10000, // 0–1
-        correct_count: null, // yalnız DSST
-        valid: trials.length >= 8,
-        invalid_reason: trials.length >= 8 ? null : 'too_few_trials',
-      };
-    }
+    // Özet hesap ortak dosyada (scoring.ts): gerçek backend'e de aynı değerler gider
+    const result: CognitiveTest = { ...base, ...summarizeTest(input.test_type, input.trials) };
     db.tests = [result, ...db.tests];
     db.idempotency.set(idempotencyKey, result);
     return ok(result, 201);
@@ -211,14 +169,11 @@ export const mockServer = {
     assertOnline();
     const prev = db.idempotency.get(idempotencyKey);
     if (prev) return ok(prev as WeeklyAssessment, 201);
-    const a = input.answers;
     const result: WeeklyAssessment = {
       id: db.nextId++,
       taken_at: new Date().toISOString(),
       mission_day: missionDay(todayUtc()),
-      who5_score: (a.who5_1 + a.who5_2 + a.who5_3 + a.who5_4 + a.who5_5) * 4,
-      phq2_score: a.phq2_1 + a.phq2_2,
-      gad2_score: a.gad2_1 + a.gad2_2,
+      ...weeklyScores(input.answers),
       share_with_crew_medical: input.share_with_crew_medical,
       source: 'manual',
     };

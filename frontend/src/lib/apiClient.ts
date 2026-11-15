@@ -42,6 +42,38 @@ export interface ApiResponse<T> {
   etag: string | null;
 }
 
+type FieldError = { field?: string; code?: string; message?: string };
+
+/**
+ * Backend hata zarfı: {"detail": {code, message, trace_id, fields: [{field, code, message}]}}.
+ * Eski biçim {"error": {..., details}} ve FastAPI'nin kendi doğrulama listesi de okunur.
+ */
+const parseErrorBody = (
+  json: unknown
+): { code?: string; message?: string; details: Record<string, unknown>; traceId?: string } => {
+  const body = (json ?? {}) as { detail?: unknown; error?: Record<string, unknown> };
+  const d = body.detail ?? body.error;
+  if (Array.isArray(d)) {
+    // FastAPI varsayılanı: [{loc, msg, type}]
+    const msgs = d.map((x: { msg?: string }) => x?.msg).filter(Boolean);
+    return { code: 'VALIDATION_ERROR', message: msgs.join(' ') || undefined, details: { fields: d } };
+  }
+  if (typeof d === 'string') return { message: d, details: {} };
+  if (d && typeof d === 'object') {
+    const o = d as { code?: string; message?: string; trace_id?: string; fields?: FieldError[]; details?: Record<string, unknown> };
+    const fields = Array.isArray(o.fields) ? o.fields : [];
+    // 422'de alan mesajları ekranda gösterilir
+    const fieldMsg = fields.map((f) => f.message).filter(Boolean).join(' ');
+    return {
+      code: o.code,
+      message: fieldMsg || o.message,
+      details: fields.length ? { fields } : (o.details ?? {}),
+      traceId: o.trace_id,
+    };
+  }
+  return { details: {} };
+};
+
 export const apiRequest = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   path: string,
@@ -72,12 +104,19 @@ export const apiRequest = async <T>(
   }
 
   const text = await res.text();
-  const json = text ? JSON.parse(text) : null;
+  let json: unknown = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
+  }
 
   if (!res.ok) {
-    const e = json?.error ?? {};
-    if (e.trace_id) console.error(`[api] ${method} ${path} → ${res.status} trace_id=${e.trace_id}`);
-    throw new ApiError(res.status, e.code ?? `HTTP_${res.status}`, e.message ?? res.statusText, e.details ?? {}, e.trace_id);
+    const traceId = res.headers.get('X-Trace-Id') ?? undefined;
+    const e = parseErrorBody(json);
+    const id = e.traceId ?? traceId;
+    if (id) console.error(`[api] ${method} ${path} → ${res.status} trace_id=${id}`);
+    throw new ApiError(res.status, e.code ?? `HTTP_${res.status}`, e.message ?? res.statusText, e.details, id);
   }
 
   return { data: json as T, status: res.status, etag: res.headers.get('ETag') };

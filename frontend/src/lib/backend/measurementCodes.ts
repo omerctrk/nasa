@@ -1,9 +1,9 @@
 /**
  * Ekrandaki gösterge anahtarları ↔ backend ölçüm kodları (anomaly.MeasurementDefinitions).
  *
- * ÖNEMLİ: Şemada fizyolojik ölçüm sözlüğünün kodları henüz verilmedi.
- * Aşağıdaki `measurement_code` değerleri ÖNERİDİR; backend sözlüğü gelince yalnızca
- * bu dosya güncellenir, ekranlar değişmez.
+ * Kodlar ve kanonik birimler ASTRA backend seed sözlüğünden (bachand, scripts/seed.py).
+ * Birim dönüşümü yapılmaz: backend'e sözlükteki birimle aynen gönderilir.
+ * SpO₂ ve göz içi basıncı (IOP) backend sözlüğünde yok; arayüzden de kaldırıldı.
  */
 import type { MeasurementModule } from './types';
 
@@ -12,22 +12,19 @@ export interface MeasurementMapping {
   vitalKey: string;
   measurement_code: string;
   module: MeasurementModule;
-  /** Backend kanonik birimi */
+  /** Backend kanonik birimi (sözlükteki yazımıyla) */
   unit: string;
-  /** Teyit durumu */
+  /** Sözlükteki teyit durumu (seed: "unconfirmed") */
   confirmed: boolean;
 }
 
 export const MEASUREMENT_MAP: MeasurementMapping[] = [
-  { vitalKey: 'pulse', measurement_code: 'heart_rate', module: 'physiological', unit: 'bpm', confirmed: false },
-  { vitalKey: 'bp_systolic', measurement_code: 'blood_pressure_systolic', module: 'physiological', unit: 'mmHg', confirmed: false },
-  { vitalKey: 'bp_diastolic', measurement_code: 'blood_pressure_diastolic', module: 'physiological', unit: 'mmHg', confirmed: false },
-  { vitalKey: 'oxygen', measurement_code: 'spo2', module: 'physiological', unit: '%', confirmed: false },
+  { vitalKey: 'pulse', measurement_code: 'heart_rate', module: 'physiological', unit: 'BPM', confirmed: false },
+  { vitalKey: 'bp_systolic', measurement_code: 'systolic_bp', module: 'physiological', unit: 'mmHg', confirmed: false },
+  { vitalKey: 'bp_diastolic', measurement_code: 'diastolic_bp', module: 'physiological', unit: 'mmHg', confirmed: false },
   { vitalKey: 'temperature', measurement_code: 'body_temperature', module: 'physiological', unit: '°C', confirmed: false },
   { vitalKey: 'glucose', measurement_code: 'blood_glucose', module: 'physiological', unit: 'mg/dL', confirmed: false },
-  // Göz içi basıncı şemadaki SANS testlerinde yok (near_acuity/contrast/amsler). Backend'e sorulacak.
-  { vitalKey: 'iop', measurement_code: 'intraocular_pressure', module: 'physiological', unit: 'mmHg', confirmed: false },
-  // Uyku fizyolojik değil, davranış modülünden gelir: behavioral.checkins.sleep_hours
+  // Uyku fizyolojik değil, davranış modülünden gelir: check-in sleep_hours
   { vitalKey: 'sleep', measurement_code: 'sleep_hours', module: 'behavioral', unit: 'h', confirmed: false },
 ];
 

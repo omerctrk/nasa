@@ -101,7 +101,8 @@ export const vitalsFromMeasurements = (
   }
 
   for (const [key, list] of byKey) {
-    list.sort((a, b) => a.measured_at.localeCompare(b.measured_at));
+    const at = (d: MeasurementDTO) => d.measured_at ?? d.measured_date;
+    list.sort((a, b) => at(a).localeCompare(at(b)));
     const values = list.map((d) => d.value_num as number);
     const last = values[values.length - 1];
     const prev = values.length > 1 ? values[values.length - 2] : last;

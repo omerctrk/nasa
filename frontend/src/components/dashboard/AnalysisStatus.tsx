@@ -3,7 +3,7 @@ import { Sparkles, RotateCcw, Loader2, CheckCircle2, AlertTriangle, Info } from 
 import { useTelemetry } from '../../context/TelemetryContext';
 import { usePrefs } from '../../context/PreferencesContext';
 import { newIdempotencyKey } from '../../lib/apiClient';
-import { analysisApi, isTerminal } from '../../lib/backend/analysisApi';
+import { analysisApi, isTerminal, RESULT_DETAILS_AVAILABLE } from '../../lib/backend/analysisApi';
 import { anomalyLevelToStatus } from '../../lib/backend/adapters';
 import { useNotifications } from '../../lib/backend/notifications';
 import type { AnalysisJob, AnomalyResult } from '../../lib/backend/types';
@@ -31,7 +31,8 @@ const useAnalysisJob = (astronautId: string) => {
       try {
         const j = await analysisApi.getJob(id);
         setJob(j);
-        if (j.state === 'COMPLETED' && j.anomaly_result_id) setResult(await analysisApi.getResult(j.anomaly_result_id));
+        // Gerçek backend'de sonuç ayrıntısı ucu henüz yok: iş tamamlandı bilgisi yeterli
+        if (j.state === 'COMPLETED' && j.anomaly_result_id && RESULT_DETAILS_AVAILABLE) setResult(await analysisApi.getResult(j.anomaly_result_id));
       } catch (e) {
         setError(errorMessage(e, t));
       }
@@ -103,6 +104,13 @@ export const AnalysisStatus: React.FC = () => {
       <span className="flex items-center gap-1.5 text-slate-700">
         <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
         {t('Analiz tamamlanamadı. Sonuç yok.', 'Analysis could not finish. No result.')}
+      </span>
+    );
+  } else if (job?.state === 'COMPLETED' && !result && job.evaluation_status === 'evaluated') {
+    body = (
+      <span className="flex items-center gap-1.5 text-slate-700">
+        <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+        {t('Analiz tamamlandı. Sonuç uyarı olarak bildirilirse burada görünür.', 'Analysis complete. If it raises an alert, it will show here.')}
       </span>
     );
   } else if (job?.state === 'COMPLETED' && !result && job.evaluation_status !== 'evaluated') {

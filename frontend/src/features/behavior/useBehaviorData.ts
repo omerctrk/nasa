@@ -36,7 +36,7 @@ export const useBehaviorData = () => {
       const from30 = addDaysUtc(today, -30);
       const [mission, todayRes, checkins, tests, weekly] = await Promise.all([
         behavioralApi.getMission(),
-        behavioralApi.listCheckins({ from: today, to: addDaysUtc(today, 1), limit: 1 }),
+        behavioralApi.getCheckin(today),
         fetchAllPages((cursor) => behavioralApi.listCheckins({ from: from30, to: addDaysUtc(today, 1), limit: 100, cursor })),
         fetchAllPages(
           (cursor) => behavioralApi.listTests({ limit: 100, cursor }),
@@ -47,8 +47,8 @@ export const useBehaviorData = () => {
       setData({
         mission,
         today,
-        todayCheckin: todayRes.data.items[0] ?? null,
-        todayEtag: todayRes.data.items[0] ? todayRes.etag : null,
+        todayCheckin: todayRes.item,
+        todayEtag: todayRes.etag,
         checkins,
         // DSST bu arayüzde yok; gelirse gösterilmez
         tests: tests.filter((x) => x.taken_at.slice(0, 10) >= from30 && x.test_type !== 'dsst'),

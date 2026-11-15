@@ -34,8 +34,8 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
   const metricText = (value: number, unit: string) => Number.isFinite(value) ? `${value} ${unit}` : t('Kayıt yok', 'No record');
   const worst = (...st: string[]) => (st.includes('critical') ? 'critical' : st.includes('warning') ? 'warning' : 'normal') as 'normal' | 'warning' | 'critical';
   const zoneStatus = {
-    head: statusMeta(vitals.iop.status, t),
-    chest: statusMeta(worst(vitals.pulse.status, vitals.oxygen.status), t),
+    head: statusMeta(vitals.sleep.status, t),
+    chest: statusMeta(worst(vitals.pulse.status, vitals.bp_systolic.status, vitals.bp_diastolic.status), t),
     abdomen: statusMeta(worst(vitals.glucose.status, vitals.temperature.status), t),
     musculoskeletal: statusMeta('normal', t),
   };
@@ -384,7 +384,7 @@ export const Anatomy3D: React.FC<Anatomy3DProps> = ({ onSelectZone, fullPageView
                 opacity: 0.75,
               });
             }
-            // 5. BRAIN / HEAD (Baş & SANS): Glowing Electric Blue & Cyan
+            // 5. BRAIN / HEAD (Baş & Zihin): Glowing Electric Blue & Cyan
             else if (name.includes('brain') || name.includes('head') || parentName.includes('nerves')) {
               mesh.material = new THREE.MeshStandardMaterial({
                 color: 0x38bdf8,

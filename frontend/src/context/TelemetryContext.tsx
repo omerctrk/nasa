@@ -15,8 +15,8 @@ interface TelemetryContextType {
   setAstronautId: (id: string) => void;
   availableAstronauts: AstronautProfile[];
   vitals: Record<string, VitalMetric>;
-  simulationScenario: 'normal' | 'warning_iop' | 'eva_exertion' | 'hypoxia';
-  setSimulationScenario: (scenario: 'normal' | 'warning_iop' | 'eva_exertion' | 'hypoxia') => void;
+  simulationScenario: 'normal' | 'hypertension' | 'eva_exertion' | 'fever';
+  setSimulationScenario: (scenario: 'normal' | 'hypertension' | 'eva_exertion' | 'fever') => void;
   isSimulating: boolean;
   setIsSimulating: (active: boolean) => void;
   simulationIntervalMs: number;

@@ -43,10 +43,10 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
     case 'head':
       return {
         id: zone,
-        title: t('Baş & Gözler', 'Head & Eyes'),
-        subtitle: t('Göz sağlığı, beyin ve dikkat', 'Eye health, brain and alertness'),
+        title: t('Baş & Zihin', 'Head & Mind'),
+        subtitle: t('Dikkat, uyku ve ruh hali', 'Alertness, sleep and mood'),
         icon: <Brain className="w-6 h-6 text-indigo-600" />,
-        status: vitals.iop.status,
+        status: vitals.sleep.status,
         metrics: [
           measured(t('Göz içi basıncı', 'Eye pressure (IOP)'), vitals.iop),
           unavailable(t('Optik sinir kılıfı', 'Optic nerve sheath')),
@@ -54,27 +54,27 @@ export const getZoneContent = (zone: AnatomyZoneId, vitals: Record<string, Vital
           measured(t('Uyku', 'Sleep'), vitals.sleep),
         ],
         spaceEffect: t(
-          'Ağırlıksız ortamda yaklaşık 2 litre vücut sıvısı kafaya doğru kayar. Bu, göz arkasındaki basıncı artırıp görmeyi bulanıklaştırabilir. Buna SANS (uzay uçuşuna bağlı nöro-oküler sendrom) denir.',
-          'In weightlessness about 2 liters of body fluid shift toward the head. This can raise pressure behind the eyes and blur vision, a condition called SANS (Spaceflight-Associated Neuro-ocular Syndrome).'
+          'Düzensiz uyku, izolasyon, iş yükü ve radyasyon dikkat ile tepki süresini etkileyebilir. Yorgunluk, kritik görevlerde hata riskini artırır.',
+          'Irregular sleep, isolation, workload and radiation can affect alertness and reaction time. Fatigue raises the risk of mistakes during critical tasks.'
         ),
         actions: [
-          t('Haftada en az bir kez görme testi yapın.', 'Take a vision test at least once a week.'),
-          t('Baş aşağı pozisyonda uzun süre çalışmaktan kaçının.', 'Avoid long periods working head-down.'),
-          t('Göz basıncı yükselirse LBNP (alt vücut negatif basınç) seansı uygulayın.', 'If eye pressure rises, do an LBNP (lower body negative pressure) session.'),
+          t('Her gün 3 dakikalık tepki testini (PVT) yapın.', 'Take the 3-minute reaction test (PVT) every day.'),
           t('Düzenli uyku saatlerine uyun; yorgunluk dikkati düşürür.', 'Keep regular sleep hours; fatigue lowers alertness.'),
+          t('Günlük check-in ile ruh halinizi kaydedin.', 'Log your mood with the daily check-in.'),
         ],
         links: [
-          { label: t('Görme testi', 'Vision test'), tab: 'vision-test', icon: <Eye className="w-4 h-4" /> },
           { label: t('Refleks testi', 'Reflex test'), tab: 'cognitive-test', icon: <Zap className="w-4 h-4" /> },
+          { label: t('Davranış modülü', 'Behavior module'), tab: 'behavior', icon: <Activity className="w-4 h-4" /> },
+          { label: t('Göz taraması', 'Eye screening'), tab: 'vision-test', icon: <Eye className="w-4 h-4" /> },
         ],
       };
     case 'chest':
       return {
         id: zone,
         title: t('Kalp & Akciğerler', 'Heart & Lungs'),
-        subtitle: t('Kalp ritmi, oksijen ve tansiyon', 'Heart rhythm, oxygen and blood pressure'),
+        subtitle: t('Kalp ritmi ve tansiyon', 'Heart rhythm and blood pressure'),
         icon: <Heart className="w-6 h-6 text-rose-500" />,
-        status: worst(vitals.pulse.status, vitals.oxygen.status),
+        status: worst(vitals.pulse.status, vitals.bp_systolic.status, vitals.bp_diastolic.status),
         metrics: [
           measured(t('Nabız', 'Heart rate'), vitals.pulse),
           measured(t('Oksijen (SpO₂)', 'Oxygen (SpO₂)'), vitals.oxygen),

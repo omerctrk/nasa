@@ -53,8 +53,6 @@ export const HAZARDS: Record<HazardId, { name: L; short: L; desc: L }> = {
 export const METRIC_HAZARD: Record<string, HazardId> = {
   pulse: 'gravity',
   bp: 'gravity',
-  iop: 'gravity',
-  oxygen: 'environment',
   temperature: 'environment',
   glucose: 'environment',
   sleep: 'isolation',
