@@ -1,0 +1,3 @@
+# Veri paketleri ve SQL yedekleri hassas olabilir; sürüm kontrolüne girmez.
+*.json
+*.bak
