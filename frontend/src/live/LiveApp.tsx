@@ -518,6 +518,14 @@ export default function LiveApp() {
           <span>{error ? 'Bağlantı hatası' : 'API bağlı'}</span></div>
         <div className="font-semibold text-slate-900">{selectedProfile?.display_name ?? user.email}</div>
         <div className="text-xs text-slate-500">{selectedProfile?.mission_name ?? 'Görev profili yükleniyor'} · {selectedProfile?.astronaut_id ?? ''}</div>
+        {user.role === 'GROUND_CONTROL' && <select aria-label="Astronot seç" className={field} value={selectedId} onChange={(event) => {
+          const id = event.target.value; loadVersion.current += 1; setMeasurements([]); setAlerts([]); setSelectedId(id)
+          const next = crew.find((item) => item.astronaut_id === id); if (next) setDay(missionDay(next))
+        }}>{crew.map((item) => <option key={item.astronaut_id} value={item.astronaut_id}>{item.display_name} · {item.astronaut_id}{item.is_display_only ? ' · gösterim' : ''}</option>)}</select>}
+        <label className="block text-xs text-slate-500">Görüntüleme günü<input className={`${field} mt-1`} type="date" value={day} onChange={(event) => {
+          loadVersion.current += 1; setMeasurements([]); setCheckins([]); setDay(event.target.value)
+        }} /></label>
+        <button className="flex items-center gap-1 text-xs font-semibold text-sky-700" onClick={() => void loadData()}><RefreshCw className="h-3.5 w-3.5" />Veriyi yenile</button>
         {import.meta.env.DEV ? <div className="flex gap-1" aria-label="Yerel demo rolü">
           <button className="rounded-lg border px-2 py-1.5 text-xs disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'ASTRONAUT'} onClick={() => void switchDevRole('ASTRONAUT')}>Astronot</button>
           <button className="rounded-lg border px-2 py-1.5 text-xs disabled:bg-sky-50 disabled:text-sky-800" disabled={busy || user.role === 'GROUND_CONTROL'} onClick={() => void switchDevRole('GROUND_CONTROL')}>Yer kontrolü</button>
@@ -525,21 +533,8 @@ export default function LiveApp() {
       </div>
     </aside>
     <main className="relative z-10 mx-auto max-w-[90rem] space-y-5 px-4 py-6 sm:px-6">
-      <div><div className="text-xs font-bold tracking-[0.2em] text-sky-700">ASTRA HEALTH · CANLI VERİ</div>
-        <h1 className="text-2xl font-bold text-slate-900">{currentTitle}</h1></div>
-      <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] items-end">
-        <div><div className="text-sm text-slate-500">Görev profili</div>
-          {user.role === 'GROUND_CONTROL'
-            ? <select className={field} value={selectedId} onChange={(event) => { const id = event.target.value; loadVersion.current += 1; setMeasurements([]); setAlerts([]); setSelectedId(id)
-              const next = crew.find((item) => item.astronaut_id === id); if (next) setDay(missionDay(next)) }}>
-                {crew.map((item) => <option key={item.astronaut_id} value={item.astronaut_id}>{item.display_name} · {item.astronaut_id}{item.is_display_only ? ' · gösterim' : ''}</option>)}
-              </select>
-            : <div className="text-lg font-semibold">{profile?.display_name ?? user.astronaut_id}</div>}
-          {selectedProfile && <p className={subtle}>{selectedProfile.mission_name} · {selectedProfile.mission_id}{selectedProfile.is_display_only ? ' · yalnız görüntüleme' : ''}</p>}
-        </div>
-        <label className="text-sm">Görüntüleme günü<input className={`${field} mt-1`} type="date" value={day} onChange={(event) => { loadVersion.current += 1; setMeasurements([]); setCheckins([]); setDay(event.target.value) }} /></label>
-        <button className="flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm hover:bg-white" onClick={() => void loadData()}><RefreshCw className="h-4 w-4" />Yenile</button>
-      </div>
+      {view !== 'dashboard' && <div><div className="text-xs font-bold tracking-[0.2em] text-sky-700">ASTRA HEALTH · CANLI VERİ</div>
+        <h1 className="text-2xl font-bold text-slate-900">{currentTitle}</h1></div>}
       {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
       {notice && <div role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</div>}
       {view === 'dashboard' && <DashboardHome profile={selectedProfile ?? null} measurements={measurements} checkins={checkins}
