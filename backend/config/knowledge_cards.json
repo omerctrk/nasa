@@ -1064,5 +1064,70 @@
     "context": "general",
     "verified_by": "",
     "verified_at": ""
+  },
+  {
+    "id": "nutr-05",
+    "type": "risk",
+    "system": "digestive",
+    "metrics": [
+      "blood_glucose"
+    ],
+    "direction": "up",
+    "text": "In the Vascular study of astronauts on six-month ISS missions, in-flight fasting insulin and an index of insulin resistance calculated from fasting glucose and insulin were elevated. This was the first confirmation of spaceflight insulin resistance by this index; men showed a greater change than women.",
+    "source": "Studying Cardiovascular Health in Microgravity (NASA ISS Science Blog, A Lab Aloft – R. L. Hughson)",
+    "url": "https://blogs.nasa.gov/ISS_Science_Blog/tag/vascular-echo/",
+    "locator": "Vascular study results – cardio-metabolic health"
+  },
+  {
+    "id": "nutr-06",
+    "type": "risk",
+    "system": "digestive",
+    "metrics": [
+      "blood_glucose"
+    ],
+    "direction": "up",
+    "text": "In a 70-day head-down bed rest study, inactivity impaired glucose tolerance and increased insulin resistance. Daily resistance and aerobic exercise was beneficial but did not completely protect against these metabolic changes.",
+    "source": "Exercise and Testosterone Countermeasures to Mitigate Metabolic Changes during Bed Rest",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7387751/",
+    "locator": "Abstract – Results and Conclusion"
+  },
+  {
+    "id": "nutr-07",
+    "type": "sign",
+    "system": "digestive",
+    "metrics": [
+      "blood_glucose"
+    ],
+    "direction": "up",
+    "text": "After 60 days of head-down tilt bed rest, whole-body insulin sensitivity decreased and was not mitigated by reactive jump training. The degree of insulin resistance varies considerably between individuals.",
+    "source": "Fetuin-A as a Potential Biomarker of Metabolic Variability Following 60 Days of Bed Rest",
+    "url": "https://www.frontiersin.org/articles/10.3389/fphys.2020.573581/full",
+    "locator": "Abstract – Results and Conclusions; Introduction"
+  },
+  {
+    "id": "nutr-08",
+    "type": "countermeasure",
+    "system": "digestive",
+    "metrics": [
+      "blood_glucose"
+    ],
+    "direction": "up",
+    "text": "Exercise is the most effective countermeasure currently available against spaceflight-induced metabolic alterations, but the exercise dose needed to offset the effects of unloading on insulin response is unknown. Glucose tolerance improved after reambulation following bed rest.",
+    "source": "Exercise and Testosterone Countermeasures to Mitigate Metabolic Changes during Bed Rest",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7387751/",
+    "locator": "Introduction; Abstract – Results"
+  },
+  {
+    "id": "nutr-09",
+    "type": "countermeasure",
+    "system": "digestive",
+    "metrics": [
+      "blood_glucose"
+    ],
+    "direction": "any",
+    "text": "During the 2025 Axiom Mission 4, crew aboard the ISS were continuously monitored for glucose for the first time. Early results suggest that continuous glucose monitors measure with accuracy comparable to Earth-based readings and can transmit readings to the ground.",
+    "source": "Suite Ride Research Unlocks Potential for First Astronaut with Diabetes (Axiom Space press release, Sept 2025)",
+    "url": "https://axiomspace.com/release/suite-ride-research-unlocks-potential-for-first-astronaut-with-diabetes",
+    "locator": "Press release – results"
   }
 ]
