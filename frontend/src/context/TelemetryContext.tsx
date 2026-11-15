@@ -57,6 +57,9 @@ const EMPTY_VITALS: Record<string, VitalMetric> = {
   temperature: emptyVital('temperature', 'Vücut ısısı', '°C', 'thermal'),
   iop: emptyVital('iop', 'Göz içi basıncı', 'mmHg', 'ocular'),
   sleep: emptyVital('sleep', 'Uyku', 'saat', 'neuro'),
+  // Sude'nin anatomi panelleri tansiyonu ayrı okur; backend kodları systolic_bp / diastolic_bp.
+  bp_systolic: emptyVital('bp_systolic', 'Sistolik', 'mmHg', 'cardio'),
+  bp_diastolic: emptyVital('bp_diastolic', 'Diyastolik', 'mmHg', 'cardio'),
 };
 
 const emptyAstronaut: AstronautProfile = {
@@ -93,7 +96,10 @@ const dateAdd = (date: string, days: number) => {
 };
 
 function vitalFromMeasurements(rows: Measurement[]): Record<string, VitalMetric> {
-  const mappings: Record<string, string> = { heart_rate: 'pulse', blood_glucose: 'glucose', body_temperature: 'temperature' };
+  const mappings: Record<string, string> = {
+    heart_rate: 'pulse', blood_glucose: 'glucose', body_temperature: 'temperature',
+    systolic_bp: 'bp_systolic', diastolic_bp: 'bp_diastolic',
+  };
   const next = Object.fromEntries(Object.entries(EMPTY_VITALS).map(([key, value]) => [key, { ...value, history: [] }])) as Record<string, VitalMetric>;
   const grouped = new Map<string, Measurement[]>();
   for (const row of rows) {
