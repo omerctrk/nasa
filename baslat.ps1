@@ -31,6 +31,6 @@ Set-Location frontend
 if (-not (Test-Path "node_modules\.bin\vite.cmd")) { npm install --no-audit --no-fund; Kontrol "npm install" }
 # Vite hazır olunca tarayıcı açılsın
 Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile','-Command','Start-Sleep 5; Start-Process "http://127.0.0.1:5173/"'
-Write-Host "`nHazır: http://127.0.0.1:5173/   API belgesi: http://127.0.0.1:8000/docs" -ForegroundColor Green
+Write-Host "`nHazır: http://127.0.0.1:5173/   API belgesi: http://127.0.0.1:8001/docs" -ForegroundColor Green
 Write-Host "Kapatmak için Ctrl+C, ardından durdur.cmd`n" -ForegroundColor Green
 npm run dev

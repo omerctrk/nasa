@@ -15,7 +15,7 @@ Belgedeki `NEXT_PUBLIC_USE_MOCK`, bu proje Vite kullandığı için `VITE_USE_MO
 
 ```
 VITE_USE_MOCK=false
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_API_BASE_URL=http://localhost:8001/api/v1
 ```
 
 ## Dosyalar

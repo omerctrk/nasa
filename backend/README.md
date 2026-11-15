@@ -11,7 +11,7 @@ docker compose run --rm seed       # sözlük, M01, A007 + gösterim profili, 2 
 docker compose up api              # API, astra_app hesabıyla açılır
 ```
 
-Kontrol: http://localhost:8000/api/v1/health/ready adresi `"db_user": "astra_app"` döndürmeli. `sa` değil `astra_app` yazması, API'nin sınırlı hesapla çalıştığını kanıtlar. Swagger: http://localhost:8000/docs
+Kontrol: http://localhost:8001/api/v1/health/ready adresi `"db_user": "astra_app"` döndürmeli. `sa` değil `astra_app` yazması, API'nin sınırlı hesapla çalıştığını kanıtlar. Swagger: http://localhost:8001/docs (host portu 8001; konteyner içinde 8000)
 
 ## Knowledge Card API (0007)
 

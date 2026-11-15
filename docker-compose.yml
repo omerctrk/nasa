@@ -87,7 +87,7 @@ services:
       ANOMALY_REFERENCE_DATE: ${ANOMALY_REFERENCE_DATE:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-qwen3:14b}
-    ports: ["127.0.0.1:8000:8000"]
+    ports: ["127.0.0.1:8001:8000"]
     volumes: ["./backend:/app"]   # geliştirme: kod değişince yeniden yüklenir
     # Tek API worker
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--reload"]

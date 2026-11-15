@@ -21,7 +21,7 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:5173/`. Vite proxies `/api/v1` and
-`/ws/v1/notifications` to the API at `127.0.0.1:8000`, so the browser uses one
+`/ws/v1/notifications` to the API at `127.0.0.1:8001` (docker-compose host portu; konteyner içinde 8000), so the browser uses one
 origin and needs no CORS exceptions. The local Vite server opens a seeded
 astronaut session automatically; use the header buttons to switch to ground
 control. It reads the seed passwords from the ignored repository-root `.env`
