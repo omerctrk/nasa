@@ -102,7 +102,8 @@ class SansStateRecord(Record):
 
 
 class SansContext(Record):
-    """get_sans_context çıktısı: data_cutoff_at sonrasına ait hiçbir kayıt içermez."""
+    """get_sans_context çıktısı: analiz edilen oturumun flight_day'inden sonraki hiçbir kayıt
+    içermez (görev takvimi simüle olduğu için kesim görev gününe göredir)."""
 
     profile: AstronautRecord
     session: SansSessionRecord  # analiz edilen oturum
@@ -215,6 +216,13 @@ class AnomalyResultData(Record):
     data_quality_status: DataQualityStatus
     recommendation: str = Field(max_length=2000)
     data_cutoff_at: datetime
+
+
+class AnomalyResultRecord(AnomalyResultData):
+    """Okuma: kayıtlı anomali sonucu (GET /anomaly-results/{id})."""
+
+    id: uuid.UUID
+    created_at: datetime
 
 
 class SansAnalysisData(Record):

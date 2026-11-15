@@ -17,7 +17,7 @@ def analysis_transaction():
     # Called in a sync endpoint's worker; no Session crosses threads.
     from app.db.session import SessionLocal
 
-    with SessionLocal.begin() as session:
+    with SessionLocal() as session, session.begin():
         yield SqlAlchemyRepository(session)
 
 

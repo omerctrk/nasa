@@ -67,6 +67,8 @@ _REPO_ERRORS: dict[type[repo_errors.RepositoryError], tuple[int, ErrorCode]] = {
     repo_errors.InvalidStateTransition: (409, ErrorCode.INVALID_STATE_TRANSITION),
     repo_errors.NotFound: (404, ErrorCode.NOT_FOUND),
     repo_errors.ValidationFailed: (422, ErrorCode.VALIDATION_ERROR),
+    repo_errors.PreconditionFailed: (412, ErrorCode.PRECONDITION_FAILED),
+    repo_errors.Forbidden: (403, ErrorCode.FORBIDDEN),
 }
 
 

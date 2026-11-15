@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans select-none;
+    background-color: #F8FAFC;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(224, 242, 254, 0.5) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(219, 234, 254, 0.4) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(240, 249, 255, 0.6) 0px, transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.dark body {
+    background-color: #070d1a;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.10) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.10) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 50%);
+  }
+
+  /* Okunabilirlik: rakamlar sabit genişlikte, Türkçe karakterler net */
+  body {
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom scrollbars for clean UI */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.8);
+}
+.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+.dark .glass-panel {
+  background: rgba(17, 26, 43, 0.82);
+  border-color: rgba(51, 65, 85, 0.7);
+}
+
+.glass-panel-elevated {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(219, 234, 254, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}
+
+.dark .glass-panel-elevated {
+  background: rgba(17, 26, 43, 0.92);
+  border-color: rgba(51, 65, 85, 0.8);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+.hud-border {
+  position: relative;
+}
+.hud-border::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.8), transparent);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+/* Yazdırma (Raporlar > Yazdır / PDF) */
+@media print {
+  header, footer, .print\:hidden { display: none !important; }
+  body { background: #fff !important; }
+}
+
+/* Davranış modülü kaydırıcısı. Seçilmemişken düz gri çubuk ve gizli tutamaç
+   (astronot dokunmadan orta değer kaydedilmesin diye). --pct dolgu oranıdır. */
+input[type='range'].ahms-range { -webkit-appearance: none; appearance: none; background: transparent; }
+input[type='range'].ahms-range::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 9999px;
+  background: linear-gradient(to right, #2563eb var(--pct, 0%), #cbd5e1 var(--pct, 0%));
+}
+input[type='range'].ahms-range::-moz-range-track {
+  height: 6px; border-radius: 9999px;
+  background: linear-gradient(to right, #2563eb var(--pct, 0%), #cbd5e1 var(--pct, 0%));
+}
+input[type='range'].ahms-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: -9px;
+  border-radius: 9999px; background: #2563eb; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+input[type='range'].ahms-range::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 9999px; background: #2563eb; border: 3px solid #fff;
+}
+input[type='range'].ahms-range.range-unset::-webkit-slider-thumb { opacity: 0; }
+input[type='range'].ahms-range.range-unset::-moz-range-thumb { opacity: 0; }
+input[type='range'].ahms-range:focus-visible { outline: 2px solid #60a5fa; outline-offset: 2px; border-radius: 8px; }

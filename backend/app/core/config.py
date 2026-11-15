@@ -6,9 +6,11 @@ Her servis yalnız KENDİ veritabanı bağlantısını alır (iş bölümü §9)
 Bu eşleme docker-compose.yml'de yapılır; kod hangi hesapla çalıştığını bilmez.
 """
 from functools import lru_cache
+from pathlib import Path
+from datetime import date
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 from sqlalchemy.engine import URL
 
 
@@ -38,6 +40,20 @@ class Settings(BaseSettings):
     anomaly_retry_delay_seconds: float = 2
     ws_auth_timeout_seconds: float = 5
     worker_poll_seconds: float = 1
+    history_policy_path: Path = Path(__file__).resolve().parents[2] / "config/history-policy.json"
+    threshold_policy_path: Path = Path(__file__).resolve().parents[2] / "config/thresholds.json"
+    anomaly_reference_date: date | None = None  # explicit demo date; never inferred from host time
+    # Ö5 model adaptörü (Yusuf'un kart önericisi + Ollama). Boşsa model çağrılmaz; karar
+    # yalnız eşik kurallarıyla verilir, açıklama metni kodla üretilir (algorithm="threshold_rules").
+    llm_base_url: str | None = None  # örn. http://host.docker.internal:11434
+    llm_model: str = "qwen3:14b"
+    knowledge_cards_path: Path = Path(__file__).resolve().parents[2] / "config/knowledge_cards.json"
+    ws_poll_seconds: float = 2  # WebSocket: bekleyen olaylar bu aralıkla DB'den okunur
+
+    @field_validator("anomaly_reference_date", mode="before")
+    @classmethod
+    def optional_reference_date(cls, value):
+        return None if value == "" else value
     # SANS POST'u için otomatik tekrar bilerek ayar değildir: tekrar güvenliği teyit
     # edilene kadar KAPALI (sözleşme §9).
 

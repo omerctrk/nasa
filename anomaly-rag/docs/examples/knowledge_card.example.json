@@ -1,0 +1,11 @@
+{
+  "id": "resp-01",
+  "type": "risk",
+  "system": "respiratory",
+  "metrics": ["spo2", "respiratory_rate"],
+  "direction": "down",
+  "text": "Relevant source-based health information for respiratory measurements.",
+  "source": "NASA Technical Brief",
+  "url": "https://example.com/source",
+  "locator": "Section 2, page 4"
+}

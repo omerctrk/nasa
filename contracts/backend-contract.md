@@ -7,6 +7,11 @@ Bu belgedeki bir değeri değiştirmek sözleşme değişikliğidir: ikinizin on
 Kapsam dışı (bu sözleşme karar vermez): model sağlayıcısı, klinik eşikler, veri yeterlilik
 şartları, SANS API'nin URL/auth/sözleşmesi.
 
+> **Kapsam değişikliği (14 Kasım, takım kararı):** SANS modeli ve göz testleri projeden
+> çıkarıldı. API'deki göz/baş ağrısı uçları kaldırıldı; `sans` tabloları ve VIEW'ları DB'de
+> boş olarak duruyor (geri alınabilir). Ömer: SANS iş türünü ve `history-policy.json`'daki
+> göz satırlarını kaldırınca seed'deki 3 göz kodu da birlikte kaldırılacak.
+
 ## 1. Dosyalar ve sorumluluklar
 
 | Dosya | İçerik | Sorumlu |
@@ -108,11 +113,43 @@ fırlatır; repository hataları otomatik çevrilir.
 - JWT HS256, secret `JWT_SECRET` ortam değişkeninden. Claim'ler: `sub`(=`core.Users.user_id`),
   `iat`, `exp`, `iss`, `aud`, `jti`. Refresh token yok; süre bitince yeniden giriş.
 - Rol, aktiflik ve astronot bağlantısı her istekte DB'den doğrulanır.
+- Parola: `app/core/passwords.py` (Argon2id) — seed `hash_password` ile yazar, giriş
+  `verify_password` ile doğrular. Demo hesapları: `scripts/seed.py` (parolalar `.env`).
 - Dependency'ler `CurrentUser {user_id, role, astronaut_id}` döndürür:
   - `current_user()` — token + aktif hesap
   - `require_active_astronaut()` — ASTRONAUT, kendi profili, `is_display_only=0`
   - `require_ground_control()` — GROUND_CONTROL
 - Astronotun veri girişinde `astronaut_id` istemciden **alınmaz**; `CurrentUser`'dan atanır.
+
+### 5.1 Veri giriş uçları (A7, Aybala) — hepsi `require_active_astronaut`
+
+| Uç | Kural |
+|---|---|
+| `GET/PUT /api/v1/me/checkins/{date}` | Kişi+gün tek kayıt. PUT yeni gün 201; güncelleme `If-Match: <ETag>` ister, eski/eksik → 412 |
+| `POST /api/v1/me/weekly-assessments` | `client_request_id` tekrarı aynı içerik 200, farklı 409 |
+| `POST /api/v1/me/cognitive-tests` | Aynı; metrikler test türüne göre, `taken_at` saat dilimli |
+| `POST /api/v1/me/physiological` | Aynı; yalnız sözlükte `physiological` kod ve kanonik birim |
+
+Yeni kayıt 201, aynı isteğin tekrarı 200. Gösterim profili → 403. `astronaut_id` ve
+`mission_day` istemciden alınmaz. `mood_index` formülü teyit edilene kadar istemciden gelir
+(açık karar); `sleep_hours` yatış→uyanış süresinden hesaplanır.
+
+`app/routers/deps.py` şimdilik yer tutucudur (her isteğe 401); Ömer Ö1'de `current_user()`
+gövdesini yazar, imzalar değişmez.
+
+### 5.2 Okuma uçları (Aybala)
+
+Aralıklar `[start, end)`, en fazla 120 gün; ihlal → 422.
+
+| Uç | Yetki | Dönüş |
+|---|---|---|
+| `GET /api/v1/me/profile` | astronot | profil + görev (genetik/SANS başlangıç alanları YOK) |
+| `GET /api/v1/me/checkins?start&end` | astronot | check-in listesi |
+| `GET /api/v1/me/weekly-assessments?start&end` | astronot | yalnız kendisi; kuleye verilmez |
+| `GET /api/v1/me/cognitive-tests?start&end[&test_type]` | astronot | metrikler (`speed` yok) |
+| `GET /api/v1/me/measurements?start&end[&module]` | astronot | `MeasurementDTO` listesi (grafikler) |
+| `GET /api/v1/ground/astronauts` | kule | iki demo profili |
+| `GET /api/v1/ground/astronauts/{id}/measurements?start&end[&module]` | kule | `MeasurementDTO` (haftalık hariç) |
 
 ## 6. Repository sözleşmesi
 
@@ -131,6 +168,7 @@ Servisler tek nesne alır: `repo = SqlAlchemyRepository(session)`.
 | `claim_next_job(lease_seconds)` | `ClaimedJob \| None` (atomik) |
 | `renew_job_lease(job_id, lease_token, lease_seconds)` | `bool` |
 | `recover_expired_jobs()` | `list[RecoveredJob]` (DB saatine göre) |
+| `reschedule_job(job_id, lease_token, delay_seconds, error_code, max_attempts=2)` | Ö3: geçerli lease ile yalnız anomaliyi gecikmeli QUEUED yapar; snapshot korunur |
 | `save_input_snapshot(job_id, lease_token, snapshot, input_hash)` | ilk kayıt; aynı hash no-op; farklı → `SnapshotConflict` |
 | `save_anomaly_result(result)` | `UUID` |
 | `save_sans_analysis(result)` | `int` |
@@ -161,8 +199,17 @@ Ek açıklamadaki endpoint'ler ve akışlar bunlar olmadan yazılamıyor; Ömer 
 - Tekillik ve eşzamanlılık DB UNIQUE/koşullu UPDATE ile sağlanır; "önce bak sonra ekle" yetmez.
 - Hatalar: `IdempotencyConflict`, `InvalidStateTransition`, `LeaseLost`, `SnapshotConflict`,
   `NotFound`, `ValidationFailed` (→ 422).
-- Süresi dolan lease: anomaly işi `attempts <= anomaly_auto_retries` ise QUEUED (gecikmeli),
-  değilse FAILED (`LEASE_EXPIRED`). SANS işi hiçbir zaman otomatik tekrar edilmez → FAILED.
+- Süresi dolan lease: anomaly işi `attempts < min(max_attempts, anomaly_auto_retries+1)`
+  ise QUEUED (gecikmeli), değilse FAILED (`LEASE_EXPIRED`). SANS işi otomatik tekrar
+  edilmez → FAILED (`SANS_RECONCILIATION_REQUIRED`).
+
+Ö3 ayrıntısı: `recover_expired_jobs(max_attempts=2)` opsiyonel limit alır; normal
+çağrıdaki iki deneme davranışı korunur. Claim attempts+1 yapar. Lease yenileme ve
+finalizasyon süre/token/aktif durum kontrolünü DB saatiyle yapar; süresi dolan lease
+canlandırılmaz. Snapshot aynı hash'teyse içerik korunur ama retry'de ANALYZING
+geçişi yapılır. SANS SYNCING/ANALYZING lease kurtarması kör POST yerine
+FAILED/SANS_RECONCILIATION_REQUIRED üretir. Aynı astronotun SANS claim'leri atomik
+olarak sıralanır. Tam teslim ve pipeline arayüzü: `contracts/analysis-worker.md`.
 
 ## 7. Session ve transaction düzeni
 
@@ -204,22 +251,57 @@ Klinik karar değil; `app/core/config.py`'de ayardır, kodda sabit yazılmaz, `.
 
 **SANS POST'u için otomatik tekrar kapalıdır** ve ayar olarak sunulmaz (tekrar güvenliği teyit edilmedi).
 
-## 10. WebSocket (`/ws/v1/notifications`, uygulayan: Ömer)
+## 10. WebSocket (`/ws/v1/notifications`, uygulayan: Aybala — Ömer'in kısmı devralındı)
 
 - İlk istemci mesajı `{type:"authenticate", access_token}`; 5 sn içinde gelmezse bağlantı kapanır.
 - Olay: `{event_id, type, created_at, payload}` — örnek `ws_analysis_completed_sans.json`.
 - İstemci teslim yanıtı: `{type:"receipt", event_id}` → `record_receipt`.
 - Olay önce DB'ye yazılır, sonra gönderilir; frontend `event_id` ile tekrarları ayıklar.
 - `retest_due_day` modelden gelir; backend süre üretmez. Token süresi dolunca bağlantı kapanır.
+- Uygulama (`app/realtime/notifications.py`): başarılı girişte `{type:"authenticated"}`; geçersiz
+  giriş / süre dolumu → kapanış kodu **4401**. Yeni olaylar `ws_poll_seconds` (2 sn) aralığıyla
+  DB'den okunur. Alındı yalnız o bağlantıda o kullanıcıya gönderilmiş olay için kabul edilir;
+  alınmayan olay yeniden bağlanınca tekrar gelir.
+
+## 10a. Analiz pipeline'ı, sonuç ve alarm uçları (Ö5/Ö6, uygulayan: Aybala)
+
+- **Ö5 karar kuralları** (`app/services/anomaly.py`, sayı uydurmaz):
+  güncel ölçüm yok → `insufficient_data`; hiçbir ölçüm için eşik tanımlı değil →
+  `insufficient_data` (bilinmeyen normal değildir); ihlal yok → `normal`; ihlal var → en az
+  `watch`; Yusuf'un kart önericisi doktora yükseltme derse → `review`.
+  `baseline_status=provisional` (yeterlilik politikası yok).
+- **Model**: `LLM_BASE_URL` doluysa Yusuf'un `kart_onerici.oner()` Ollama ile çağrılır (özet,
+  açıklama, öneri). Boşsa kart seçimi/yükseltme yine kodla yapılır, özet kodla yazılır.
+  Kart metrik adları: `pvt_mean_rt→pvt_mean_rt_ms`, `rotation_mean_rt→rotation_mean_rt_ms`,
+  `body_temperature→body_temp`, `crew→crew_relation`.
+- **Ö6 yazım** (aynı Session): `anomaly_results` → (watch/review ise) `ops.Alerts` → olaylar.
+  Riskli sonuç: `risk.alert.created` (alert_id) kuleye ve astronota; ayrıca tamamlanma olayı yok.
+  Normal/sonuçsuz: astronota `analysis.completed` (job_id). (Şema §8 Bildirim)
+- Alarm şiddeti (İş Bölümü §5 tek eşleme): anomali `watch`/`review` → `WARNING`.
+- `provider_metadata_json`: sağlayıcı, model, prompt sürümü, ham model cevapları, seviye gerekçesi.
+- WebSocket her gönderim turunda hesabı yeniden doğrular; devre dışı hesap 4401 ile kapanır.
+- Uçlar: `GET /me/anomaly-results?start&end`, `GET /me/anomaly-results/{id}`,
+  `GET /me/alerts?status=`; kule: `GET /ground/astronauts/{id}/anomaly-results?start&end`,
+  `GET /ground/anomaly-results/{id}`, `GET /ground/alerts?status=&astronaut_id=`,
+  `POST /ground/alerts/{id}/acknowledge`, `POST /ground/alerts/{id}/resolve
+  {resolution_note}` (yalnız ACKNOWLEDGED alarm; aksi 409).
 
 ## 11. Açık konular
 
-1. **`ops.AnalysisJobs.request_json` (A3'te eklendi, Ömer'in onayı bekleniyor).** Şemada
+1. **`ops.AnalysisJobs.request_json` (A3'te eklendi, Ö2/Ö3 entegrasyonunda kullanılıyor).** Şemada
    `module_scope` / `session_id` için sütun yoktu; `input_snapshot_json` hazırlık bitene kadar
    NULL olduğundan işçi işi sahiplendiğinde neyi analiz edeceğini bilemiyordu. Sütun
-   `NVARCHAR(MAX) NOT NULL` + ISJSON; içeriği normalize `JobRequestData`. Onaylanmazsa yeni bir
-   migration ile kaldırılır. Ayrıca `IX_AnalysisJobs_state_next_attempt_at` performans indeksi
+   `NVARCHAR(MAX) NOT NULL` + ISJSON; içeriği normalize `JobRequestData`. Mevcut migration
+   değiştirilmedi. Ayrıca `IX_AnalysisJobs_state_next_attempt_at` performans indeksi
    eklendi (veri kuralı değil).
 2. `metadata_json` için izin verilen anahtar listesi henüz yok (şimdilik `original_source`).
-3. `MeasurementDTO.eye` kuralı: göz dışı modülde `null` zorunlu; `sans` modülünde göz dışı
-   kayıt (CO₂, baş ağrısı) DTO'ya girecekse `eye=null` olabilir — VIEW tasarımında (A5) netleşecek.
+3. `anomaly.v_measurements` (A5) yalnız göz TESTLERİNİ `module=sans` olarak verir (eye her zaman
+   OD/OS). CO₂ ve baş ağrısı DTO'ya girmez; `get_sans_context` içinde ayrı listelerdir.
+4. Ölçüm kodları (A6 seed sözlüğü bunları tanımlamalı): check-in `mood, energy, stress,
+   loneliness, crew, mood_index, sleep_hours, sleep_quality`; bilişsel `pvt_mean_rt,
+   pvt_median_rt, pvt_lapses, pvt_false_starts, rotation_mean_rt, rotation_accuracy,
+   dsst_accuracy, dsst_correct_count`; göz `near_acuity, contrast, amsler`. Sözlükte tanımsız
+   kod `MissingDefinition` hatası verir. PVT `speed`, yatış/uyanış saatleri ve `symptoms`
+   VIEW'a girmez.
+5. `get_sans_context` "geleceği" görev gününe göre keser (oturumun flight_day'i); demo takvimi
+   simüle olduğundan gerçek saat ile takvim tarihi karşılaştırılmaz.

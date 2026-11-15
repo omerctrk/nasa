@@ -14,7 +14,7 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Developer
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?.env içinde MSSQL_SA_PASSWORD yok}
-    ports: ["1433:1433"]
+    ports: ["${SQL_HOST_BIND_IP:-127.0.0.1}:1433:1433"]
     volumes: [mssql-data:/var/opt/mssql]
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -b -Q \"SELECT 1\" -o /dev/null"]
@@ -51,6 +51,22 @@ services:
     volumes: ["./backend:/app"]   # autogenerate ile üretilen migration dosyası senin klasörüne yazılır
     command: ["alembic", "upgrade", "head"]
 
+  # Seed (A6): migrate'ten sonra, sınırlı astra_app hesabıyla; tekrar çalıştırılabilir
+  seed:
+    build: ./backend
+    profiles: ["tools"]
+    depends_on:
+      bootstrap: { condition: service_completed_successfully }
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-AstraHealth}
+      DB_USER: astra_app
+      DB_PASSWORD: ${ASTRA_APP_DB_PASSWORD}
+      SEED_ASTRONAUT_PASSWORD: ${SEED_ASTRONAUT_PASSWORD:-}
+      SEED_GROUND_PASSWORD: ${SEED_GROUND_PASSWORD:-}
+    volumes: ["./backend:/app"]
+    command: ["python", "-m", "scripts.seed"]
+
   # API + işçi: yalnız astra_app ve SANS API ayarlarını alır (sa şifresi yok)
   api:
     build: ./backend
@@ -68,7 +84,10 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-astra-health}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-astra-health-api}
       ACCESS_TOKEN_SECONDS: ${ACCESS_TOKEN_SECONDS:-3600}
-    ports: ["8000:8000"]
+      ANOMALY_REFERENCE_DATE: ${ANOMALY_REFERENCE_DATE:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:14b}
+    ports: ["127.0.0.1:8000:8000"]
     volumes: ["./backend:/app"]   # geliştirme: kod değişince yeniden yüklenir
     # Tek API worker
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--reload"]

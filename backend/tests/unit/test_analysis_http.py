@@ -76,15 +76,27 @@ def test_new_job_repeat_and_status(api):
     assert len(store.jobs) == 1
 
 
-def test_key_conflict_and_sans_normalization(api):
+def test_key_conflict(api):
     client, _, headers, _ = api
-    payload = {"module": "sans", "idempotency_key": str(uuid4()), "session_id": " S-A007-D074 "}
-    response = create(api, payload)
-    repeat = client.post("/api/v1/analysis/jobs", json=payload | {"session_id": "S-A007-D074"}, headers=headers())
-    assert repeat.status_code == 200 and repeat.json() == response.json()
-    conflict = client.post("/api/v1/analysis/jobs", json=payload | {"session_id": "S-A007-D075"}, headers=headers())
+    payload = body()
+    create(api, payload)
+    conflict = client.post("/api/v1/analysis/jobs", json=payload | {"module_scope": "behavioral"},
+                           headers=headers())
     assert conflict.status_code == 409
     assert conflict.json()["detail"]["code"] == "IDEMPOTENCY_CONFLICT"
+
+
+@pytest.mark.parametrize("payload", [
+    {"module": "sans", "idempotency_key": str(uuid4()), "session_id": "S-A007-D074"},
+    body(module_scope="sans"),
+])
+def test_sans_is_closed(api, payload):
+    """SANS/göz modülü projeden çıkarıldı (takım kararı): API SANS işi ve SANS kapsamı almaz."""
+    client, store, headers, _ = api
+    response = client.post("/api/v1/analysis/jobs", json=payload, headers=headers())
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "VALIDATION_ERROR"
+    assert not store.jobs
 
 
 @pytest.mark.parametrize("payload", [
@@ -172,12 +184,12 @@ def test_missing_a3_returns_service_unavailable_not_fake_success(api):
     app.state.analysis_service = configure_analysis_service
 
 
-def test_openapi_describes_discriminator_and_replay_response(api):
+def test_openapi_describes_request_and_replay_response(api):
     client, _, _, _ = api
     paths = client.get("/openapi.json").json()["paths"]
     create_spec = paths["/api/v1/analysis/jobs"]["post"]
     schema = create_spec["requestBody"]["content"]["application/json"]["schema"]
-    assert schema["discriminator"]["propertyName"] == "module"
+    assert schema["$ref"].endswith("/AnomalyJobRequest")  # SANS kapalı: tek istek türü
     assert {"200", "202"} <= set(create_spec["responses"])
     assert "/api/v1/analysis/jobs/{job_id}" in paths
     assert "/api/v1/analysis/jobs/{job_id}/retry" in paths

@@ -16,9 +16,12 @@ target_metadata = Base.metadata
 
 
 def include_name(name, type_, parent_names):
-    # Autogenerate yalnız bizim altı şemamıza bakar (dbo, sys vb. hariç)
+    # Six application schemas plus the single 0007 table in default dbo.
+    # Never scan unrelated dbo tables when checking for model drift.
     if type_ == "schema":
-        return name in SCHEMAS
+        return name in SCHEMAS or name in (None, "dbo")
+    if type_ == "table" and parent_names.get("schema_name") in (None, "dbo"):
+        return name == "knowledge_cards"
     return True
 
 

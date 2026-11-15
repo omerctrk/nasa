@@ -7,3 +7,44 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 *.egg-info/
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/pnpm-lock.yaml
+frontend/pnpm-workspace.yaml
+.vs/
+
+# --- anomaly dalı (Aynur) ---
+# NASA raw data and local datasets
+data/raw/
+data/processed/
+data/test/
+
+# Python
+*.pyc
+.ipynb_checkpoints/
+
+# Environment
+
+# Linux virtual environment
+.venv-linux/
+
+# Pytest
+.coverage
+htmlcov/
+
+# Model and ML caches
+.cache/
+hf_cache/
+models/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+backend/seed_output/
+backend/seed_output_before/

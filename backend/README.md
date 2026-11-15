@@ -7,10 +7,25 @@ FastAPI + SQLAlchemy 2.0 + Alembic + MS SQL Server 2022. Kaynaklar: `BACKEND_TAB
 ```bash
 cp backend/.env.example .env       # değerleri doldur; .env git'e girmez
 docker compose run --rm migrate    # db → bootstrap → migration (sa)
+docker compose run --rm seed       # sözlük, M01, A007 + gösterim profili, 2 giriş hesabı (astra_app)
 docker compose up api              # API, astra_app hesabıyla açılır
 ```
 
 Kontrol: http://localhost:8000/api/v1/health/ready adresi `"db_user": "astra_app"` döndürmeli. `sa` değil `astra_app` yazması, API'nin sınırlı hesapla çalıştığını kanıtlar. Swagger: http://localhost:8000/docs
+
+## Knowledge Card API (0007)
+
+`/api/v1/knowledge-cards` altında listeleme, oluşturma, kimlikle okuma, tam güncelleme
+(`PUT`) ve silme uçları vardır. Tüm uçlar `GROUND_CONTROL` token'ı ister. İsteklerde
+`metrics` bir metin dizisidir; SQL'de JSON olarak saklanır. `content_hash`, kartın
+içerik alanlarının kanonik JSON'undan SHA-256 ile sunucuda hesaplanır. Repository
+transaction'ı kapatmaz; yazma işlemini servis commit eder.
+
+Gerçek SQL CRUD kabul testi, her testten sonra rollback yapar:
+
+```bash
+docker compose run --rm -e RUN_DB_TESTS=1 api pytest -q tests/integration/test_knowledge_db.py
+```
 
 ## Kurulum sırası (şema §8)
 
@@ -101,18 +116,24 @@ pip install -r requirements.lock.txt && pytest
 
 ## Durum
 
-Ömer'in auth entegrasyonu: `contracts/auth-integration.md`. Auth router gerçek
-SQLAlchemy repository'sine bağlıdır. API başlangıcında güçlü `JWT_SECRET` zorunludur;
-`DB_USER=astra_app` kontrol edilir. A6 seed/A7 ve gerçek DB kabulü hâlâ ayrı teslimdir.
-
-Ö2 analiz işi API'si: `contracts/analysis-jobs.md`. Başlatma/durum/retry router'ları
-hazırdır. A3 job repository'si teslim edilene kadar üretim çağrıları 503 döndürür;
-başarılı kalıcı kayıt varmış gibi bellekten job üretilmez.
-
 - [x] A0: klasör yapısı, tek Base, 6 şema, 2 rol (SANS rolü yok), evaluation DENY, bootstrap, ayrı migrate, sınırlı API hesabı, `/api/v1/health/live|ready`
 - [x] A1 core: Missions/Astronauts/Users, FK/UQ/CHECK, filtreli UQ, app izinleri (DELETE yok), flight_day eşlemesi, kimlik repository'si
 - [x] Ortak sözleşme: common.py, interfaces.py, records.py, hata zarfı, ayarlar, fixture'lar (contracts/backend-contract.md)
 - [x] A2 sans (6) + anomaly (3) tablo, migration 0003 + izinler, sonuç repository'si (save_anomaly_result, save_sans_analysis, update_sans_state)
 - [x] A3 ops: AnalysisJobs (+request_json önerisi), Alerts, NotificationEvents, EventReceipts; migration 0004; iş ve alarm repository'leri (Ömer'e teslim)
-- [ ] A4 behavioral + evaluation (+ eval izinleri) · [ ] A5 üç VIEW
-- [ ] A6 seed · [ ] A7 veri giriş API'leri · [ ] A8 göz dışı sentetik veri · [ ] A9 a007_aktarim.json import
+- [x] A4 behavioral (3) + evaluation.gercek_durum; migration 0005; eval yalnız astra_eval_role'e açık
+- [x] A5 sans.gorev, sans.profil, anomaly.v_measurements (migration 0006, SELECT izni); get_measurements, get_sans_context — Repository arayüzünün tamamı hazır
+- [x] A6 seed: tekrar çalıştırılabilir; parolalar .env'den, Argon2 (app/core/passwords.py). Geçici değerler scripts/seed.py içinde TODO(ekip) ile işaretli
+- [x] 0007: `dbo.knowledge_cards` ek tablosu. `astra_app_role` için SELECT/INSERT/UPDATE/DELETE; `astra_collaborator` üyelikten devralır. Diğer tablolarda DELETE izni yoktur.
+- [x] Knowledge Card CRUD: `/api/v1/knowledge-cards`, ground-control JWT, SQLAlchemy repository.
+- [x] Alarm/bildirim API: `/api/v1/me/alerts`, `/api/v1/ground/alerts` listeleme/onay/kapatma, `/api/v1/notifications/pending` ve `/{event_id}/receipt`.
+- [x] Anomali sonuç okuma: `/api/v1/me/anomaly-results/{result_id}` ve `/api/v1/ground/anomaly-results/{result_id}`; astronot yalnız kendi sonucunu görür.
+- [x] WebSocket: `/ws/v1/notifications`; token doğrulaması, kalıcı olay teslimi ve receipt ile yeniden bağlantıda tekrar oynatma.
+- [x] İşçi yalnız bağlı anomali pipeline'ının işlerini sahiplenir; eski SANS işleri tüketilmez.
+- [x] A7 veri giriş API'leri (/api/v1/me/...): check-in PUT+ETag, haftalık, bilişsel, fizyolojik. Yetki: Ömer'in app/core/security.py dependency'leri (app/routers/deps.py yeniden dışa aktarır)
+- [x] Okuma uçları: GET /me/profile, /me/checkins, /me/weekly-assessments, /me/cognitive-tests, /me/measurements; GET /ground/astronauts, /ground/astronauts/{id}/measurements
+- [x] SANS/göz modülü kapsam dışı: göz oturumu, baş ağrısı ve göz okuma uçları kaldırıldı; eski DB tabloları korunuyor.
+- [x] Seed: Ömer'in history-policy.json'undaki 5 fizyolojik ölçüm (heart_rate, systolic_bp, diastolic_bp, blood_glucose, body_temperature)
+- [ ] A8 sentetik veri (fizyolojik + davranış) · ~~A9 a007_aktarim.json~~ (SANS kapsam dışı)
+- [x] Ö4/Ö5/Ö6 anomali pipeline'ı bağlıdır. Eşikler henüz tanımlı olmadığından mevcut ölçümler için sonuç `insufficient_data` olur; sahte `normal` üretilmez. İsteğe bağlı Ollama kart açıklama sağlayıcısı yapılandırılabilir.
+- [ ] Eşik kuralları/veri yeterliliği değerleri, frontend gerçek API entegrasyonu ve Knowledge Card RAG indeksleme tamamlanmadı.

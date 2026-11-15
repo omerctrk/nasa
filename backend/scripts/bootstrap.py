@@ -53,6 +53,30 @@ def _require(name: str) -> str:
     return value
 
 
+def password_problem(value: str) -> str | None:
+    """SQL Server parola kuralı (CHECK_POLICY): en az 8 karakter ve şu dört gruptan en az
+    üçü: büyük harf, küçük harf, rakam, sembol. Uygunsa None, değilse açıklama döner."""
+    if len(value) < 8:
+        return "en az 8 karakter olmalı"
+    groups = sum((
+        any(c.isupper() for c in value),
+        any(c.islower() for c in value),
+        any(c.isdigit() for c in value),
+        any(not c.isalnum() for c in value),
+    ))
+    if groups < 3:
+        return "büyük harf, küçük harf, rakam ve sembolden en az üçünü içermeli"
+    return None
+
+
+def _require_sql_password(name: str) -> str:
+    value = _require(name)
+    problem = password_problem(value)
+    if problem:
+        sys.exit(f"bootstrap: {name} SQL Server parola kuralına uymuyor: {problem} (.env)")
+    return value
+
+
 def main() -> None:
     import pyodbc  # ODBC sürücüsü yalnız container'da gerekir
 
@@ -60,7 +84,8 @@ def main() -> None:
     port = os.environ.get("DB_PORT", "1433")
     db_name = safe_name(os.environ.get("DB_NAME", "AstraHealth"))
     sa_password = _require("MSSQL_SA_PASSWORD")
-    passwords = {login: _require(env) for login, (env, _) in SERVICE_LOGINS.items()}
+    # SQL'e gitmeden önce: hangi değişkenin sorunlu olduğunu açıkça söyle
+    passwords = {login: _require_sql_password(env) for login, (env, _) in SERVICE_LOGINS.items()}
 
     # CREATE DATABASE / LOGIN transaction içinde çalışmaz → autocommit
     with pyodbc.connect(connection_string(host, port, "master", sa_password), autocommit=True) as conn:

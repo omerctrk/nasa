@@ -1,0 +1,187 @@
+{
+  "version": 2,
+  "language": "en",
+  "daily_checkin": {
+    "note": "Custom single-item questions for daily tracking; not a validated instrument.",
+    "questions": [
+      {
+        "key": "mood",
+        "type": "slider",
+        "prompt": "Overall, how do you feel today?",
+        "min": 0,
+        "max": 10,
+        "anchors": [
+          { "value": 0, "label": "Very bad" },
+          { "value": 10, "label": "Very good" }
+        ]
+      },
+      {
+        "key": "energy",
+        "type": "slider",
+        "prompt": "How is your energy level today?",
+        "min": 0,
+        "max": 10,
+        "anchors": [
+          { "value": 0, "label": "Very low" },
+          { "value": 10, "label": "Very high" }
+        ]
+      },
+      {
+        "key": "stress",
+        "type": "slider",
+        "prompt": "How stressed do you feel today?",
+        "min": 0,
+        "max": 10,
+        "anchors": [
+          { "value": 0, "label": "Not at all" },
+          { "value": 10, "label": "Extremely" }
+        ]
+      },
+      {
+        "key": "loneliness",
+        "type": "choice",
+        "prompt": "Did you feel lonely?",
+        "min": 0,
+        "max": 4,
+        "options": [
+          { "value": 0, "label": "Not at all" },
+          { "value": 1, "label": "A little" },
+          { "value": 2, "label": "Moderately" },
+          { "value": 3, "label": "Quite a bit" },
+          { "value": 4, "label": "Extremely" }
+        ]
+      },
+      {
+        "key": "crew_relation",
+        "type": "choice",
+        "prompt": "How are your relations with the crew?",
+        "min": 0,
+        "max": 4,
+        "options": [
+          { "value": 0, "label": "Very poor" },
+          { "value": 1, "label": "Poor" },
+          { "value": 2, "label": "Neutral" },
+          { "value": 3, "label": "Good" },
+          { "value": 4, "label": "Very good" }
+        ]
+      },
+      {
+        "key": "bed_time",
+        "type": "time",
+        "format": "HH:MM",
+        "prompt": "What time did you go to bed last night?"
+      },
+      {
+        "key": "wake_time",
+        "type": "time",
+        "format": "HH:MM",
+        "prompt": "What time did you wake up this morning?"
+      },
+      {
+        "key": "sleep_quality",
+        "type": "choice",
+        "prompt": "How would you rate the quality of your sleep?",
+        "min": 1,
+        "max": 5,
+        "options": [
+          { "value": 1, "label": "Very poor" },
+          { "value": 2, "label": "Poor" },
+          { "value": 3, "label": "Fair" },
+          { "value": 4, "label": "Good" },
+          { "value": 5, "label": "Very good" }
+        ]
+      },
+      {
+        "key": "symptoms",
+        "type": "multi_select",
+        "prompt": "Do you have any of the following today?",
+        "options_from": "symptom_codes",
+        "allow_empty": true,
+        "none_label": "None"
+      }
+    ]
+  },
+  "symptom_codes": [
+    { "code": "headache", "label": "Headache" },
+    { "code": "fatigue", "label": "Fatigue" },
+    { "code": "nausea", "label": "Nausea" },
+    { "code": "dizziness", "label": "Dizziness" },
+    { "code": "blurred_vision", "label": "Blurred vision" },
+    { "code": "eye_pressure", "label": "Eye pressure" },
+    { "code": "back_pain", "label": "Back pain" },
+    { "code": "cough", "label": "Cough" },
+    { "code": "shortness_of_breath", "label": "Shortness of breath" },
+    { "code": "sore_throat", "label": "Sore throat" },
+    { "code": "skin_lesion", "label": "Skin lesion (rash / cold sore)" },
+    { "code": "digestive_issue", "label": "Digestive issue" }
+  ],
+  "weekly_assessment": {
+    "privacy_note": "Your answers stay with you by default. They are not used by the anomaly model, the language model or the alert system.",
+    "share_label": "Share this assessment with the crew medical officer",
+    "share_default": false,
+    "support_note": "Your latest weekly assessment suggests it may help to talk with the psychological support team. This is a screening result, not a diagnosis.",
+    "support_rule": "phq2_score >= 3 or gad2_score >= 3",
+    "scales": [
+      {
+        "id": "who5",
+        "name": "WHO-5",
+        "instructions": "Please indicate for each of the five statements which is closest to how you have been feeling over the last two weeks. Notice that higher numbers mean better well-being.",
+        "timeframe": "Over the last two weeks",
+        "min": 0,
+        "max": 5,
+        "options": [
+          { "value": 5, "label": "All of the time" },
+          { "value": 4, "label": "Most of the time" },
+          { "value": 3, "label": "More than half of the time" },
+          { "value": 2, "label": "Less than half of the time" },
+          { "value": 1, "label": "Some of the time" },
+          { "value": 0, "label": "At no time" }
+        ],
+        "items": [
+          { "key": "who5_1", "text": "I have felt cheerful and in good spirits" },
+          { "key": "who5_2", "text": "I have felt calm and relaxed" },
+          { "key": "who5_3", "text": "I have felt active and vigorous" },
+          { "key": "who5_4", "text": "I woke up feeling fresh and rested" },
+          { "key": "who5_5", "text": "My daily life has been filled with things that interest me" }
+        ],
+        "source": "World Health Organization. The World Health Organization-Five Well-Being Index (WHO-5). Geneva: World Health Organization; 2024 (WHO/UCN/MSD/MHE/2024.1). License: CC BY-NC-SA 3.0 IGO."
+      },
+      {
+        "id": "phq2",
+        "name": "PHQ-2",
+        "instructions": "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
+        "min": 0,
+        "max": 3,
+        "options": [
+          { "value": 0, "label": "Not at all" },
+          { "value": 1, "label": "Several days" },
+          { "value": 2, "label": "More than half the days" },
+          { "value": 3, "label": "Nearly every day" }
+        ],
+        "items": [
+          { "key": "phq2_1", "text": "Little interest or pleasure in doing things" },
+          { "key": "phq2_2", "text": "Feeling down, depressed, or hopeless" }
+        ],
+        "source": "Developed by Drs. Robert L. Spitzer, Janet B.W. Williams, Kurt Kroenke and colleagues, with an educational grant from Pfizer Inc. No permission required to reproduce, translate, display or distribute."
+      },
+      {
+        "id": "gad2",
+        "name": "GAD-2",
+        "instructions": "Over the last 2 weeks, how often have you been bothered by the following problems?",
+        "min": 0,
+        "max": 3,
+        "options": [
+          { "value": 0, "label": "Not at all" },
+          { "value": 1, "label": "Several days" },
+          { "value": 2, "label": "More than half the days" },
+          { "value": 3, "label": "Nearly every day" }
+        ],
+        "items": [
+          { "key": "gad2_1", "text": "Feeling nervous, anxious, or on edge" },
+          { "key": "gad2_2", "text": "Not being able to stop or control worrying" }
+        ],
+        "source": "Developed by Drs. Robert L. Spitzer, Janet B.W. Williams, Kurt Kroenke and colleagues, with an educational grant from Pfizer Inc. No permission required to reproduce, translate, display or distribute."
+      }
+    ]
+  }
+}

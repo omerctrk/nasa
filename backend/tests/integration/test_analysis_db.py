@@ -71,3 +71,14 @@ def test_real_retry_preserves_snapshot_and_hash(db, job_case):
     assert (row.attempts, row.retry_cycle) == (0, 1)
     with pytest.raises(InvalidStateTransition):
         service.retry(identity, job_id)
+
+
+def test_analysis_transaction_uses_real_session_factory():
+    from sqlalchemy import text
+    from app.core.analysis_runtime import analysis_transaction
+    from app.core.history_runtime import history_sources
+
+    with analysis_transaction() as repo:
+        assert repo.session.scalar(text("SELECT 1")) == 1
+    with history_sources() as repo:
+        assert repo.session.scalar(text("SELECT 1")) == 1

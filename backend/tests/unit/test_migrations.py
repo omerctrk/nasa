@@ -79,9 +79,23 @@ def test_every_model_index_is_created(offline_sql):
             assert migrated.get(index.name) == expected, index.name
 
 
-def test_every_table_is_granted_to_app_role_without_delete(offline_sql):
+def test_every_table_is_granted_to_app_role_with_only_knowledge_delete(offline_sql):
     grants = re.findall(r"GRANT ([A-Z, ]+) ON \[(\w+)\]\.\[(\w+)\] TO \[astra_app_role\]", offline_sql)
     granted = {f"{s}.{t}": perms for perms, s, t in grants}
     operational = {t.fullname for t in Base.metadata.sorted_tables if t.schema != "evaluation"}
     assert operational <= set(granted), operational - set(granted)
-    assert all("DELETE" not in p for p in granted.values())
+    assert "DELETE" in granted["dbo.knowledge_cards"]
+    assert all("DELETE" not in p for name, p in granted.items() if name != "dbo.knowledge_cards")
+
+
+def test_evaluation_is_isolated(offline_sql):
+    """Eval tablosu yalnız eval rolüne verilir; app rolüne hiçbir evaluation izni verilmez."""
+    assert re.search(r"GRANT [A-Z, ]+ ON \[evaluation\]\.\[gercek_durum\] TO \[astra_eval_role\]",
+                     offline_sql)
+    assert not re.search(r"GRANT [A-Z, ]+ ON \[evaluation\]\.\[\w+\] TO \[astra_app_role\]",
+                         offline_sql)
+    assert "DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[evaluation] TO [astra_app_role]" in offline_sql
+    # eval rolü operasyonel tablolara izin almaz
+    assert not re.search(r"ON \[(core|sans|anomaly|ops|behavioral)\]\.\[\w+\] TO \[astra_eval_role\]",
+                         offline_sql)
+    assert "DELETE ON [evaluation]" not in offline_sql

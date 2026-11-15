@@ -25,6 +25,7 @@ from app.repositories.records import (
     AlertCreate,
     AlertRecord,
     AnomalyResultData,
+    AnomalyResultRecord,
     AstronautRecord,
     ClaimedJob,
     CreateJobResult,
@@ -40,7 +41,7 @@ from app.repositories.records import (
     SansStateData,
     UserRecord,
 )
-from app.schemas.common import AlertStatus, MeasurementDTO
+from app.schemas.common import AlertStatus, AnalysisModule, MeasurementDTO
 
 
 @runtime_checkable
@@ -91,17 +92,29 @@ class JobApiRepository(Protocol):
 
 @runtime_checkable
 class JobRepository(JobApiRepository, Protocol):
-    def claim_next_job(self, lease_seconds: int) -> ClaimedJob | None:
-        """Zamanı gelmiş en eski QUEUED işi atomik olarak sahiplenir (SYNCING, yeni lease)."""
+    def claim_next_job(self, lease_seconds: int,
+                       modules: tuple[AnalysisModule, ...] = tuple(AnalysisModule)) -> ClaimedJob | None:
+        """Yalnız etkin modüllerdeki en eski QUEUED işi atomik sahiplenir: SYNCING, yeni lease,
+        attempts+1. Aynı astronotun SANS işlerini atomik olarak sıralar."""
 
     def renew_job_lease(
         self, job_id: uuid.UUID, lease_token: uuid.UUID, lease_seconds: int
     ) -> bool:
-        """Sahiplik hâlâ bu token'daysa lease_until uzatılır; değilse False."""
+        """Token + aktif durum + lease_until>DB now koşuluyla yeniler.
+        Süresi geçmiş lease yeniden canlandırılmaz; geçerli değilse False."""
 
-    def recover_expired_jobs(self) -> list[RecoveredJob]:
+    def recover_expired_jobs(self, max_attempts: int = 2) -> list[RecoveredJob]:
         """lease_until < DB'nin SYSUTCDATETIME()'ı olan işleri kurtarır:
-        tekrar hakkı varsa QUEUED, yoksa FAILED."""
+        Anomali tekrar hakkı varsa QUEUED, yoksa FAILED. ANALYZING SANS işi
+        SANS_RECONCILIATION_REQUIRED ile FAILED olur; kör POST tekrarı yapılmaz."""
+
+    def reschedule_job(
+        self, job_id: uuid.UUID, lease_token: uuid.UUID, delay_seconds: float,
+        error_code: str, max_attempts: int = 2,
+    ) -> JobRecord:
+        """Ö3: geçerli lease + anomaly + attempts<max_attempts koşuluyla QUEUED.
+        next_attempt_at DB saati+delay, lease temizlenir; snapshot/hash korunur.
+        Sahiplik/süre yoksa LeaseLost; uygun değilse InvalidStateTransition."""
 
     def save_input_snapshot(
         self,
@@ -110,17 +123,21 @@ class JobRepository(JobApiRepository, Protocol):
         snapshot: dict[str, Any],
         input_hash: str,
     ) -> None:
-        """İlk kayıt yazılır ve iş ANALYZING olur. Aynı hash → no-op.
+        """İlk kayıt yazılır ve iş ANALYZING olur. Aynı hash → içerik değişmez,
+        ama retry SYNCING→ANALYZING geçişi yine yapılır.
         Farklı hash → SnapshotConflict. Sahiplik yoksa → LeaseLost."""
 
     def finalize_job(
         self, job_id: uuid.UUID, lease_token: uuid.UUID, outcome: JobOutcome
     ) -> JobRecord:
-        """Sahiplik kontrollü tamamlanma; lease alanları temizlenir. Sahiplik yoksa LeaseLost."""
+        """Token + aktif durum + lease_until>DB now kontrollü tamamlanma;
+        lease temizlenir. Geçerli sahiplik yoksa LeaseLost, sonuç yazımı rollback edilir."""
 
 @runtime_checkable
 class ResultRepository(Protocol):
     def save_anomaly_result(self, result: AnomalyResultData) -> uuid.UUID: ...
+
+    def get_anomaly_result(self, result_id: uuid.UUID) -> AnomalyResultRecord | None: ...
 
     def save_sans_analysis(self, result: SansAnalysisData) -> int: ...
 

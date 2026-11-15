@@ -21,6 +21,14 @@ class AnomalyJobRequest(AnalysisModel):
     idempotency_key: UUID
     module_scope: ModuleScope
 
+    @field_validator("module_scope")
+    @classmethod
+    def no_sans_scope(cls, value: ModuleScope) -> ModuleScope:
+        # SANS/göz modülü projeden çıkarıldı (takım kararı): göz verisi yok.
+        if value is ModuleScope.SANS:
+            raise ValueError("SANS kapsamı kapatıldı.")
+        return value
+
     def to_record(self) -> JobRequestData:
         return JobRequestData(module=self.module, module_scope=self.module_scope)
 
@@ -42,7 +50,10 @@ class SansJobRequest(AnalysisModel):
         return JobRequestData(module=self.module, session_id=self.session_id)
 
 
-AnalysisJobRequest = Annotated[AnomalyJobRequest | SansJobRequest, Field(discriminator="module")]
+# SANS/göz modülü projeden çıkarıldı (takım kararı, 14 Kasım): API yalnız anomali işi kabul eder.
+# SansJobRequest ve işçinin SANS yolu kapalı ama silinmedi; geri açmak için birleşime eklenir:
+#   Annotated[AnomalyJobRequest | SansJobRequest, Field(discriminator="module")]
+AnalysisJobRequest = AnomalyJobRequest
 
 
 class RetryJobRequest(AnalysisModel):

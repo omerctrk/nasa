@@ -43,9 +43,17 @@ def claim_mine(repo, job_id):
     """DB'de başka QUEUED iş varsa onları atlayıp kendi işimizi bul (hepsi rollback olur)."""
     for _ in range(50):
         c = repo.claim_next_job(lease_seconds=120)
-        if c is None or c.job.job_id == job_id:
+        assert c is not None, "sıradaki iş alınamadı (zamanı gelmiş QUEUED iş bulunmadı)"
+        if c.job.job_id == job_id:
             return c
     raise AssertionError("iş sahiplenilemedi")
+
+
+def test_new_job_is_claimable_immediately(repo, scope):
+    """Gerçek DB'de yakalanan hata: yeni iş aynı milisaniyede sahiplenilebilmeli."""
+    for i in range(20):
+        job = repo.create_or_get_job(scope, uuid.uuid4(), h(f"im{i}"), ANOMALY).job
+        assert claim_mine(repo, job.job_id).job.state == "SYNCING"
 
 
 ANOMALY = JobRequestData(module="anomaly", module_scope="combined")

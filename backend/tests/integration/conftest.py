@@ -18,9 +18,9 @@ if os.environ.get("RUN_DB_TESTS") != "1":
 
 @pytest.fixture
 def db() -> Session:
-    from app.db.session import engine
+    from app.db.session import get_engine
 
-    conn = engine.connect()
+    conn = get_engine().connect()
     tx = conn.begin()
     session = Session(bind=conn, join_transaction_mode="create_savepoint")
     try:
