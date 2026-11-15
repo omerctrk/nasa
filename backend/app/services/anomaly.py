@@ -66,11 +66,12 @@ CARD_METRIC = {
     "rotation_mean_rt": "rotation_mean_rt_ms",
     "body_temperature": "body_temp",
     "crew": "crew_relation",
+    "intraocular_pressure": "eye_pressure",
 }
 # Birim kodu → modele ve özete giden okunur birim (değer dönüştürülmez, yalnız etiket).
 UNIT_TEXT = {
     "h": "saat", "ms": "ms", "count": "adet", "BPM": "BPM", "mmHg": "mmHg", "mg/dL": "mg/dL",
-    "°C": "°C", "score_0_10": "puan (0-10)", "score_0_4": "puan (0-4)", "score_1_5": "puan (1-5)",
+    "°C": "°C", "%": "%", "mSv/d": "mSv/gün", "score_0_10": "puan (0-10)", "score_0_4": "puan (0-4)", "score_1_5": "puan (1-5)",
     "score_0_100": "puan (0-100)", "ratio_0_1": "oran (0-1)",
 }
 ALERT_SEVERITY = {AnomalyLevel.WATCH: Severity.WARNING, AnomalyLevel.REVIEW: Severity.WARNING}

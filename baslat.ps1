@@ -30,6 +30,9 @@ Adim 4 "Demo takvimi bugüne hizalanıyor (görev günü 74 = bugün)..."
 docker compose run --rm migrate python -m scripts.realign_demo --apply
 if ($LASTEXITCODE -eq 3) { Write-Host "UYARI: takvim hizalanmadı (yukarıdaki nedene bak); demo mevcut takvimle açılıyor." -ForegroundColor Yellow }
 elseif ($LASTEXITCODE -ne 0) { Kontrol "Takvim hizalama" }
+# Sentetik fizyolojik/ortam ölçümleri (nabız…, SpO2, göz içi basıncı, radyasyon, kabin CO2):
+# yalnız EKSİK gün/ölçümleri ekler (var olana dokunmaz), görev günü 74'e kadar.
+docker compose run --rm seed python -m scripts.seed_physiological --apply;   Kontrol "Sentetik ölçümler"
 
 Adim 5 "Frontend açılıyor..."
 Set-Location frontend

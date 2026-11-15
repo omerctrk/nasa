@@ -31,6 +31,10 @@ def test_returns_same_rules_as_analysis_policy_with_exact_decimals():
     for rule in POLICY["rules"]:
         out = got[rule["measurement"]]
         assert out["unit"] == rule["unit"] and out["module"] == rule["module"]
-        assert float(out["upper"]) == float(rule["upper"])
+        for side in ("lower", "upper"):
+            assert (out[side] is None) == (rule.get(side) is None)
+            if rule.get(side) is not None:
+                assert float(out[side]) == float(rule[side])
+    assert got["spo2"]["lower"] == "95" and got["spo2"]["upper"] is None
     assert got["body_temperature"]["upper"] == "37.10"  # ondalık yuvarlanmaz
     assert got["heart_rate"]["unit"] == "BPM" and got["body_temperature"]["unit"] == "°C"

@@ -66,6 +66,12 @@ const EMPTY_VITALS: Record<string, VitalMetric> = {
   // Sude'nin anatomi panelleri tansiyonu ayrı okur; backend kodları systolic_bp / diastolic_bp.
   bp_systolic: emptyVital('bp_systolic', 'Sistolik', 'mmHg', 'cardio'),
   bp_diastolic: emptyVital('bp_diastolic', 'Diyastolik', 'mmHg', 'cardio'),
+  // Görev ortamı (sentetik demo kaynakları: kişisel dozimetre, kabin CO2 sensörü)
+  radiation: emptyVital('radiation', 'Radyasyon dozu', 'mSv/d', 'respiratory'),
+  co2: emptyVital('co2', 'Kabin CO₂', 'mmHg', 'respiratory'),
+  // İzolasyon: günlük check-in (gerçek giriş)
+  loneliness: emptyVital('loneliness', 'Yalnızlık', 'score_0_4', 'neuro'),
+  crew: emptyVital('crew', 'Mürettebat ilişkisi', 'score_0_4', 'neuro'),
 };
 
 const emptyAstronaut: AstronautProfile = {
@@ -130,6 +136,8 @@ function vitalFromMeasurements(rows: Measurement[], policy: ThresholdPolicy | nu
   const mappings: Record<string, string> = {
     heart_rate: 'pulse', blood_glucose: 'glucose', body_temperature: 'temperature',
     systolic_bp: 'bp_systolic', diastolic_bp: 'bp_diastolic',
+    spo2: 'oxygen', intraocular_pressure: 'iop', radiation_dose: 'radiation', cabin_co2: 'co2',
+    loneliness: 'loneliness', crew: 'crew',
   };
   const next = Object.fromEntries(Object.entries(EMPTY_VITALS).map(([key, value]) => [key, { ...value, history: [] }])) as Record<string, VitalMetric>;
   const codeOf = Object.fromEntries(Object.entries(mappings).map(([code, key]) => [key, code]));
@@ -149,6 +157,7 @@ function vitalFromMeasurements(rows: Measurement[], policy: ThresholdPolicy | nu
     const range = checkRange(policy, codeOf[key], unit, last);
     next[key] = { ...next[key], value: last, unit, history, trend: last > previous ? 'up' : last < previous ? 'down' : 'stable', changeRate: history.length > 1 ? `${last >= previous ? '+' : ''}${Math.round((last - previous) * 100) / 100} ${unit}` : 'Tek kayıt',
       status: range.status, rangeKnown: range.known, lowerLimit: range.lower, upperLimit: range.upper, code: codeOf[key],
+      synthetic: values.at(-1)!.source === 'synthetic', lastDate: values.at(-1)!.measured_date,
       minNormal: range.lower ?? Number.NaN, maxNormal: range.upper ?? Number.NaN };
   }
   return next;

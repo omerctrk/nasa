@@ -85,8 +85,10 @@ def test_policy_file_preserves_decimals_and_rejects_duplicate_keys(tmp_path):
 
 
 def test_shipped_thresholds_are_only_the_team_approved_demo_limits():
-    """Ekip kararı (15 Kasım 2026): yalnız 5 fizyolojik DEMO üst sınırı; davranışa eşik yok.
-    Kaynak: A007 sentetik gün 1-60, ortalama + 3 popülasyon SS. Klinik aralık değildir."""
+    """Ekip kararı (15 Kasım 2026): 5 fizyolojik DEMO üst sınırı; davranışa eşik yok.
+    Kaynak: A007 sentetik gün 1-60, ortalama + 3 popülasyon SS. Klinik aralık değildir.
+    Ek (15 Kasım, sentetik demo kaynakları): SpO2 alt 95 %, göz içi basıncı üst 21 mmHg,
+    kabin CO2 üst 4.0 mmHg; radyasyon dozunda günlük eşik yok."""
     from tests.fixtures.history import ROOT
     shipped = load_threshold_policy(ROOT / "config/thresholds.json")
     assert {(r.module.value, r.measurement, r.unit, r.protocol_version, r.lower, r.upper)
@@ -96,6 +98,9 @@ def test_shipped_thresholds_are_only_the_team_approved_demo_limits():
         ("physiological", "diastolic_bp", "mmHg", "module-v2", None, Decimal("86")),
         ("physiological", "blood_glucose", "mg/dL", "module-v2", None, Decimal("111")),
         ("physiological", "body_temperature", "°C", "module-v2", None, Decimal("37.10")),
+        ("physiological", "spo2", "%", "module-v2", Decimal("95"), None),
+        ("physiological", "intraocular_pressure", "mmHg", "module-v2", None, Decimal("21")),
+        ("physiological", "cabin_co2", "mmHg", "module-v2", None, Decimal("4.0")),
     }
     assert "DEMO" in shipped.source_note and "klinik" in shipped.source_note
     assert history_policy().sufficiency_policy_status == "not_configured"

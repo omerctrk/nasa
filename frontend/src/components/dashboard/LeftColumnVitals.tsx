@@ -55,6 +55,7 @@ export const LeftColumnVitals: React.FC = () => {
   const judged = measured.filter(({ metric }) => metric.rangeKnown);
   const counts = { normal: judged.filter(({ metric }) => metric.status === 'normal').length, warning: judged.filter(({ metric }) => metric.status === 'warning').length, critical: judged.filter(({ metric }) => metric.status === 'critical').length, unknown: measured.length - judged.length };
   const worst: MetricStatus = counts.critical ? 'critical' : counts.warning ? 'warning' : 'normal';
+  const anySynthetic = measured.some(({ metric }) => metric.synthetic || (metric.id === 'bp' && vitals.bp_systolic.synthetic));
   const zoneFor = (id: string) => id === 'pulse' || id === 'oxygen' || id === 'bp' ? 'chest' : id === 'glucose' || id === 'temperature' ? 'abdomen' : 'head';
   const limitOf = (m: VitalMetric) => {
     if (m.id === 'bp') {
@@ -73,7 +74,8 @@ export const LeftColumnVitals: React.FC = () => {
         <div className="flex flex-1 items-center gap-3 md:justify-center"><ScoreRing count={measured.length} total={cards.length} />
           <div className="text-sm text-slate-600"><div className="font-bold text-slate-900">{measured.length ? t('Kayıtlı ölçümler', 'Stored measurements') : t('Ölçüm kaydı yok', 'No measurement record')}</div>
             <ul className="mt-2 space-y-1"><li><b>{counts.normal}</b> {t('aralık içinde', 'within range')}</li><li className={counts.warning ? 'font-semibold text-amber-700' : ''}><b>{counts.warning}</b> {t('aralık dışı (dikkat)', 'out of range (caution)')}</li><li><b>{counts.critical}</b> {t('kritik', 'critical')}</li>{counts.unknown > 0 && <li><b>{counts.unknown}</b> {t('eşik tanımsız', 'no threshold')}</li>}</ul>
-            <p className="mt-2 text-xs text-slate-500">{t('Durum, analizin kullandığı eşiklerden (demo eşikleri, klinik değil).', 'Status from the thresholds the analysis uses (demo limits, not clinical).')}</p></div>
+            <p className="mt-2 text-xs text-slate-500">{t('Durum, analizin kullandığı eşiklerden (demo eşikleri, klinik değil).', 'Status from the thresholds the analysis uses (demo limits, not clinical).')}</p>
+            {anySynthetic && <p className="mt-1 text-xs font-medium text-slate-500">{t('Kaynak: veritabanındaki sentetik demo ölçümleri.', 'Source: synthetic demo measurements in the database.')}</p>}</div>
         </div>
         <div className="min-w-0 md:border-l md:border-slate-200 md:pl-4"><div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">{t('Yaşamsal bulgular', 'Vital signs')}</div>
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">{cards.map(({ id, metric, display }) => {

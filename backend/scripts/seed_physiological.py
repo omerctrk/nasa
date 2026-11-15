@@ -24,27 +24,40 @@ from scripts.demo_data import LAST_DAY
 from scripts.seed import PHYSIOLOGICAL_DEFINITIONS, PHYSIOLOGICAL_PROTOCOL
 
 GENERATOR = "physiological-demo-v1"
-# mean, bounded daily variation, late-mission demo increase (not clinical limits)
+# mean, bounded daily variation, late-mission demo change (not clinical limits).
+# Ranges for the 15 Nov additions follow published ISS values:
+#  spo2                 normoxic cabin (~21 % O2, 1 atm): 96-99 %; slight late fall
+#  intraocular_pressure early-flight elevation within normal (10-21 mmHg); late rise
+#  radiation_dose       ISS LEO personal dose ~0.4-0.7 mSv/day; no trend
+#  cabin_co2            ISS typical 2-3.5 mmHg; late rise toward the 4 mmHg operating limit
 PARAMETERS = {
     "heart_rate": (72, 3, 14),
     "systolic_bp": (118, 4, 18),
     "diastolic_bp": (77, 3, 12),
     "blood_glucose": (94, 5, 24),
     "body_temperature": (36.65, 0.15, 0.7),
+    "spo2": (97.6, 0.8, -1.6),
+    "intraocular_pressure": (15.5, 1.2, 2.5),
+    "radiation_dose": (0.55, 0.08, 0.0),
+    "cabin_co2": (2.6, 0.3, 1.4),
 }
+# Device resolution: pulse oximeter reports whole %, tonometer 0.1 mmHg; others 2 decimals.
+DECIMALS = {"spo2": 0, "intraocular_pressure": 1}
 
 
 def sample(astronaut_id: str, day: date, mission_day: int, code: str) -> Decimal:
     rng = random.Random(f"{GENERATOR}:{astronaut_id}:{day}:{code}")
     mean, variation, increase = PARAMETERS[code]
     drift = min(1, max(0, (mission_day - 60) / 14))
-    return Decimal(str(round(mean + rng.uniform(-variation, variation) + increase * drift, 2)))
+    value = round(mean + rng.uniform(-variation, variation) + increase * drift, DECIMALS.get(code, 2))
+    return Decimal(str(value))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--astronaut", default="A007")
-    parser.add_argument("--end-date", type=date.fromisoformat, required=True)
+    parser.add_argument("--end-date", type=date.fromisoformat, default=None,
+                        help=f"default: mission day {LAST_DAY} (the demo scenario's last day)")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--beyond-scenario", action="store_true",
                         help=f"görev günü {LAST_DAY}'ten sonrasına da üret (takvim hizalamayı engeller)")
@@ -56,6 +69,8 @@ def main() -> None:
             raise SystemExit("An active, non-display astronaut is required.")
         mission = db.get(Mission, astronaut.mission_id)
         start = mission.start_date + timedelta(days=1)
+        if args.end_date is None:
+            args.end_date = mission.start_date + timedelta(days=LAST_DAY)
         if not start <= args.end_date < mission.start_date + timedelta(days=mission.length_days):
             raise SystemExit("End date must be within the mission.")
         last = mission.start_date + timedelta(days=LAST_DAY)

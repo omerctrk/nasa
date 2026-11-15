@@ -26,6 +26,10 @@ export interface VitalMetric {
   upperLimit?: number | null;
   /** Backend ölçüm kodu (ör. heart_rate) */
   code?: string;
+  /** Son kayıt sentetik demo verisi mi (MeasurementRecords.source = synthetic) */
+  synthetic?: boolean;
+  /** Son kaydın tarihi (YYYY-MM-DD) */
+  lastDate?: string;
 }
 
 export interface AstronautProfile {

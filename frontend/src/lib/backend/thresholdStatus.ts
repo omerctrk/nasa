@@ -57,6 +57,10 @@ export const MEASUREMENT_LABELS: Record<string, { tr: string; en: string }> = {
   diastolic_bp: { tr: 'Küçük tansiyon', en: 'Diastolic BP' },
   blood_glucose: { tr: 'Kan şekeri', en: 'Blood glucose' },
   body_temperature: { tr: 'Vücut ısısı', en: 'Body temperature' },
+  spo2: { tr: 'Oksijen satürasyonu (SpO₂)', en: 'Oxygen saturation (SpO₂)' },
+  intraocular_pressure: { tr: 'Göz içi basıncı', en: 'Intraocular pressure' },
+  radiation_dose: { tr: 'Radyasyon dozu', en: 'Radiation dose' },
+  cabin_co2: { tr: 'Kabin CO₂', en: 'Cabin CO₂' },
   stress: { tr: 'Stres', en: 'Stress' },
   loneliness: { tr: 'Yalnızlık', en: 'Loneliness' },
   crew: { tr: 'Mürettebat ilişkisi', en: 'Crew relations' },
@@ -73,6 +77,7 @@ export const MEASUREMENT_LABELS: Record<string, { tr: string; en: string }> = {
 /** Birim kodu → okunur birim. Değer dönüştürülmez; yalnız etiket (backend UNIT_TEXT ile aynı). */
 export const UNIT_LABELS: Record<string, { tr: string; en: string }> = {
   h: { tr: 'saat', en: 'h' },
+  'mSv/d': { tr: 'mSv/gün', en: 'mSv/day' },
   ms: { tr: 'ms', en: 'ms' },
   count: { tr: 'adet', en: 'count' },
   score_0_10: { tr: 'puan (0–10)', en: 'pts (0–10)' },

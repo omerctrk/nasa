@@ -72,6 +72,12 @@ PHYSIOLOGICAL_DEFINITIONS: tuple[tuple[str, str, str, str, str], ...] = (
     ("diastolic_bp", "physiological", "mmHg", "numeric", "unconfirmed"),
     ("blood_glucose", "physiological", "mg/dL", "numeric", "unconfirmed"),
     ("body_temperature", "physiological", "°C", "numeric", "unconfirmed"),
+    # Sentetik demo kaynakları (ekip kararı, 15 Kasım): pulse oksimetre, tonometre, kişisel
+    # dozimetre ve astronotun bulunduğu modülün kabin CO₂ sensörü. Astronota bağlı kaydedilir.
+    ("spo2", "physiological", "%", "numeric", "unconfirmed"),
+    ("intraocular_pressure", "physiological", "mmHg", "numeric", "unconfirmed"),
+    ("radiation_dose", "physiological", "mSv/d", "numeric", "unconfirmed"),
+    ("cabin_co2", "physiological", "mmHg", "numeric", "unconfirmed"),
 )
 
 # --- GEÇİCİ (belgelerde yok; ekip teyidi bekliyor) ---------------------------------
