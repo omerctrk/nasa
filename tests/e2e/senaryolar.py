@@ -380,9 +380,28 @@ def main() -> int:
             "unit": "bpm", "measured_date": TODAY.isoformat()})
         check(s == 422, "422", (s, b))
 
-    @step("S7 Davranış", "davranış kapsamı: eşik tanımı yok → insufficient_data (bilinmeyen ≠ normal)")
+    @step("S7 Davranış", "davranış kapsamı: bugünün check-in/testleri önceki 73 günle karşılaştırılır")
     def _():
-        return insufficient("thresholds_not_configured")("behavioral")
+        st = run_job("behavioral")
+        check(st["state"] == "COMPLETED" and st["evaluation_status"] == "evaluated" and st["anomaly_result_id"],
+              "evaluated (kişisel taban çizgisi; davranışta sabit eşik yok)", st)
+        s, _, r = http("GET", f"/me/anomaly-results/{st['anomaly_result_id']}", ctx["astro"])
+        personal = [d for d in r["drivers"] if d.get("kind") == "baseline"]
+        check(personal and all(d["module"] == "behavioral" and int(d["baseline_days"]) >= 14 for d in personal),
+              "sürücüler baseline, modül behavioral, ≥14 gün", r["drivers"][:2])
+        check(not any(d.get("kind") == "threshold" for d in r["drivers"]), "davranışta eşik ihlali yok", r["drivers"])
+        sleep = next((d for d in personal if d["measurement"] == "sleep_hours"), None)
+        check(sleep and sleep["direction"] == "down" and sleep["unit"] == "h", "uyku süresi düşük sapma, birim h", sleep)
+        ctx["s7_result"] = r["id"]
+        if r["level"] == "normal":
+            ctx["completed_jobs"].append(st["job_id"])
+        else:
+            ctx["risk_jobs"] = ctx.get("risk_jobs", 0) + 1
+            s, _, al = http("GET", "/ground/alerts?status=OPEN&astronaut_id=A007", ctx["ground"])
+            mine = [a for a in al if a["anomaly_result_id"] == r["id"]]
+            check(len(mine) == 1, "riskli davranış sonucu → tek alarm", al)
+            ctx["alert_s7"] = mine[0]["alert_id"]
+        return f"level={r['level']}, {len(personal)} sapma: " + ", ".join(f"{d['measurement']} z={d['z']}" for d in personal)
 
     # ---------------- S8 normal gün
     @step("S8 Normal gün", "5 fizyolojik ölçüm eşik içinde → normal sonuç, alarm yok")
@@ -411,7 +430,7 @@ def main() -> int:
         check(st["evaluation_status"] == "evaluated" and st["anomaly_result_id"], "evaluated", st)
         s, _, r = http("GET", f"/me/anomaly-results/{st['anomaly_result_id']}", ctx["astro"])
         check(s == 200 and r["is_anomaly"] is True and r["level"] in ("watch", "review"), "watch/review", r)
-        breaches = {d["measurement"]: d for d in r["drivers"] if d.get("type") != "advice"}
+        breaches = {d["measurement"]: d for d in r["drivers"] if d.get("kind") == "threshold"}
         check(set(breaches) == {"heart_rate", "body_temperature"}, "yalnız HR + ateş ihlal", list(breaches))
         hr, tp = breaches["heart_rate"], breaches["body_temperature"]
         check(num(hr["upper"]) == 80 and num(hr["value"]) == 96 and num(tp["upper"]) == 37.1
@@ -444,8 +463,10 @@ def main() -> int:
         check(st["evaluation_status"] == "evaluated", "evaluated", st)
         s, _, r = http("GET", f"/me/anomaly-results/{st['anomaly_result_id']}", ctx["astro"])
         check(r["module_scope"] == "combined" and r["level"] == ctx["risk_level"], "aynı seviye", r)
-        names = {d["measurement"] for d in r["drivers"] if d.get("type") != "advice"}
-        check(names == {"heart_rate", "body_temperature"}, "davranış ölçümleri ihlal sayılmaz", names)
+        names = {d["measurement"] for d in r["drivers"] if d.get("kind") == "threshold"}
+        check(names == {"heart_rate", "body_temperature"}, "eşik ihlalleri yalnız HR + ateş", names)
+        personal = {d["module"] for d in r["drivers"] if d.get("kind") == "baseline"}
+        check(personal <= {"behavioral"}, "kişisel sapmalar davranıştan (fizyolojik geçmiş yok)", personal)
         s, _, al = http("GET", "/ground/alerts?status=OPEN&astronaut_id=A007", ctx["ground"])
         mine = [a for a in al if a["anomaly_result_id"] == r["id"]]
         check(len(mine) == 1, "ikinci alarm", al)
@@ -468,13 +489,13 @@ def main() -> int:
         check({"stress", "sleep_hours", "pvt_mean_rt"} <= beh, "check-in + PVT görünümde", beh)
         return f"{len(phys)} fizyolojik + {len(mine) - len(phys)} davranış kaydı"
 
-    @step("S11 Tutarlılık", "sonuç listeleri: astronot = kule, normal + 2 riskli sonuç")
+    @step("S11 Tutarlılık", "sonuç listeleri: astronot = kule, 4 sonuç (normal, davranış, risk, combined)")
     def _():
         q = f"?start={TODAY}&end={TOMORROW}"
         s1, _, a = http("GET", "/me/anomaly-results" + q, ctx["astro"])
         s2, _, g = http("GET", "/ground/astronauts/A007/anomaly-results" + q, ctx["ground"])
         ids_a, ids_g = {r["id"] for r in a}, {r["id"] for r in g}
-        want = {ctx["normal_result"], ctx["risk_result"], ctx["combined_result"]}
+        want = {ctx["normal_result"], ctx["risk_result"], ctx["combined_result"], ctx["s7_result"]}
         check(s1 == 200 and ids_a == ids_g == want, "aynı 3 sonuç", (ids_a, ids_g, want))
         s, _, r = http("GET", f"/ground/anomaly-results/{ctx['risk_result']}", ctx["ground"])
         check(s == 200 and r["id"] == ctx["risk_result"], "kule tekil okuma", (s, r))
@@ -482,23 +503,25 @@ def main() -> int:
         check(s == 404, "bilinmeyen sonuç 404", s)
 
     # ---------------- S12 bildirimler
-    @step("S12 Bildirim", "REST pending: astronotta 5 tamamlanma + 2 risk olayı, kulede 2 risk olayı")
+    @step("S12 Bildirim", "REST pending: her iş için tek olay (tamamlanma veya risk), kule yalnız risk")
     def _():
         s, _, ev = http("GET", "/notifications/pending", ctx["astro"])
         check(s == 200, "200", (s, ev))
         types = [e["event_type"] for e in ev]
         n_done = len(ctx["completed_jobs"])
-        check(types.count("analysis.completed") == n_done and types.count("risk.alert.created") == 2,
-              f"{n_done} analysis.completed + 2 risk.alert.created", types)
+        n_risk = 2 + ctx.get("risk_jobs", 0)
+        check(types.count("analysis.completed") == n_done and types.count("risk.alert.created") == n_risk,
+              f"{n_done} analysis.completed + {n_risk} risk.alert.created", types)
         done_jobs = {e["payload"]["job_id"] for e in ev if e["event_type"] == "analysis.completed"}
         check(done_jobs == set(ctx["completed_jobs"]), "her tamamlanan işe bir olay", (done_jobs, ctx["completed_jobs"]))
         risk_alerts = {e["payload"]["alert_id"] for e in ev if e["event_type"] == "risk.alert.created"}
-        check(risk_alerts == {ctx["alert1"], ctx["alert2"]}, "risk olayları alarmlarla aynı", risk_alerts)
+        want_alerts = {ctx["alert1"], ctx["alert2"]} | ({ctx["alert_s7"]} if "alert_s7" in ctx else set())
+        check(risk_alerts == want_alerts, "risk olayları alarmlarla aynı", risk_alerts)
         ctx["astro_events"] = {e["event_id"] for e in ev}
         s, _, gev = http("GET", "/notifications/pending", ctx["ground"])
         gtypes = [e["event_type"] for e in gev]
-        check(gtypes.count("risk.alert.created") == 2 and "analysis.completed" not in gtypes,
-              "kule yalnız 2 risk olayı", gtypes)
+        check(gtypes.count("risk.alert.created") == n_risk and "analysis.completed" not in gtypes,
+              f"kule yalnız {n_risk} risk olayı", gtypes)
         ctx["ground_events"] = [e["event_id"] for e in gev]
 
     @step("S12 Bildirim", "kule REST receipt → recorded, pending'den düşer; başka kullanıcının olayı 404/403")
@@ -590,7 +613,8 @@ def main() -> int:
         st = {x["alert_id"]: x["status"] for x in mine}
         check(st.get(ctx["alert1"]) == "RESOLVED" and st.get(ctx["alert2"]) == "OPEN", "RESOLVED + OPEN", st)
         s, _, open_ = http("GET", "/ground/alerts?status=OPEN&astronaut_id=A007", ctx["ground"])
-        check({x["alert_id"] for x in open_} == {ctx["alert2"]}, "yalnız ikinci alarm açık", open_)
+        want_open = {ctx["alert2"]} | ({ctx["alert_s7"]} if "alert_s7" in ctx else set())
+        check({x["alert_id"] for x in open_} == want_open, "kapatılan dışındakiler açık", open_)
 
     # ---------------- S14 bilgi kartları
     card_id = f"e2e-{uuid.uuid4().hex[:8]}"
