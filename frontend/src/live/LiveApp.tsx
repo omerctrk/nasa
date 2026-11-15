@@ -124,10 +124,6 @@ function DashboardHome({ profile, measurements, checkins, alerts, events, job, r
             </div>)}</div> : <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Bu dönemde ölçüm kaydı yok.</p>}
           <button className="mt-4 text-sm font-semibold text-sky-700" onClick={() => onView('reports')}>Tüm ölçümleri aç →</button>
         </section>
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="font-bold text-slate-900">Bugünkü Hedefler</h2>
-          <p className="mt-2 text-sm text-slate-500">Veritabanında onaylı hedef veya öneri kaydı bulunmuyor. Model ve eşik kuralları tamamlandığında burada gösterilecek.</p>
-        </section>
         <section className="ai-panel overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-3"><span className="ai-orb"><Database className="h-5 w-5 text-white" /></span>
             <div><h2 className="font-bold text-slate-900">Analiz işi</h2><p className="text-xs text-slate-500">Sonuç yalnızca backend değerlendirmesinden gelir.</p></div></div>
@@ -138,6 +134,10 @@ function DashboardHome({ profile, measurements, checkins, alerts, events, job, r
           <div className="mt-3 flex gap-3">{canAnalyze && <button className={button} disabled={busy || !!job && !['COMPLETED', 'FAILED'].includes(job.state)} onClick={onAnalysis}>Analiz et</button>}
             <button className="text-sm font-semibold text-sky-700" onClick={() => onView('analysis')}>Ayrıntılar →</button></div>
           <p className="mt-3 text-xs text-slate-500">Model ve klinik eşikler hazır değilse değerlendirme yetersiz veri dönebilir.</p>
+        </section>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="font-bold text-slate-900">Bugünkü Hedefler</h2>
+          <p className="mt-2 text-sm text-slate-500">Veritabanında onaylı hedef veya öneri kaydı bulunmuyor. Model ve eşik kuralları tamamlandığında burada gösterilecek.</p>
         </section>
         <div className="grid gap-4 sm:grid-cols-2">
           <Card title="Alarmlar" icon={ShieldCheck}>{openAlerts.length ? <p className="text-sm">{openAlerts.length} açık alarm kaydı bulunuyor.</p> : <p className={subtle}>Açık alarm kaydı yok.</p>}</Card>
